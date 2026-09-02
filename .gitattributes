@@ -1,0 +1,26 @@
+# 줄 끝 문자를 강제한다.
+#
+# 왜 필요한가: 이 저장소는 Windows에서 쓰지만 산출물은 NAS(Linux)에서 돈다.
+# Git이 기본으로 Windows 체크아웃에 CRLF를 넣으면 셸 스크립트의 첫 줄이
+# `#!/bin/bash\r`가 되고, 컨테이너는 "bad interpreter: no such file or directory"로
+# 죽는다. 원인이 줄 끝 문자라는 것을 알아채기까지 한참 걸린다.
+
+# 컨테이너·NAS에서 도는 것 — 반드시 LF
+*.sh    text eol=lf
+*.sql   text eol=lf
+*.yml   text eol=lf
+*.yaml  text eol=lf
+
+# 환경 파일도 컨테이너가 읽는다. CRLF면 값 끝에 \r이 붙어,
+# 비밀번호가 조용히 틀린 값이 된다 — 인증 실패의 원인을 찾기 가장 어려운 종류다.
+.env*   text eol=lf
+
+# 개발 PC에서 도는 것 — Windows 그대로
+*.ps1   text eol=crlf
+*.cmd   text eol=crlf
+*.bat   text eol=crlf
+
+# 문서는 어느 쪽이든 상관없다. LF로 통일해 diff를 조용하게 둔다.
+*.md    text eol=lf
+.gitignore     text eol=lf
+.gitattributes text eol=lf
