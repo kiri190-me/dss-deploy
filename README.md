@@ -13,7 +13,13 @@
 
 **1단계 진행 중** (2026-09-02)
 - ✅ 4번 — `RF_Service_System/HANDOFF.md` 17번을 "staging 대신 배포 리허설"로 갱신
-- ✅ 5번 — `dss-home/README.md`에 "NAS로 옮기는 것은 앱이지 DB가 아니다" 단서 추가
+- ✅ 5번 — `dss-home/README.md`에 "이 사이트는 NAS에 올리지 않는다" 명시
+
+**결정 하나 더 닫힘** (2026-09-02) — **회사 홈페이지는 앱도 DB도 NAS에 두지 않는다.**
+처음에는 "앱은 NAS, DB만 바깥"으로 갈라져 있었는데 앱까지 바깥으로 정했다.
+이제 **NAS는 사내 전용 시스템 셋만** 담는다 — 예외가 없어져 6단계(접근 경계)에서
+인터넷에서 들어오는 길을 아예 검토하지 않아도 된다.
+근거와 따라가는 결과는 [`runbook/01`](./runbook/01-postgres-통합.md) 4절 결정 A.
 - ✅ 3번 — `dss-auth/scripts/backup.ts`에 `BACKUP_MODE` 추가 (`docker` 기본 · `direct` 신규).
   개발 PC 동작은 그대로, NAS용 길이 새로 생겼다. `docker` 모드 실동작 확인함
 - ✅ 2번 — 비밀번호 5개 생성, `nas/.env.nas` 작성 완료. 다섯 값이 모두 다르고
@@ -105,7 +111,7 @@ NAS는 이미 검증된 형태를 그대로 세우기만 하면 된다.
 | 2 | 비밀번호 **5개** 생성 (**모두 서로 다른 값**) | 아무 데서나 |
 | 3 | `dss-auth/scripts/backup.ts`를 TCP 접속 방식으로 수정 | `dss-auth` |
 | 4 | ~~`RF_Service_System/HANDOFF.md` 17번 갱신~~ ✅ 완료 | `RF_Service_System` |
-| 5 | ~~`dss-home/README.md:48`에 *앱만* 단서 추가~~ ✅ 완료 | `dss-home` |
+| 5 | ~~`dss-home/README.md`에 "NAS에 올리지 않는다" 명시~~ ✅ 완료 | `dss-home` |
 
 ### 3번 — 처음 파악이 반대였다 (2026-09-02 정정)
 
