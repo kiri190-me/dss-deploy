@@ -11,7 +11,19 @@
 
 **0단계 완료** — Postgres 통합 계획 확정 (2026-09-02). 결정 A·B 닫힘.
 
-다음은 **1단계**다. RAM 6GB 장착이 나머지 전부의 선행 조건이다.
+**1단계 진행 중** (2026-09-02)
+- ✅ 4번 — `RF_Service_System/HANDOFF.md` 17번을 "staging 대신 배포 리허설"로 갱신
+- ✅ 5번 — `dss-home/README.md`에 "NAS로 옮기는 것은 앱이지 DB가 아니다" 단서 추가
+- ✅ 3번 — `dss-auth/scripts/backup.ts`에 `BACKUP_MODE` 추가 (`docker` 기본 · `direct` 신규).
+  개발 PC 동작은 그대로, NAS용 길이 새로 생겼다. `docker` 모드 실동작 확인함
+- ⬜ 1·2번 — RAM 6GB 장착과 롤 비밀번호 생성. 사용자 몫
+
+**다음 세션 첫 작업** — 1·2번이 끝나 있으면 2단계(개발 PC에서 DB 통합 리허설).
+아직이면 3단계의 `Dockerfile` 작업을 먼저 시작할 수 있다 — `postgresql-client-17`을
+넣어야 `BACKUP_MODE=direct`가 실제로 도는지 처음으로 확인할 수 있다(지금은 개발 PC에
+클라이언트가 없어 경로 구성까지만 확인된 상태다).
+
+RAM 6GB 장착이 2단계 이후 전부의 선행 조건이다.
 
 ---
 
@@ -22,7 +34,7 @@
 | 0 | 계획 | Postgres 인스턴스를 둘로 줄이는 계획. 결정 A·B 확정 | ✅ |
 | 1 | 준비 | RAM 6GB, 롤 비밀번호, `njlee` 백업 스크립트 수정 | ⬜ |
 | 2 | 리허설 | **개발 PC에서 먼저** DB를 둘로 통합해 형태를 검증 | ⬜ |
-| 3 | 이미지 | `Dockerfile` 4개, A/S에 `output: "standalone"` 추가 | ⬜ |
+| 3 | 이미지 | `Dockerfile` 4개, A/S에 `output: "standalone"`, **이미지에 `postgresql-client-17`** | ⬜ |
 | 4 | DB 이전 | NAS에 인스턴스 둘 세우고 데이터 이관 | ⬜ |
 | 5 | 앱 이전 | NAS에 앱 컨테이너 올리고 `DATABASE_URL` 전환 | ⬜ |
 | 6 | 접근 경계 | 리버스 프록시·방화벽·HTTPS·`TRUSTED_PROXY_HOPS=1` | ⬜ |
@@ -61,12 +73,31 @@ NAS는 이미 검증된 형태를 그대로 세우기만 하면 된다.
 |---|---|---|
 | 1 | NAS RAM 6GB 장착, DSM 정보 센터에서 인식 확인 | NAS |
 | 2 | 롤 비밀번호 3개 생성 (**서로 다른 값**) | 개발 PC |
-| 3 | `njlee/scripts/backup.ts`를 `docker exec` 방식으로 수정 | `njlee` |
-| 4 | `RF_Service_System/HANDOFF.md` 17번을 "staging 대신 배포 리허설"로 갱신 | `RF_Service_System` |
-| 5 | `dss-home/README.md:48`의 "NAS로 옮길 때"에 *앱만*이라는 단서 추가 | `dss-home` |
+| 3 | `dss-auth/scripts/backup.ts`를 TCP 접속 방식으로 수정 | `dss-auth` |
+| 4 | ~~`RF_Service_System/HANDOFF.md` 17번 갱신~~ ✅ 완료 | `RF_Service_System` |
+| 5 | ~~`dss-home/README.md:48`에 *앱만* 단서 추가~~ ✅ 완료 | `dss-home` |
 
-3번이 필수인 이유: 지금 스크립트가 **호스트에 설치된 `pg_dump`를 부르는데 NAS에는 없다.**
-고치지 않으면 계측기 백업이 NAS에서 동작하지 않는다.
+### 3번 — 처음 파악이 반대였다 (2026-09-02 정정)
+
+계획서 초안은 "`njlee`의 백업이 NAS에서 안 돈다"고 적었지만, 실제로 읽어 보니
+**반대였다.**
+
+| | 지금 방식 | NAS에서 |
+|---|---|---|
+| `njlee/scripts/backup.ts` | `DATABASE_URL`로 TCP 접속 · 비밀번호는 `PGPASSWORD` | **이미 준비돼 있다** |
+| `dss-auth/scripts/backup.ts` | `docker exec <컨테이너> pg_dump` | **돌지 않는다** |
+
+`njlee`는 128행에 *"PG_BIN이 비어 있으면 PATH에서 찾는다 (NAS 컨테이너에서는
+그쪽이 맞다)"*고 적혀 있다. 처음부터 컨테이너를 염두에 두고 쓴 코드다.
+남은 것은 코드가 아니라 **이미지에 `postgresql-client-17`을 넣는 일**(3단계)뿐이다.
+
+문제는 `dss-auth`다. `docker exec`를 부르므로 컨테이너 안에서는 돌지 않는다.
+**돌게 만들려면 Docker 소켓을 앱 컨테이너에 물려야 하는데, 소켓 접근은 사실상
+호스트 root 권한이다.** 하필 인증 컨테이너에 그걸 주는 것은 이 프로젝트가
+인증 DB를 따로 격리한 이유를 정면으로 무너뜨린다.
+
+→ **`dss-auth`를 `njlee` 방식(TCP + `PGPASSWORD`)으로 바꾼다.** 개발 PC에서
+`docker exec`를 쓰던 이점(호스트에 클라이언트가 없어도 됨)은 모드 선택으로 남긴다.
 
 비밀번호 생성:
 

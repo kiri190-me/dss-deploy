@@ -468,14 +468,25 @@ docker stop dss-as-postgres-dev dss-meters-postgres-dev dss-auth-postgres-dev
 
 | 위치 | 지금 | 필요한 조치 | 난이도 |
 |---|---|---|---|
-| `njlee/scripts/backup.ts:131` | 호스트에 설치된 `pg_dump`를 부른다 | **NAS에는 `pg_dump`가 없다.** `docker exec` 방식으로 바꾼다 | 필수 |
-| `RF_Service_System/HANDOFF.md` | 운영 준비 17번이 "staging 구성"을 미완료 과제로 남겨 둔다 | 결정 B에 따라 "staging 대신 배포 리허설"로 갱신 | 필수 |
-| `dss-auth/scripts/backup.ts:41` | 컨테이너 이름이 `dss-auth-postgres-dev` | 이미 `BACKUP_DB_CONTAINER` 환경변수로 덮게 돼 있다. 값만 바꾼다 | 값만 |
+| `dss-auth/scripts/backup.ts:57` | `docker exec <컨테이너> pg_dump`를 부른다 | **컨테이너 안에서 돌지 않는다.** `njlee` 방식(TCP + `PGPASSWORD`)으로 바꾼다 | 필수 |
+| `RF_Service_System/HANDOFF.md` | 운영 준비 17번이 "staging 구성"을 미완료 과제로 남겨 둔다 | 결정 B에 따라 "staging 대신 배포 리허설"로 갱신 | ✅ 완료 |
+| 각 앱 이미지 | `pg_dump`가 없다 | `postgresql-client-17`을 설치한다. 서버가 17이므로 클라이언트도 17이어야 한다 | 별건(3단계) |
+| `njlee/scripts/backup.ts` | — | **고칠 것 없다.** 128행 주석대로 이미 컨테이너를 염두에 두고 쓰였다 | — |
 | `njlee/docker-compose.yml` | `LANG: ko_KR.UTF-8` on alpine | 운영은 Debian 이미지 + ICU로 대체. 개발용은 그대로 둬도 된다 | 선택 |
 | `RF_Service_System/next.config.ts` | `output: "standalone"`이 없다 | 이 문서 범위 밖이지만 **같은 NAS 배포에서 반드시 필요하다.** 나머지 셋은 이미 있다 | 별건 |
 | 네 저장소 전부 | `Dockerfile`이 하나도 없다 | `njlee/DESIGN.md:331`에 계획만 있고 실물이 없다 | 별건 |
 
-아래 둘(`standalone`·`Dockerfile`)은 DB 통합과 별개의 작업이지만
+> ⛔ **`docker exec`를 컨테이너 안에서 쓰려고 소켓을 물리지 않는다.**
+> `dss-auth`의 백업을 그대로 두고 돌게 만드는 가장 빠른 길은 앱 컨테이너에
+> `/var/run/docker.sock`을 마운트하는 것이다. **하지 말아야 한다.**
+> Docker 소켓 접근은 사실상 호스트 root 권한이다 — 그 소켓으로 특권 컨테이너를
+> 띄우면 NAS 전체를 가져갈 수 있다.
+>
+> 하필 그것을 **인증 컨테이너**에 주는 것은, 인증 DB를 따로 격리한 이 계획의
+> 이유를 정면으로 무너뜨린다. DB를 갈라 놓고 앱에 호스트 root를 쥐여 주면
+> 3절에서 그은 경계는 아무 의미가 없다.
+
+`Dockerfile`과 `standalone`은 DB 통합과 별개의 작업이지만
 **NAS 이전이라는 같은 관문에 함께 걸려 있다.** 통합만 끝내고 배포를 시작하면
 거기서 다시 막힌다.
 
