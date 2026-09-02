@@ -21,6 +21,16 @@
   (값은 확인 과정에서도 출력하지 않았다)
 - ⬜ 1번 — **NAS RAM 6GB 장착.** 남은 하나이자 2단계 이후의 선행 조건
 
+**3단계 거의 완료** (2026-09-02) — RAM과 무관하게 먼저 진행했다
+- ✅ `RF_Service_System`에 `output: "standalone"` 추가
+- ✅ `njlee/.dockerignore` 작성 (계측기는 SMTP 비밀번호를 다뤄 그물이 먼저 필요했다)
+- ✅ `Dockerfile` 3개 — 멀티스테이지, `postgresql-client-17`, `node` 사용자로 실행
+- ✅ 세 이미지 빌드 성공 · **셋 다 `pg_dump 17.11`** · 487~493MB
+- ⬜ `docker save` → `docker load` 왕복 한 번 해보기
+- ⚠️ **미해결** — 이미지 안에서 `npm run backup`·`db:migrate`가 안 돈다
+  (`tsx`·`drizzle-kit`이 devDependency). 길 셋을 적어 두었다:
+  [`runbook/02-이미지-빌드.md`](./runbook/02-이미지-빌드.md) 8절
+
 **다음 세션 첫 작업** — RAM 장착이 끝나 있으면 **2단계**(개발 PC에서 DB 통합 리허설).
 아직이면 **3단계의 `Dockerfile`**을 먼저 시작한다. RAM과 무관하게 진행할 수 있고,
 `postgresql-client-17`을 넣어야 `BACKUP_MODE=direct`가 실제로 도는지 **처음으로**
@@ -40,7 +50,7 @@ RAM 6GB 장착이 2단계 이후 전부의 선행 조건이다.
 | 0 | 계획 | Postgres 인스턴스를 둘로 줄이는 계획. 결정 A·B 확정 | ✅ |
 | 1 | 준비 | RAM 6GB, 비밀번호 5개, `dss-auth` 백업 모드 | ⬜ |
 | 2 | 리허설 | **개발 PC에서 먼저** DB를 둘로 통합해 형태를 검증 | ⬜ |
-| 3 | 이미지 | `Dockerfile` 4개, A/S에 `output: "standalone"`, **이미지에 `postgresql-client-17`** | ⬜ |
+| 3 | 이미지 | `Dockerfile` 3개, A/S에 `output: "standalone"`, 이미지에 `postgresql-client-17` | 🔸 거의 |
 | 4 | DB 이전 | NAS에 인스턴스 둘 세우고 데이터 이관 | ⬜ |
 | 5 | 앱 이전 | NAS에 앱 컨테이너 올리고 `DATABASE_URL` 전환 | ⬜ |
 | 6 | 접근 경계 | 리버스 프록시·방화벽·HTTPS·`TRUSTED_PROXY_HOPS=1`·**VPN** | ⬜ |
