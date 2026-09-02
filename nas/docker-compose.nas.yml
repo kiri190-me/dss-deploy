@@ -1,0 +1,244 @@
+# NAS(Synology DS218+) 운영 구성 — 초안
+#
+# ⚠️ 아직 돌려 본 적 없다. 4·5단계에서 실제로 띄우며 다듬는다.
+#    지금은 "무엇을 어떻게 세울지"를 적어 둔 것이다.
+#
+#   docker compose -f docker-compose.nas.yml --env-file .env.nas up -d
+#
+# 이미지는 개발 PC에서 굽고 파일로 옮겨 온다(runbook/02-이미지-빌드.md).
+# 셋 합쳐 324MB 정도다.
+#
+#   (개발 PC) docker save dss-auth:1.0 -o dss-auth-1.0.tar
+#   (NAS)     docker load -i dss-auth-1.0.tar
+#
+# ── 이 파일이 지키는 원칙 ──────────────────────────────────────────────
+#
+# 1. DB 에 ports: 를 쓰지 않는다.
+#    개발용 compose 를 복사해 오면 "127.0.0.1:54xx:5432" 가 딸려 온다.
+#    그 한 줄이 "사내에서 NAS 를 통해서만" 원칙을 깨뜨린다. 여기서는 같은
+#    도커 네트워크의 서비스 이름으로만 부른다 — 호스트 포트를 하나도 열지 않는다.
+#
+# 2. 앱도 호스트 포트를 열지 않는다.
+#    DSM 리버스 프록시가 유일한 입구여야 한다. 우회로가 열려 있으면
+#    TRUSTED_PROXY_HOPS=1 이 보호가 아니라 구멍이 된다
+#    (dss-auth/.env.example 의 그 주석 참고). 프록시는 dss-edge 망으로 닿는다.
+#
+# 3. 컨테이너마다 메모리 상한을 건다.
+#    A/S 의 엑셀 업로드(21MB 한도)가 파싱 중 크게 튄다. 상한이 없으면 그 한 번이
+#    다른 컨테이너를 밀어낸다. 상한이 있으면 그 컨테이너만 죽고 포털은 산다.
+#
+# 4. 비밀값은 이 파일에 없다. .env.nas 와 env/*.env 에서 온다(둘 다 git 제외).
+#
+# 자세한 근거는 runbook/01-postgres-통합.md 3·7·8절.
+
+name: dss
+
+# ══ 네트워크 ═══════════════════════════════════════════════════════════
+networks:
+  # 앱과 DB 만 있는 망. internal: true 라 바깥으로 나가지도 들어오지도 못한다.
+  dss-data:
+    internal: true
+  # 리버스 프록시가 앱에 닿는 망. DB 는 여기 없다.
+  dss-edge:
+
+# ══ 볼륨 ═══════════════════════════════════════════════════════════════
+volumes:
+  # ⚠️ 개발 PC 의 옛 볼륨과 이름이 다르다. 되돌리기를 위해 일부러 새 이름을 쓴다.
+  dss-pg-app-data:
+    name: dss-pg-app-data
+  dss-pg-auth-data:
+    name: dss-pg-auth-data
+
+services:
+  # ══ 데이터베이스 둘 ═════════════════════════════════════════════════
+  #
+  # 인증용을 따로 세우는 이유: 서명 개인키·카카오 시크릿·클라이언트 시크릿
+  # 해시를 다뤄 등급이 다르다. 업무 DB 가 전부 털려도 닿지 못해야
+  # "포털은 누구인가만 답한다"는 원칙이 실제로 성립한다.
+
+  db-app:
+    image: postgres:17
+    container_name: dss-pg-app
+    restart: unless-stopped
+    networks: [dss-data]
+    # ports: 없음 — 위 원칙 1. 이 줄을 되살리지 말 것.
+    environment:
+      POSTGRES_USER: ${APP_POSTGRES_USER}
+      POSTGRES_PASSWORD: ${APP_POSTGRES_PASSWORD}
+      # 기본값은 POSTGRES_USER 와 같은 이름의 DB 를 만든다. 그럴 이유가 없으므로
+      # 이미 있는 postgres 를 쓴다. 업무 DB 는 초기화 스크립트가 만든다.
+      POSTGRES_DB: postgres
+      # 초기화 스크립트가 -v 로 psql 에 넘긴다.
+      AS_APP_PASSWORD: ${AS_APP_PASSWORD}
+      METERS_APP_PASSWORD: ${METERS_APP_PASSWORD}
+    volumes:
+      - dss-pg-app-data:/var/lib/postgresql/data
+      # ⚠️ 이 스크립트는 데이터 폴더가 비어 있을 때 **한 번만** 돈다.
+      #    나중에 고쳐도 이미 만들어진 롤에는 반영되지 않는다.
+      - ./init/app:/docker-entrypoint-initdb.d:ro
+    command:
+      - postgres
+      - -c
+      - shared_buffers=256MB
+      - -c
+      - effective_cache_size=768MB   # 플래너에게 알려 줄 뿐 메모리를 잡지 않는다
+      - -c
+      - work_mem=4MB                 # 커넥션마다 잡힌다. 40 × 4MB 가 상한
+      - -c
+      - maintenance_work_mem=64MB    # 복원과 VACUUM 이 빨라진다
+      - -c
+      - max_connections=40           # 기본 100 은 6GB 에서 과하다
+      - -c
+      - random_page_cost=4.0         # HDD 기준. SSD 로 바꾸면 1.1
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          memory: 768M
+
+  db-auth:
+    image: postgres:17
+    container_name: dss-pg-auth
+    restart: unless-stopped
+    networks: [dss-data]
+    # ports: 없음
+    environment:
+      POSTGRES_USER: ${AUTH_POSTGRES_USER}
+      POSTGRES_PASSWORD: ${AUTH_POSTGRES_PASSWORD}
+      POSTGRES_DB: postgres
+      AUTH_APP_PASSWORD: ${AUTH_APP_PASSWORD}
+    volumes:
+      - dss-pg-auth-data:/var/lib/postgresql/data
+      - ./init/auth:/docker-entrypoint-initdb.d:ro
+    command:
+      - postgres
+      - -c
+      - shared_buffers=128MB
+      - -c
+      - effective_cache_size=384MB
+      - -c
+      - work_mem=4MB
+      - -c
+      - maintenance_work_mem=64MB
+      - -c
+      - max_connections=20
+      - -c
+      - random_page_cost=4.0
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          memory: 384M
+
+  # ══ 앱 셋 ═══════════════════════════════════════════════════════════
+  #
+  # env_file 에는 각 앱의 나머지 설정이 들어간다(카카오 키, SMTP, SSO 주소 등).
+  # 만드는 법은 env/README.md 에 있다. DATABASE_URL 만 여기서 조립하는 이유는
+  # 비밀번호가 .env.nas 한 곳에만 있게 하기 위해서다 — 같은 값을 두 파일에
+  # 적어 두면 언젠가 한쪽만 바뀐다.
+
+  app-auth:
+    image: dss-auth:1.0
+    container_name: dss-auth
+    restart: unless-stopped
+    networks: [dss-data, dss-edge]
+    # ports: 없음 — 리버스 프록시가 dss-edge 망으로 닿는다
+    env_file:
+      - ./env/auth.env
+    environment:
+      DATABASE_URL: postgresql://dss_auth_app:${AUTH_APP_PASSWORD}@dss-pg-auth:5432/dss_auth
+      # 백업이 컨테이너 안에서 돌 때는 direct 뿐이다. 컨테이너에는 docker 명령이 없다.
+      BACKUP_MODE: direct
+    volumes:
+      # ⚠️ 서명 개인키. 이미지에 넣지 않고 여기서 붙인다 —
+      #    이미지는 파일로 복사되어 돌아다니므로 한 번 들어가면 회수할 수 없다.
+      #    읽기 전용으로 붙인다. 앱은 서명만 하고 키를 고치지 않는다.
+      - /volume1/dss/auth-keys:/keys:ro
+    depends_on:
+      db-auth:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 384M
+
+  app-as:
+    image: dss-as:1.0
+    container_name: dss-as
+    restart: unless-stopped
+    networks: [dss-data, dss-edge]
+    env_file:
+      - ./env/as.env
+    environment:
+      DATABASE_URL: postgresql://dss_app:${AS_APP_PASSWORD}@dss-pg-app:5432/dss_as
+    volumes:
+      # 첨부파일(사진·도면·성적서). 이미지에 없고 여기서 붙인다.
+      - /volume1/dss/as-attachments:/data
+    depends_on:
+      db-app:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          # 셋 중 가장 넉넉하게 준다. 21MB 엑셀을 파싱할 때 크게 튄다.
+          memory: 640M
+
+  app-meters:
+    image: dss-meters:1.0
+    container_name: dss-meters
+    restart: unless-stopped
+    networks: [dss-data, dss-edge]
+    env_file:
+      - ./env/meters.env
+    environment:
+      DATABASE_URL: postgres://dss_meters_app:${METERS_APP_PASSWORD}@dss-pg-app:5432/dss_meters
+      FILE_STORAGE_ROOT: /data
+    volumes:
+      # 계측기 사진과 교정 성적서.
+      # ⚠️ 쓰기 권한을 node(uid 1000)에게 줘야 한다. 안 그러면 사진 업로드가
+      #    조용히 실패한다. NAS 에서: chown -R 1000:1000 /volume1/dss/meters-files
+      - /volume1/dss/meters-files:/data
+    depends_on:
+      db-app:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
+# ══ 메모리 예산 ═════════════════════════════════════════════════════════
+#
+#   db-app      768M
+#   db-auth     384M
+#   app-as      640M
+#   app-meters  512M
+#   app-auth    384M
+#   ───────────────
+#   합계       2.7GB   + DSM 자체 약 1.2GB = 3.9GB / 6GB
+#
+# 여유가 2GB 남는다. 파일 캐시로 쓰이므로 남는 것이 낭비가 아니다 —
+# HDD 인 이 장비에서는 오히려 그쪽이 체감을 좌우한다.
+#
+# ══ 아직 정하지 않은 것 ═════════════════════════════════════════════════
+#
+# 1. 회사 홈페이지(dss-home)를 여기 올릴 것인가.
+#    DB 는 바깥 호스팅으로 확정됐지만(결정 A) 앱을 어디 둘지는 남아 있다.
+#    공개 사이트라 사내 NAS 에 두면 외부 공개를 위해 방화벽에 구멍을 내야 하고,
+#    그 구멍이 이 셋 옆에 뚫린다. 지금 초안에서는 뺐다.
+#
+# 2. 백업과 마이그레이션을 어떻게 돌릴 것인가.
+#    tsx·drizzle-kit 이 devDependency 라 이미지 안에서 npm run 이 안 된다.
+#    길 셋을 runbook/02-이미지-빌드.md 8절에 적어 두었다.
+#
+# 3. 리버스 프록시·방화벽·HTTPS·VPN — 6단계에서. 이 파일은 dss-edge 망을
+#    내어 놓기만 하고 프록시 자체는 DSM 이 맡는다.

@@ -21,14 +21,17 @@
   (값은 확인 과정에서도 출력하지 않았다)
 - ⬜ 1번 — **NAS RAM 6GB 장착.** 남은 하나이자 2단계 이후의 선행 조건
 
-**3단계 거의 완료** (2026-09-02) — RAM과 무관하게 먼저 진행했다
+**3단계 완료** (2026-09-02) — RAM과 무관하게 먼저 진행했다
 - ✅ `RF_Service_System`에 `output: "standalone"` 추가
 - ✅ `njlee/.dockerignore` 작성 (계측기는 SMTP 비밀번호를 다뤄 그물이 먼저 필요했다)
 - ✅ `Dockerfile` 3개 — 멀티스테이지, `postgresql-client-17`, `node` 사용자로 실행
-- ✅ 세 이미지 빌드 성공 · **셋 다 `pg_dump 17.11`** · 487~493MB
-- ⬜ `docker save` → `docker load` 왕복 한 번 해보기
-- ⚠️ **미해결** — 이미지 안에서 `npm run backup`·`db:migrate`가 안 돈다
-  (`tsx`·`drizzle-kit`이 devDependency). 길 셋을 적어 두었다:
+- ✅ 세 이미지 빌드 · **셋 다 `pg_dump 17.11`**
+- ✅ `docker save` → `docker load` 왕복 — **이미지를 지웠다가 되살려** 확인.
+  **옮길 파일은 셋 합쳐 324MB**다(`docker images`의 490MB는 압축 풀린 크기)
+- ✅ [`nas/docker-compose.nas.yml`](./nas/docker-compose.nas.yml) 초안 —
+  문법 검사 통과, **호스트 노출 포트 0개**를 기계적으로 확인
+- ⚠️ **4단계로 넘긴 것** — 이미지 안에서 `npm run backup`·`db:migrate`가 안 돈다
+  (`tsx`·`drizzle-kit`이 devDependency). 길 셋:
   [`runbook/02-이미지-빌드.md`](./runbook/02-이미지-빌드.md) 8절
 
 **다음 세션 첫 작업** — RAM 장착이 끝나 있으면 **2단계**(개발 PC에서 DB 통합 리허설).
@@ -50,7 +53,7 @@ RAM 6GB 장착이 2단계 이후 전부의 선행 조건이다.
 | 0 | 계획 | Postgres 인스턴스를 둘로 줄이는 계획. 결정 A·B 확정 | ✅ |
 | 1 | 준비 | RAM 6GB, 비밀번호 5개, `dss-auth` 백업 모드 | ⬜ |
 | 2 | 리허설 | **개발 PC에서 먼저** DB를 둘로 통합해 형태를 검증 | ⬜ |
-| 3 | 이미지 | `Dockerfile` 3개, A/S에 `output: "standalone"`, 이미지에 `postgresql-client-17` | 🔸 거의 |
+| 3 | 이미지 | `Dockerfile` 3개, A/S에 `output: "standalone"`, 이미지에 `postgresql-client-17` | ✅ |
 | 4 | DB 이전 | NAS에 인스턴스 둘 세우고 데이터 이관 | ⬜ |
 | 5 | 앱 이전 | NAS에 앱 컨테이너 올리고 `DATABASE_URL` 전환 | ⬜ |
 | 6 | 접근 경계 | 리버스 프록시·방화벽·HTTPS·`TRUSTED_PROXY_HOPS=1`·**VPN** | ⬜ |
@@ -77,7 +80,9 @@ NAS는 이미 검증된 형태를 그대로 세우기만 하면 된다.
 | [runbook/02-이미지-빌드.md](./runbook/02-이미지-빌드.md) | 3단계 — 빌드와 실행의 차이, 이미지를 NAS로 옮기는 법 |
 | [nas/init/app/01-roles.sh](./nas/init/app/01-roles.sh) | 업무용 인스턴스의 롤·DB·권한 |
 | [nas/init/auth/01-roles.sh](./nas/init/auth/01-roles.sh) | 인증용 인스턴스의 롤·DB·권한 |
+| [nas/docker-compose.nas.yml](./nas/docker-compose.nas.yml) | **운영 구성 초안** — DB 둘·앱 셋, 포트를 열지 않는다 |
 | [nas/.env.nas.example](./nas/.env.nas.example) | 두 인스턴스가 읽는 비밀번호 자리 |
+| [nas/env/README.md](./nas/env/README.md) | 앱마다의 설정 파일을 만드는 법과 NAS에서 달라지는 값 |
 | [scripts/README.md](./scripts/README.md) | 공용 실행 스크립트를 아직 옮기지 않은 이유 |
 
 앞으로 늘어날 것: `03-리버스-프록시.md`(VPN 포함), `04-배포-리허설.md`
