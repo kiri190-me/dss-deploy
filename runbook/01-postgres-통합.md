@@ -536,7 +536,7 @@ NAS 자체가 이미 공통 단일 실패점이기 때문이다. 반면 fsync �
 - [x] 결정 A — `dss_home`은 바깥 호스팅으로 확정
 - [x] 결정 B — staging은 NAS에 두지 않는 것으로 확정
 - [ ] NAS RAM 6GB 장착 및 DSM 정보 센터에서 인식 확인
-- [ ] 비밀번호 5개 생성(앱 롤 3 + 부트스트랩 관리자 2), 모두 서로 다른 값인지 확인
+- [x] 비밀번호 5개 생성(앱 롤 3 + 부트스트랩 관리자 2), 모두 서로 다른 값인지 확인 — 2026-09-02
 - [ ] `njlee/scripts/backup.ts`를 `docker exec` 방식으로 수정
 - [ ] `RF_Service_System/HANDOFF.md` 17번 갱신
 - [ ] `dss-home/README.md:48`에 *앱만*이라는 단서 추가
