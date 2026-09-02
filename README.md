@@ -16,7 +16,7 @@
 - ✅ 5번 — `dss-home/README.md`에 "NAS로 옮기는 것은 앱이지 DB가 아니다" 단서 추가
 - ✅ 3번 — `dss-auth/scripts/backup.ts`에 `BACKUP_MODE` 추가 (`docker` 기본 · `direct` 신규).
   개발 PC 동작은 그대로, NAS용 길이 새로 생겼다. `docker` 모드 실동작 확인함
-- ⬜ 1·2번 — RAM 6GB 장착과 롤 비밀번호 생성. 사용자 몫
+- ⬜ 1·2번 — RAM 6GB 장착과 비밀번호 5개 생성. 사용자 몫
 
 **다음 세션 첫 작업** — 1·2번이 끝나 있으면 2단계(개발 PC에서 DB 통합 리허설).
 아직이면 3단계의 `Dockerfile` 작업을 먼저 시작할 수 있다 — `postgresql-client-17`을
@@ -32,7 +32,7 @@ RAM 6GB 장착이 2단계 이후 전부의 선행 조건이다.
 | | 단계 | 무엇을 하나 | 상태 |
 |---|---|---|---|
 | 0 | 계획 | Postgres 인스턴스를 둘로 줄이는 계획. 결정 A·B 확정 | ✅ |
-| 1 | 준비 | RAM 6GB, 롤 비밀번호, `njlee` 백업 스크립트 수정 | ⬜ |
+| 1 | 준비 | RAM 6GB, 비밀번호 5개, `dss-auth` 백업 모드 | ⬜ |
 | 2 | 리허설 | **개발 PC에서 먼저** DB를 둘로 통합해 형태를 검증 | ⬜ |
 | 3 | 이미지 | `Dockerfile` 4개, A/S에 `output: "standalone"`, **이미지에 `postgresql-client-17`** | ⬜ |
 | 4 | DB 이전 | NAS에 인스턴스 둘 세우고 데이터 이관 | ⬜ |
@@ -72,7 +72,7 @@ NAS는 이미 검증된 형태를 그대로 세우기만 하면 된다.
 | | 할 일 | 어디서 |
 |---|---|---|
 | 1 | NAS RAM 6GB 장착, DSM 정보 센터에서 인식 확인 | NAS |
-| 2 | 롤 비밀번호 3개 생성 (**서로 다른 값**) | 개발 PC |
+| 2 | 비밀번호 **5개** 생성 (**모두 서로 다른 값**) | 아무 데서나 |
 | 3 | `dss-auth/scripts/backup.ts`를 TCP 접속 방식으로 수정 | `dss-auth` |
 | 4 | ~~`RF_Service_System/HANDOFF.md` 17번 갱신~~ ✅ 완료 | `RF_Service_System` |
 | 5 | ~~`dss-home/README.md:48`에 *앱만* 단서 추가~~ ✅ 완료 | `dss-home` |
@@ -99,11 +99,23 @@ NAS는 이미 검증된 형태를 그대로 세우기만 하면 된다.
 → **`dss-auth`를 `njlee` 방식(TCP + `PGPASSWORD`)으로 바꾼다.** 개발 PC에서
 `docker exec`를 쓰던 이점(호스트에 클라이언트가 없어도 됨)은 모드 선택으로 남긴다.
 
-비밀번호 생성:
+비밀번호는 **셋이 아니라 다섯**이다. 앱 롤 셋(`AS_APP_PASSWORD`·`METERS_APP_PASSWORD`·
+`AUTH_APP_PASSWORD`)에 더해, 상자를 세울 때 쓰는 부트스트랩 관리자 둘
+(`APP_POSTGRES_PASSWORD`·`AUTH_POSTGRES_PASSWORD`)이 필요하다.
+빈칸은 [`nas/.env.nas.example`](./nas/.env.nas.example)에 전부 있다.
+
+아래 명령을 다섯 번 실행한다.
 
 ```
 node -e "console.log(require('crypto').randomBytes(24).toString('base64url'))"
 ```
+
+`base64url`인 이유: 이 값이 `DATABASE_URL` 안에 들어가는데, `@`·`:`·`/`가 섞이면
+주소가 엉뚱하게 쪼개진다.
+
+⚠️ **비밀번호는 상자를 처음 만들 때 굳는다.** 나중에 `.env.nas`만 고쳐도 이미
+만들어진 롤은 바뀌지 않는다(초기화 스크립트가 빈 데이터 폴더에서만 돈다).
+그래서 이 항목이 4단계보다 앞에 있다.
 
 ---
 
