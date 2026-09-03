@@ -1,0 +1,48 @@
+# 개발 PC 리허설용 — 운영(NAS) 파일의 DB 정의를 그대로 끌어오되 포트만 내놓는다.
+#
+#   docker compose -f docker-compose.rehearsal.yml --env-file .env.nas up -d
+#
+# 왜 따로 두나: 개발 PC에서는 앱이 컨테이너가 아니라 호스트에서(next dev) 돈다.
+# 그래서 DB 에 호스트 포트가 있어야 앱이 닿는다. 운영 파일에 ports: 를 넣는 순간
+# NAS 에도 딸려 가므로, 포트는 이 파일에만 둔다. **이 파일은 NAS 로 가져가지 않는다.**
+#
+# 덧씌우기(-f 둘)가 아니라 extends 인 이유: 덧씌우기는 앱 서비스까지 읽어
+# env/*.env 가 없으면 실패한다. extends 는 여기 적은 두 서비스만 가져온다.
+# 설정(shared_buffers · 메모리 상한 · 초기화 스크립트)은 NAS 파일 한 곳에만 있다.
+#
+# 포트를 5442·5444 로 고른 이유: 옛 개발 컨테이너(5432·5434·5438)와 겹치지 않아야
+# 되돌리기가 docker start 한 번으로 끝난다 (runbook/01 9절 Phase 2).
+#
+# dss-edge 를 DB 에 붙이는 이유: dss-data 는 internal: true 라 그 망만 가진
+# 컨테이너는 호스트 포트를 내놓지 못한다. 리허설에서만 바깥 망을 하나 더 준다.
+
+name: dss
+
+networks:
+  dss-data:
+    internal: true
+  dss-edge:
+
+volumes:
+  # NAS 파일과 같은 이름. 개발 PC 의 옛 볼륨(*-postgres-dev-data)과는 다르다.
+  dss-pg-app-data:
+    name: dss-pg-app-data
+  dss-pg-auth-data:
+    name: dss-pg-auth-data
+
+services:
+  db-app:
+    extends:
+      file: docker-compose.nas.yml
+      service: db-app
+    networks: [dss-data, dss-edge]
+    ports:
+      - "127.0.0.1:5442:5432"
+
+  db-auth:
+    extends:
+      file: docker-compose.nas.yml
+      service: db-auth
+    networks: [dss-data, dss-edge]
+    ports:
+      - "127.0.0.1:5444:5432"

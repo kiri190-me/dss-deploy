@@ -471,6 +471,83 @@ docker stop dss-as-postgres-dev dss-meters-postgres-dev dss-auth-postgres-dev
 
 ---
 
+### 9절 부록 — 개발 PC 리허설 기록 (2026-09-03)
+
+**2단계 완료.** Phase 0~6을 개발 PC에서 이 절 그대로 밟았고, 검증이 전부 통과했다.
+Phase 3~5(앱 중단)는 **약 7분**이었다. 자료가 작아서(A/S 21MB · 계측기 9MB · 인증 9MB)
+복원이 초 단위로 끝났다. NAS에서는 HDD라 더 걸리겠지만 자릿수가 바뀌지는 않는다.
+
+| Phase | 한 일 | 결과 |
+|---|---|---|
+| 0 | [`nas/docker-compose.rehearsal.yml`](../nas/docker-compose.rehearsal.yml) 작성. NAS 파일의 DB 둘을 `extends`로 끌어오고 포트만 5442·5444로 연다 | NAS 파일은 한 줄도 안 바꿨다 |
+| 1 | 옛 컨테이너 셋에서 `pg_dump -Fc` 넷(`dss_as_test` 포함) + 테이블별 **정확한 행 수**·시퀀스 값 스냅숏 | `rehearsal/` (git 제외) |
+| 2 | `postgres:17` 인스턴스 둘 기동. 초기화 스크립트가 롤·DB·`CONNECT` 분리까지 돌았다 | 6절 격리 검증 **소켓·TCP 양쪽 모두 거절** |
+| 3 | 앱 셋(3000·3100·3300) 정지 → `pg_restore --no-owner --role=<앱 롤>` 넷 | **오류 0 · 경고 0** |
+| 4 | 행 수·시퀀스 넷 모두 일치. 인덱스·제약·enum 수 일치. 격리 재확인. 인수번호 카운터(2609→1)와 최대 인수번호(D260901) 이어짐 | 통과 |
+| 5 | 세 저장소 `.env.local`의 `DATABASE_URL`만 교체(A/S는 `.env.test.local`도). 앱 셋 재기동 | `db:preflight` 80/0 · 마이그레이션 3/3·5/5 · **`check:oidc` 26/26** · 인증 백업 정상 |
+| 6 | 옛 컨테이너 셋 `docker stop`. 볼륨 여섯 보존 | 되돌리기는 `docker start` 한 번 |
+| 7 | **2026-09-17 이후** 옛 볼륨 회수 | ⬜ |
+
+#### 이 절과 달랐던 것 — 다음에 이 절을 따를 사람이 알아야 한다
+
+1. **Phase 1 덤프와 Phase 3 사이에 들어온 자료는 사라진다.** 이 절은 덤프를
+   "중단 없음"에 두고 그 뒤에 앱을 멈추는데, 그 사이의 쓰기는 새 DB에 없다.
+   리허설에서는 아무도 쓰지 않아 문제가 없었지만 **운영(4단계)에서는 앱을 멈춘 뒤
+   최종 덤프를 다시 떠야 한다.** Phase 1 덤프는 복원 연습용, Phase 3 첫 줄이 진짜 덤프다.
+2. **`-f` 둘로 덧씌우면 `config`가 실패한다.** compose는 고르지 않은 앱 서비스의
+   `env_file`(`env/*.env`)까지 읽고, 그 파일이 없으면 멈춘다. 그래서 리허설 파일은
+   `extends`로 DB 둘만 가져온다. 설정은 여전히 NAS 파일 한 곳에만 있다.
+3. **Git Bash는 `/tmp/…`를 Windows 경로로 바꿔 넘긴다.** `docker exec … -f /tmp/x.dump`가
+   "could not open output file C:/Users/…/Temp/x.dump"로 죽는다. `MSYS_NO_PATHCONV=1`을 앞에 둔다.
+4. **행 수 대조는 `n_live_tup`이 아니라 `count(*)`로 한다.** 통계값은 `ANALYZE` 뒤에도
+   추정치라 같은 자료에서 다르게 나올 수 있다. 정확한 값을 한 줄로 뽑는 쿼리:
+   ```sql
+   SELECT table_schema||'.'||table_name||' = '||(xpath('/row/c/text()',
+     query_to_xml(format('select count(*) as c from %I.%I', table_schema, table_name),
+     false, true, '')))[1]::text
+   FROM information_schema.tables
+   WHERE table_schema IN ('public','drizzle') AND table_type='BASE TABLE' ORDER BY 1;
+   ```
+5. **`ANALYZE`를 앱 롤로 돌리면 카탈로그 경고 11줄이 나온다** (`pg_authid` 등
+   permission denied). 앱 롤이 슈퍼유저가 아니라서 생기는 것이고 무해하다. 옛 개발
+   DB에서는 앱 롤이 곧 슈퍼유저였기 때문에 이 경고를 본 적이 없었을 뿐이다.
+6. **정렬이 바뀐다.** 새 DB(ICU `ko-KR`)는 `123 < ㄱ < 가나 < 나비 < 다람쥐 < 한자漢 < apple < B < Zebra`,
+   옛 DB 셋은 코드포인트 순 `123 < B < Zebra < apple < ㄱ < 가나 …`였다(alpine의
+   `ko_KR.UTF-8`은 musl이라 실제로는 정렬을 안 했다). **한글이 영문 앞에 오고 대소문자를
+   구분하지 않는다.** 이름순 목록의 모양이 달라지는데, 이것이 ICU를 고른 이유이므로 의도한 변화다.
+7. **`dss_as_test`는 개발 PC 전용이다.** A/S 테스트가 같은 인스턴스의 `_test` DB를 요구해서
+   리허설에서 손으로 만들었다(같은 로케일, `dss_app` 소유, `CONNECT` 분리). 초기화
+   스크립트에는 없고 **NAS에는 만들지 않는다.**
+8. **개발 PC의 시작·종료 스크립트 여섯이 옛 컨테이너 이름을 본다.** 옛 상자를 매일
+   켜고 끄는 것은 무해하지만, A/S `end-work.ps1`의 **일일 백업이 옛 DB를 뜨는 것**은
+   조용히 틀린 백업이 되므로 그 자리만 `dss-pg-app`·`dss_as`로 돌렸다(`start-work.ps1`의
+   건수 표시도). 끄는 대상은 옛 상자 그대로 두었다 — 공용 인스턴스를 A/S 종료가 끄면
+   계측기 DB가 함께 죽는다. 여섯 스크립트를 새 구조에 맞춰 다시 쓰는 일은 Phase 7 때 한다.
+9. **`dss-auth` 백업의 docker 모드 기본값이 옛 컨테이너다** (`dss-auth-postgres-dev` / `dss_auth_dev`).
+   `.env.local`에 `BACKUP_DB_CONTAINER=dss-pg-auth`·`BACKUP_DB_NAME=dss_auth`를 넣었다.
+   NAS에서는 `BACKUP_MODE=direct`라 무관하다.
+10. **계측기 백업은 이 PC에서 원래 돌지 않는다.** `PG_BIN`이 이남준 님 PC 경로이고 백업
+    폴더가 네트워크 공유다. 리허설과 무관한 기존 조건이라 손대지 않았다.
+11. **격리 검증은 TCP로도 한다.** 6절의 두 명령은 소켓(trust)이라 비밀번호를 안 거친다.
+    앱이 실제로 오는 길로 한 번 더 확인한다:
+    ```bash
+    docker exec -e PGPASSWORD="$METERS_APP_PASSWORD" dss-pg-app \
+      psql -h 127.0.0.1 -U dss_meters_app -d dss_as -c 'select 1'   # FATAL 이어야 한다
+    ```
+12. PostgreSQL 17은 `pg_database.daticulocale`이 **`datlocale`**로 이름이 바뀌었다.
+    로케일 확인 쿼리를 16 기준으로 쓰면 열이 없다고 나온다.
+
+#### 지금 되돌리려면 (Phase 7 전까지)
+
+```bash
+# 1. env 원본을 되돌린다 — rehearsal/env-backup/ 에 넷이 있다
+# 2. 옛 컨테이너를 켠다
+docker start dss-as-postgres-dev dss-meters-postgres-dev dss-auth-postgres-dev
+# 3. 앱 셋을 다시 띄운다. 전환 뒤 들어온 자료는 새 인스턴스에만 있다.
+```
+
+---
+
 ## 10. 되돌리기
 
 | 시점 | 되돌리는 법 | 잃는 것 |
