@@ -518,11 +518,24 @@ Phase 3~5(앱 중단)는 **약 7분**이었다. 자료가 작아서(A/S 21MB · 
 7. **`dss_as_test`는 개발 PC 전용이다.** A/S 테스트가 같은 인스턴스의 `_test` DB를 요구해서
    리허설에서 손으로 만들었다(같은 로케일, `dss_app` 소유, `CONNECT` 분리). 초기화
    스크립트에는 없고 **NAS에는 만들지 않는다.**
-8. **개발 PC의 시작·종료 스크립트 여섯이 옛 컨테이너 이름을 본다.** 옛 상자를 매일
-   켜고 끄는 것은 무해하지만, A/S `end-work.ps1`의 **일일 백업이 옛 DB를 뜨는 것**은
-   조용히 틀린 백업이 되므로 그 자리만 `dss-pg-app`·`dss_as`로 돌렸다(`start-work.ps1`의
-   건수 표시도). 끄는 대상은 옛 상자 그대로 두었다 — 공용 인스턴스를 A/S 종료가 끄면
-   계측기 DB가 함께 죽는다. 여섯 스크립트를 새 구조에 맞춰 다시 쓰는 일은 Phase 7 때 한다.
+8. **개발 PC의 시작·종료 스크립트 여섯을 새 구조로 다시 썼다** (2026-09-03, Phase 7에서 앞당김).
+   처음에는 A/S `end-work.ps1`의 **일일 백업이 옛 DB를 뜨는 것**만 고치고 나머지는
+   Phase 7로 미뤘다. 미룰 수 없었던 것은 **끄는 대상**이다 — 옛 상자를 끄는 동안
+   새 인스턴스 둘은 아무도 끄지 않아 계속 떠 있고, 그렇다고 끄는 대상만 새 것으로
+   바꾸면 A/S 종료가 계측기 DB를 함께 죽인다. 어느 쪽도 한 줄로 고쳐지지 않아
+   **공용이라는 사실 자체를 스크립트에 넣었다.**
+
+   | | 어떻게 |
+   |---|---|
+   | 켜기 | 저장소의 `db:up`(옛 상자)을 부르지 않고, `nas/docker-compose.rehearsal.yml`로 만든 컨테이너를 `docker start` |
+   | 만들기 | 없을 때만 그 compose로. `.env.nas`가 없으면 빈 비밀번호로 만들어져 재시작 루프에 빠지므로, 먼저 막고 어디를 채우라고 알린다 |
+   | 끄기 | **상대 서버 포트가 아직 떠 있으면 끄지 않는다.** A/S는 3300을, 계측기는 3000을 본다 — 마지막에 나가는 쪽이 끈다 |
+   | 경합 | `start-all.ps1`이 컨테이너 둘을 **먼저 한 번** 켠다. A/S 창과 계측기 창이 몇 초 차이로 같은 것을 만들려 들면 하나가 "이미 있다"며 죽기 때문이다 |
+
+   여섯 중 넷(`start-work`·`end-work`·`start-sso-work`·`end-sso-work`)은 각 저장소 안에 있고,
+   둘(`start-meters-work`·`end-meters-work`)과 `start-all`·`end-all`은 아직 `Development/`에
+   git 밖으로 떠 있다(`scripts/README.md`). **`dss-home`은 그대로다** — 그 DB(5436)는
+   통합 대상이 아니다. 옛 상자 셋은 정지된 채 남고 이 스크립트들은 더 건드리지 않는다.
 9. **`dss-auth` 백업의 docker 모드 기본값이 옛 컨테이너다** (`dss-auth-postgres-dev` / `dss_auth_dev`).
    `.env.local`에 `BACKUP_DB_CONTAINER=dss-pg-auth`·`BACKUP_DB_NAME=dss_auth`를 넣었다.
    NAS에서는 `BACKUP_MODE=direct`라 무관하다.
