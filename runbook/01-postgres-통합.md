@@ -401,6 +401,72 @@ docker exec dss-as-postgres-dev psql -U dss_app -d dss_as_dev -c \
   > before-as.txt
 ```
 
+> ⚠️ **위 A/S 명령은 4단계에서 쓰지 않는다 — 결정 D (2026-09-04).**
+> A/S의 업무 자료는 전부 데모라 **가져가지 않는다.** 아래 「Phase 1-A」로 대신한다.
+> **계측기와 인증은 위 그대로** 통째로 뜬다 — 그쪽은 실제 자료다.
+
+#### Phase 1-A — A/S는 뼈대만 뜬다 (결정 D)
+
+버릴 것이 58장, 가져갈 것이 20장이다. **제외 목록(`--exclude-table-data`)을 58줄 쓰는 대신
+가져갈 20장을 `-t`로 적는다** — 짧고, 새 표가 생겨도 저절로 빠진다(안전한 쪽으로 틀린다).
+
+```bash
+docker exec dss-pg-app pg_dump -U dss_app -d dss_as -Fc --data-only \
+  -t users \
+  -t procedure_templates -t procedure_template_nodes -t procedure_template_edges \
+  -t procedure_reference_items -t procedure_checklist_sections \
+  -t procedure_checklist_items -t procedure_troubleshooting_entries \
+  -t workflow_templates -t workflow_versions -t workflow_steps -t workflow_transitions \
+  -t repair_task_catalog -t role_permissions -t customer_status_options \
+  -t exception_statuses -t repair_labor_settings -t notification_role_settings \
+  -t shipment_approval_delegations -t intake_mail_signature_images \
+  > as-skeleton.dump
+```
+
+`--data-only`인 이유: NAS의 스키마는 `db:migrate`가 만든다. 이 덤프에 스키마가 들어 있으면
+마이그레이션 journal과 두 주인이 생긴다. **확인함 — 이 덤프에 `drizzle` 항목은 0개다.**
+
+**왜 이 20장인가** — 참조가 이 집합 안에서 닫히는 최소 단위다.
+
+| | 무엇 | 행 |
+|---|---|---|
+| 절차 | 템플릿 6 · 노드 450 · 연결 565 · 참고자료 193 · 체크리스트 30 · 트러블슈팅 11 | 1,255 |
+| 워크플로 | 템플릿 10 · 버전 19 · 단계 257 · 전이 389 | 675 |
+| 목록·설정 | `repair_task_catalog` 36 · 권한 3 · 상태문구 7 · 예외 9 · 공임 3 · 알림 2 · 결재위임 1 · 메일서명 1 | 62 |
+| 계정 | `users` | 14 |
+| | | **2,006** |
+
+**`users`는 고르는 것이 아니라 딸려 오는 것이다.** 절차·워크플로·작업목록·설정이 전부
+"누가 만들었나"로 `users`를 참조한다. 빼면 뼈대가 통째로 안 들어간다.
+데모 계정이 섞여 있으면 **NAS에 올린 뒤 지운다** — 자료가 아니라 계정이라 지우기 쉽다.
+
+**함께 버려지는 것 둘** (참조가 밖을 향해 못 가져온다)
+
+| | 왜 |
+|---|---|
+| OH 부품 템플릿 44행 | `oh_part_template_items → parts`, `oh_part_template_models → product_models`. 부품과 제품모델이 데모라 함께 간다 |
+| `weekly_report_goals` 6행 | `→ repair_cases`. 접수를 버리므로 이것도 못 남는다 |
+
+**인수번호는 1번부터 다시 시작한다.** `repair_case_intake_sequences`를 안 가져가기 때문이고,
+데모를 버리는 것이 목적이므로 **의도한 결과다.** (자료를 이관하는 경우였다면 이 4행을
+빠뜨리는 것이 가장 비싼 실수였다 — 번호가 겹친다.)
+
+#### 개발 PC에서 실제로 해 본 결과 (2026-09-04)
+
+위 명령을 그대로 돌리고, 빈 DB에 스키마를 넣은 뒤 복원까지 마쳤다.
+
+| 확인 | 결과 |
+|---|---|
+| 덤프 | 163KB · `TABLE DATA` **정확히 20개** · 전부 `public`/`dss_app` · `drizzle` 0개 |
+| 복원 | `pg_restore --data-only` **오류 0** |
+| 행 수 | 20장 **전부 일치 · 합계 2,006행** |
+| 업무 표 | `repair_cases`·`customers`·`products`·`quotes`·`attachments`·`stock_transactions` 모두 **0행** |
+
+> **`pg_dump`가 경고를 하나 낸다** — `users`·`procedure_templates`·`procedure_template_edges`에
+> 자기참조 FK가 있어 *"`--disable-triggers` 없이는 복원이 안 될 수 있다"*고 한다.
+> **실제로는 없이도 됐다.** 다만 이건 행이 담긴 물리적 순서에 기대는 것이라 보장이 아니다.
+> 복원이 FK 오류로 멈추면 부트스트랩 관리자(`dss_admin`)로 `--disable-triggers`를 붙인다.
+
 ### Phase 2 — 기동 · 중단 없음 · 10분
 
 - 새 컨테이너를 **옛 것과 다른 포트**로 먼저 띄운다(예: 5442·5444).
@@ -430,8 +496,16 @@ cat dss_auth.dump | docker exec -i dss-pg-auth \
 
 - **행 수 대조** — `before-*.txt`와 같은 쿼리를 새 DB에서 돌려 비교한다.
   `ANALYZE`를 먼저 돌려야 `n_live_tup`이 정확해진다.
+  > ⚠️ **A/S는 일치하면 안 된다 (결정 D).** 뼈대 20장만 옮기므로 나머지 58장은 **0이어야 정상**이다.
+  > A/S의 합격 기준은 "원본과 같다"가 아니라 아래 둘이다.
+  > - 뼈대 **20장이 정확히 일치**한다 (Phase 1-A 표의 2,006행 — 뜬 시점 기준)
+  > - `repair_cases`·`customers`·`products`·`quotes`·`attachments`·`stock_transactions`가 **모두 0**이다
+  >
+  > 계측기와 인증은 종전대로 **전부 일치**해야 한다.
 - **시퀀스** — 인수번호처럼 순번이 의미를 갖는 곳은 눈으로 확인한다
   (A/S 인수번호 규칙 `D+YYMM+순번`).
+  > **A/S 인수번호는 1번부터 시작하는 것이 정상이다 (결정 D).** 데모를 버렸기 때문이다.
+  > 첫 접수를 하나 넣어 `D<YYMM>01`이 나오는지만 본다. 계측기·인증은 종전대로 이어져야 한다.
 - **정렬** — 계측기 목록을 한글 이름순으로 정렬해 본다. ICU 로케일 확인의 가장 빠른 방법.
 - **격리 재확인** — 6절의 두 명령을 다시 돌린다. 복원 과정에서 권한이 바뀌었을 수 있다.
 
