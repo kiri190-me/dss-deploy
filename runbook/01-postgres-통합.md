@@ -560,7 +560,7 @@ Phase 3~5(앱 중단)는 **약 7분**이었다. 자료가 작아서(A/S 21MB · 
 | 4 | 행 수·시퀀스 넷 모두 일치. 인덱스·제약·enum 수 일치. 격리 재확인. 인수번호 카운터(2609→1)와 최대 인수번호(D260901) 이어짐 | 통과 |
 | 5 | 세 저장소 `.env.local`의 `DATABASE_URL`만 교체(A/S는 `.env.test.local`도). 앱 셋 재기동 | `db:preflight` 80/0 · 마이그레이션 3/3·5/5 · **`check:oidc` 26/26** · 인증 백업 정상 |
 | 6 | 옛 컨테이너 셋 `docker stop`. 볼륨 여섯 보존 | 되돌리기는 `docker start` 한 번 |
-| 7 | **2026-09-17 이후** 옛 볼륨 회수 | ⬜ |
+| 7 | **2026-09-17 이후** 옛 볼륨 회수. 함께 지울 것: `dss-auth/docker-compose.yml`(옛 상자 정의, 2026-09-14 은퇴 표시), `dss-auth/.env.local`의 `DEV_POSTGRES_PASSWORD`(그 파일만 읽던 값) | ⬜ |
 
 #### 이 절과 달랐던 것 — 다음에 이 절을 따를 사람이 알아야 한다
 
@@ -613,6 +613,9 @@ Phase 3~5(앱 중단)는 **약 7분**이었다. 자료가 작아서(A/S 21MB · 
 9. **`dss-auth` 백업의 docker 모드 기본값이 옛 컨테이너다** (`dss-auth-postgres-dev` / `dss_auth_dev`).
    `.env.local`에 `BACKUP_DB_CONTAINER=dss-pg-auth`·`BACKUP_DB_NAME=dss_auth`를 넣었다.
    NAS에서는 `BACKUP_MODE=direct`라 무관하다.
+   **2026-09-14에 기본값 자체를 `dss-pg-auth`/`dss_auth`로 고쳤다**(dss-auth `051a949`) —
+   덮어쓰기가 없는 새 PC에서는 멈춘 옛 컨테이너를 불러 실패했을 것이다. 이 PC의
+   `.env.local` 값은 이제 기본값과 같아 무해하다.
 10. **계측기 백업은 이 PC에서 원래 돌지 않는다.** `PG_BIN`이 이남준 님 PC 경로이고 백업
     폴더가 네트워크 공유다. 리허설과 무관한 기존 조건이라 손대지 않았다.
 11. **격리 검증은 TCP로도 한다.** 6절의 두 명령은 소켓(trust)이라 비밀번호를 안 거친다.
