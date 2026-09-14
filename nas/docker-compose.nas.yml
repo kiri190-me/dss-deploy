@@ -1,15 +1,22 @@
-# NAS(Synology DS218+) 운영 구성 — 초안
+# NAS(Synology DS218+) 운영 구성
 #
-# ⚠️ 아직 돌려 본 적 없다. 4·5단계에서 실제로 띄우며 다듬는다.
-#    지금은 "무엇을 어떻게 세울지"를 적어 둔 것이다.
+# ⚠️ 아직 NAS 에서 돌려 본 적 없다. 2026-09-14 NAS 예행에서 처음 띄운다.
 #
-#   docker compose -f docker-compose.nas.yml --env-file .env.nas up -d
+#   (NAS) cd /volume1/dss/deploy
+#   (NAS) sudo /usr/local/bin/docker compose -f docker-compose.nas.yml --env-file .env.nas up -d
 #
-# 이미지는 개발 PC에서 굽고 파일로 옮겨 온다(runbook/02-이미지-빌드.md).
-# 셋 합쳐 324MB 정도다.
+# ⚠️ NAS 의 SSH 셸(sudo 포함)은 /usr/local/bin 이 PATH 에 없을 수 있다 — docker 는
+#    전체 경로로 부른다. Container Manager 가 거기에 링크를 둔다 (Docker 24.0.2 ·
+#    Compose v2.20.1, 2026-09-14 실측).
 #
-#   (개발 PC) docker save dss-auth:1.0 -o dss-auth-1.0.tar
-#   (NAS)     docker load -i dss-auth-1.0.tar
+# 이미지는 개발 PC 에서 굽고 파일로 옮겨 온다(runbook/02-이미지-빌드.md).
+#
+#   (개발 PC) docker save dss-auth:1.1 -o dss-auth-1.1.tar
+#   (NAS)     sudo /usr/local/bin/docker load -i dss-auth-1.1.tar
+#
+# 사내 주소 (2026-09-14 확정) — http://192.168.0.222:<포트>
+#   통합 로그인 3100 · A/S 3000 · 계측기 3300. 개발 PC 와 같은 번호다.
+#   NAS 주소는 DSM 네트워크 설정에서 수동(고정)으로 잡혀 있다.
 #
 # ── 이 파일이 지키는 원칙 ──────────────────────────────────────────────
 #
@@ -18,27 +25,53 @@
 #    그 한 줄이 "사내에서 NAS 를 통해서만" 원칙을 깨뜨린다. 여기서는 같은
 #    도커 네트워크의 서비스 이름으로만 부른다 — 호스트 포트를 하나도 열지 않는다.
 #
-# 2. 앱도 호스트 포트를 열지 않는다.
-#    DSM 리버스 프록시가 유일한 입구여야 한다. 우회로가 열려 있으면
-#    TRUSTED_PROXY_HOPS=1 이 보호가 아니라 구멍이 된다
-#    (dss-auth/.env.example 의 그 주석 참고). 프록시는 dss-edge 망으로 닿는다.
+# 2. 앱 포트는 NAS 자신(127.0.0.1)에만 연다. 사내망 주소에는 열지 않는다.
+#    사내망에서 들어오는 입구는 DSM 리버스 프록시 하나여야 한다. 우회로가
+#    열려 있으면 TRUSTED_PROXY_HOPS=1 이 보호가 아니라 구멍이 된다
+#    (dss-auth/.env.example 의 그 주석 참고).
+#
+#    처음에는 "프록시가 dss-edge 망으로 닿는다"고 적었는데 틀렸다 (2026-09-14 정정).
+#    DSM 리버스 프록시는 컨테이너가 아니라 NAS 위에서 도는 nginx 라서 도커 망에
+#    들어오지 못하고 서비스 이름도 모른다. 그래서 127.0.0.1 에만 포트를 열고
+#    프록시가 localhost 로 받는다. 사내망 주소(192.168.0.222)에는 여전히 앱 포트가
+#    하나도 열리지 않으므로 원칙은 그대로다.
+#
+#      192.168.0.222:3100 ─ DSM 프록시 ─→ 127.0.0.1:13100 ─→ app-auth   :3100
+#      192.168.0.222:3000 ─ DSM 프록시 ─→ 127.0.0.1:13000 ─→ app-as     :3000
+#      192.168.0.222:3300 ─ DSM 프록시 ─→ 127.0.0.1:13300 ─→ app-meters :3300
+#
+#    127.0.0.1 쪽을 1 을 붙인 번호로 두는 이유: 프록시가 3000 을 모든 주소에서
+#    잡으므로, 같은 번호를 127.0.0.1 에 또 열면 둘이 부딪힌다.
 #
 # 3. 컨테이너마다 메모리 상한을 건다.
 #    A/S 의 엑셀 업로드(21MB 한도)가 파싱 중 크게 튄다. 상한이 없으면 그 한 번이
 #    다른 컨테이너를 밀어낸다. 상한이 있으면 그 컨테이너만 죽고 포털은 산다.
+#    NAS 커널에 memory cgroup 이 켜져 있어 실제로 먹힌다 (2026-09-14 실측).
 #
 # 4. 비밀값은 이 파일에 없다. .env.nas 와 env/*.env 에서 온다(둘 다 git 제외).
 #
-# 자세한 근거는 runbook/01-postgres-통합.md 3·7·8절.
+# 5. 로그 크기에 상한을 건다 — 서비스마다 10MB × 3개.
+#    기본값은 무제한이다. HDD 한 장짜리 NAS 에서 로그가 /volume1 을 채우면
+#    DB 가 먼저 죽는다 (runbook/05 11절 ㄷ).
+#
+# 자세한 근거는 runbook/01-postgres-통합.md 3·7·8절, runbook/05-배포-리허설.md.
 
 name: dss
+
+# 다섯 서비스가 같은 로그 설정을 쓴다 — 아래에서 *logging 으로 불러 쓴다.
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
 
 # ══ 네트워크 ═══════════════════════════════════════════════════════════
 networks:
   # 앱과 DB 만 있는 망. internal: true 라 바깥으로 나가지도 들어오지도 못한다.
   dss-data:
     internal: true
-  # 리버스 프록시가 앱에 닿는 망. DB 는 여기 없다.
+  # 앱이 바깥으로 나가는 망 — SMTP 메일, 그리고 SSO 토큰 교환(앱이 사내 주소
+  # 192.168.0.222:3100 으로 포털을 부른다). DB 는 여기 없다.
   dss-edge:
 
 # ══ 볼륨 ═══════════════════════════════════════════════════════════════
@@ -55,11 +88,15 @@ services:
   # 인증용을 따로 세우는 이유: 서명 개인키·카카오 시크릿·클라이언트 시크릿
   # 해시를 다뤄 등급이 다르다. 업무 DB 가 전부 털려도 닿지 못해야
   # "포털은 누구인가만 답한다"는 원칙이 실제로 성립한다.
+  #
+  # TZ 를 주지 않는다 — 개발 PC 의 두 인스턴스(이 정의를 extends 로 끌어다
+  # 쓴다)와 모양을 같게 둔다. 시간대가 필요한 것은 앱이고, 앱에는 준다.
 
   db-app:
     image: postgres:17
     container_name: dss-pg-app
     restart: unless-stopped
+    logging: *logging
     networks: [dss-data]
     # ports: 없음 — 위 원칙 1. 이 줄을 되살리지 말 것.
     environment:
@@ -105,6 +142,7 @@ services:
     image: postgres:17
     container_name: dss-pg-auth
     restart: unless-stopped
+    logging: *logging
     networks: [dss-data]
     # ports: 없음
     environment:
@@ -146,19 +184,30 @@ services:
   # 만드는 법은 env/README.md 에 있다. DATABASE_URL 만 여기서 조립하는 이유는
   # 비밀번호가 .env.nas 한 곳에만 있게 하기 위해서다 — 같은 값을 두 파일에
   # 적어 두면 언젠가 한쪽만 바뀐다.
+  #
+  # 컨테이너 안의 경로(/data · /keys · /templates)도 여기서 정한다. 볼륨과 짝이라
+  # 한 파일에 있어야 어긋나지 않는다.
+  #
+  # TZ: Asia/Seoul — 개발 PC 의 앱은 Windows 의 한국 시각으로 돈다. 컨테이너는
+  # 기본이 UTC 라 주지 않으면 날짜 경계(인수번호 D+YYMM, 교정 기한)가 9시간
+  # 어긋난다. 세 이미지 모두 tzdata 가 들어 있어 실제로 먹힌다 (2026-09-14 실측).
 
   app-auth:
-    image: dss-auth:1.0
+    image: dss-auth:1.1
     container_name: dss-auth
     restart: unless-stopped
+    logging: *logging
     networks: [dss-data, dss-edge]
-    # ports: 없음 — 리버스 프록시가 dss-edge 망으로 닿는다
+    # NAS 자신에게만 연다 — 위 원칙 2. "3100:3100" 으로 바꾸지 말 것.
+    ports: ["127.0.0.1:13100:3100"]
     env_file:
       - ./env/auth.env
     environment:
+      TZ: Asia/Seoul
       DATABASE_URL: postgresql://dss_auth_app:${AUTH_APP_PASSWORD}@dss-pg-auth:5432/dss_auth
       # 백업이 컨테이너 안에서 돌 때는 direct 뿐이다. 컨테이너에는 docker 명령이 없다.
       BACKUP_MODE: direct
+      AUTH_KEYS_DIR: /keys
     volumes:
       # ⚠️ 서명 개인키. 이미지에 넣지 않고 여기서 붙인다 —
       #    이미지는 파일로 복사되어 돌아다니므로 한 번 들어가면 회수할 수 없다.
@@ -173,17 +222,33 @@ services:
           memory: 384M
 
   app-as:
-    image: dss-as:1.0
+    image: dss-as:1.1
     container_name: dss-as
     restart: unless-stopped
+    logging: *logging
     networks: [dss-data, dss-edge]
+    ports: ["127.0.0.1:13000:3000"]
     env_file:
       - ./env/as.env
     environment:
+      TZ: Asia/Seoul
       DATABASE_URL: postgresql://dss_app:${AS_APP_PASSWORD}@dss-pg-app:5432/dss_as
+      UPLOADS_DIR: /data
+      # 양식 여섯 — 아래 /templates 볼륨 안의 파일 이름과 글자 하나까지 같아야 한다.
+      # 하나라도 못 읽으면 그 출력(견적서·검사/수리 보고서)이 통째로 죽는다.
+      # 이 줄들이 빠져 있던 것이 runbook/05 11절의 구멍 ㄱ 이다 (2026-09-14 메움).
+      QUOTE_TEMPLATE_PATH: "/templates/내자견적서.xlsx"
+      OH_QUOTE_TEMPLATE_PATH: "/templates/제너레이터 OH 견적서.xlsx"
+      MATCHER_QUOTE_TEMPLATE_PATH: "/templates/매쳐 내자 견적서.xlsx"
+      MATCHER_OH_QUOTE_TEMPLATE_PATH: "/templates/매쳐 OH 견적서.xlsx"
+      INSPECTION_REPORT_TEMPLATE_PATH: "/templates/검사보고서.xlsx"
+      REPAIR_REPORT_TEMPLATE_PATH: "/templates/수리보고서.xlsx"
     volumes:
       # 첨부파일(사진·도면·성적서). 이미지에 없고 여기서 붙인다.
+      # 결정 D — A/S 는 업무 자료를 옮기지 않으므로 NAS 에서는 빈 폴더로 시작한다.
       - /volume1/dss/as-attachments:/data
+      # 양식 — 법인 직인·계좌번호가 들어 있어 저장소에 없다. 앱은 읽기만 한다.
+      - /volume1/dss/as-templates:/templates:ro
     depends_on:
       db-app:
         condition: service_healthy
@@ -194,19 +259,23 @@ services:
           memory: 640M
 
   app-meters:
-    image: dss-meters:1.0
+    image: dss-meters:1.1
     container_name: dss-meters
     restart: unless-stopped
+    logging: *logging
     networks: [dss-data, dss-edge]
+    ports: ["127.0.0.1:13300:3300"]
     env_file:
       - ./env/meters.env
     environment:
+      TZ: Asia/Seoul
       DATABASE_URL: postgres://dss_meters_app:${METERS_APP_PASSWORD}@dss-pg-app:5432/dss_meters
       FILE_STORAGE_ROOT: /data
     volumes:
       # 계측기 사진과 교정 성적서.
       # ⚠️ 쓰기 권한을 node(uid 1000)에게 줘야 한다. 안 그러면 사진 업로드가
-      #    조용히 실패한다. NAS 에서: chown -R 1000:1000 /volume1/dss/meters-files
+      #    조용히 실패한다. dss 공유 폴더는 시놀로지 ACL 이 administrators 만
+      #    허용하므로, NAS 준비 스크립트가 이 폴더의 ACL 을 걷고 1000 에게 준다.
       - /volume1/dss/meters-files:/data
     depends_on:
       db-app:
@@ -228,15 +297,19 @@ services:
 #
 # 여유가 2GB 남는다. 파일 캐시로 쓰이므로 남는 것이 낭비가 아니다 —
 # HDD 인 이 장비에서는 오히려 그쪽이 체감을 좌우한다.
+# 2026-09-14 실측: 커널이 보는 전체 5,786MB · 컨테이너 없이 사용 중 648MB.
 #
-# ══ 아직 정하지 않은 것 ═════════════════════════════════════════════════
+# ══ 아직 여기 없는 것 ═══════════════════════════════════════════════════
 #
-# 1. 백업과 마이그레이션을 어떻게 돌릴 것인가.
-#    tsx·drizzle-kit 이 devDependency 라 이미지 안에서 npm run 이 안 된다.
-#    길 셋을 runbook/02-이미지-빌드.md 8절에 적어 두었다.
+# 1. 백업·마이그레이션·예약 작업을 돌리는 도구 컨테이너.
+#    tsx·drizzle-kit 이 devDependency 라 운영 이미지 안에서 npm run 이 안 된다.
+#    runbook/05-배포-리허설.md 6절에서 길 ㄴ(도구 이미지)으로 정했고 아직 굽지 않았다.
+#    계측기의 백업(BACKUP_ROOT)·성적서 가져오기(CERT_SOURCE_ROOT)·알림 메일
+#    (send-notify)도 이것이 생겨야 NAS 에서 돈다. 그 폴더는 NAS 의
+#    /volume1/2_AS센터/3. 계측기 관리/ 아래 8번·4번이다.
 #
-# 2. 리버스 프록시·방화벽·HTTPS·VPN — 6단계에서. 이 파일은 dss-edge 망을
-#    내어 놓기만 하고 프록시 자체는 DSM 이 맡는다.
+# 2. HTTPS·VPN — 6단계에서. 리버스 프록시 규칙 셋(위 원칙 2의 그림)은 DSM
+#    제어판 → 로그인 포털 → 고급 → 리버스 프록시에서 사람이 넣는다.
 #
 # ══ 여기 없는 것 ═══════════════════════════════════════════════════════
 #
@@ -246,4 +319,5 @@ services:
 #
 # 사내 A/S 가 바깥의 홈페이지를 불러 가는 길(DSS_HOME_URL → /api/nas-sync/*)은
 # **안에서 밖으로** 나가는 요청이라 여기에 아무것도 열 필요가 없다.
-# as.env 에 DSS_HOME_URL 과 DSS_HOME_SYNC_SECRET 을 채우면 된다.
+# 홈페이지가 배포되면 as.env 에 DSS_HOME_URL 과 DSS_HOME_SYNC_SECRET 을 채운다.
+# 그 전까지 A/S 의 고객 포털 기능은 꺼져 있다(버튼을 누르면 설정이 없다고 알린다).
