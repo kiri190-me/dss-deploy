@@ -6,6 +6,9 @@
 #   (NAS)         sudo -i                        ← DSM 비밀번호. 한/영이 영문인지 먼저!
 #   (NAS)         bash /volume1/dss/setup/02-rehearse.sh
 #
+#   ⚠️ 2026-09-14 부터 NAS 는 운영 중이다. --reset 은 운영 DB 를 지우고 setup/dumps 의 덤프로 되돌린다.
+#      setup/PRODUCTION 표지가 있으면 --wipe-production 을 함께 주지 않는 한 거절한다.
+#      새 이미지 배포에는 쓰지 않는다 — README 「다음 배포」.
 #   처음부터 다시:  bash /volume1/dss/setup/02-rehearse.sh --reset
 #                   (예행 DB 두 볼륨을 지우고 새로 만든다 — 예행 자료만 사라진다)
 #   멈추기만:       /usr/local/bin/docker compose -f /volume1/dss/deploy/docker-compose.nas.yml \
@@ -30,6 +33,14 @@ COMPOSE=("$DOCKER" compose -f "$DEP/docker-compose.nas.yml" --env-file "$DEP/.en
 RESET=0; [ "${1:-}" = "--reset" ] && RESET=1
 
 [ "$(id -u)" = 0 ] || { echo "먼저 sudo -i 로 관리자(root)가 된 뒤 실행하세요."; exit 1; }
+# 운영 보호 — 전환(2026-09-14) 뒤로 --reset 은 그날 뒤의 모든 자료를 지운다.
+if [ $RESET = 1 ] && [ -e "$D/setup/PRODUCTION" ] && [ "${2:-}" != "--wipe-production" ]; then
+  echo "✗ NAS 는 운영 중이다 — $(head -1 "$D/setup/PRODUCTION")"
+  echo "  --reset 은 지금의 운영 자료를 지우고 전환 때의 덤프로 되돌린다. 멈춘다."
+  echo "  정말 그래야 한다면 먼저 bash $D/jobs/backup-nightly.sh 로 백업하고:"
+  echo "    bash $0 --reset --wipe-production"
+  exit 1
+fi
 mkdir -p "$D/setup/logs"
 STAMP=$(date +%Y%m%d-%H%M%S)
 LOG="$D/setup/logs/02-rehearse-$STAMP.log"
@@ -67,6 +78,31 @@ if "$DOCKER" volume inspect dss-pg-app-data >/dev/null 2>&1 || "$DOCKER" volume 
     ! "$DOCKER" volume inspect dss-pg-app-data >/dev/null 2>&1 && ok "예행 DB 두 볼륨 지움 (--reset)" || die "볼륨을 지우지 못함"
   else
     die "예행 DB 가 이미 있습니다. 처음부터 다시 하려면 끝에 --reset 을 붙여 실행하세요."
+  fi
+fi
+
+# --reset 이면 업로드 폴더도 최종 자료에 맞춘다. 예행 때 화면에서 올린 사진·첨부는
+# DB 에서는 사라지고(볼륨을 지웠다) 파일만 남아 짝 잃은 파일이 되기 때문이다.
+if [ $RESET = 1 ]; then
+  n=$(find "$D/as-attachments" -mindepth 1 | wc -l)
+  find "$D/as-attachments" -mindepth 1 -delete
+  ok "A/S 첨부 폴더 비움 — 예행 때 생긴 ${n}개 (결정 D: 빈 채로 시작)"
+  MAN="$DUMPS/meters-files.manifest"
+  if [ -s "$MAN" ]; then
+    extra=$(cd "$D/meters-files" && find . -type f -printf '%P
+' | LC_ALL=C sort | LC_ALL=C comm -23 - "$MAN")
+    if [ -n "$extra" ]; then
+      printf '%s
+' "$extra" | sed 's/^/    지움: /'
+      (cd "$D/meters-files" && printf '%s
+' "$extra" | while IFS= read -r f; do rm -f -- "$f"; done)
+    fi
+    miss=$(cd "$D/meters-files" && find . -type f -printf '%P
+' | LC_ALL=C sort | LC_ALL=C comm -13 - "$MAN" | grep -c . || true)
+    gone=$(printf '%s' "$extra" | grep -c . || true)
+    [ "$miss" = 0 ] && ok "계측기 파일 = 최종 자료 $(wc -l < "$MAN")개 (예행 때 생긴 ${gone}개 지움)"                     || bad "계측기 파일 ${miss}개가 최종 자료보다 모자람"
+  else
+    bad "계측기 파일 목록(meters-files.manifest)이 없어 업로드 폴더를 맞추지 못함"
   fi
 fi
 
