@@ -9,7 +9,24 @@
 
 ## 지금 어디까지 됐나
 
-### 🟢 2026-09-14 — 운영 전환 완료. 세 시스템이 NAS 에서 돈다
+### 🟢 2026-09-15 — HTTPS. 사내 주소가 `https://*.dss21.co.kr` 로 바뀌었다
+
+| 시스템 | 사내 주소 |
+|---|---|
+| 통합 로그인 (앱 목록) | `https://login.dss21.co.kr` |
+| A/S 관리 | `https://as.dss21.co.kr` |
+| 계측기 관리 | `https://meters.dss21.co.kr` |
+
+**14:05 전환 · 멈춘 시간 약 22초 · `05-https-switch.sh` 34/34** — 사용자가 브라우저로 로그인·두 시스템 이동까지 확인.
+도메인 `dss21.co.kr`(카페24 등록 · Cloudflare DNS · A 레코드 셋 → `192.168.0.222`, DNS only) · 인증서 Let's Encrypt
+와일드카드(NAS 의 acme.sh, 매일 03:10 갱신 작업) · DSM 리버스 프록시 443 호스트 이름 규칙 셋. 결정 I 그대로 — **NAS 는
+인터넷에 열리지 않았다**(인증은 DNS 로만). 순서와 검증 값은 아래 「다음 세션 첫 작업」 ①.
+
+> ⚠️ **옛 주소 `http://192.168.0.222:3000·3100·3300` 에서는 로그인이 깨진다** — 로그인 시작 쿠키가 옛 주소에 붙고 돌아오는 곳은
+> 새 주소라서다(포털은 쿠키가 https 전용이 됐다). 사용자가 **직원 공지**를 택했다(09-15). DSM 의 http 규칙 셋은 되돌리기용으로
+> 남겨 두었다 — 정리는 ② 표.
+
+### 2026-09-14 — 운영 전환 완료. 세 시스템이 NAS 에서 돈다
 
 **16:23~16:31 (중단 약 8분)** 개발 PC 서버 셋을 멈추고 최종 덤프로 NAS 를 다시 세웠다.
 **직원이 쓰는 곳은 이제 NAS 뿐**이고, 개발 PC 의 서버·DB 는 개발용이다.
@@ -37,7 +54,7 @@ DSSTECH5 와이파이·사내 유선에서 닿고, **dsspublic 에서는 닿지 
 > ⚠️ **`02-rehearse.sh --reset` 은 이제 운영 자료를 지운다.** NAS 의 `setup/PRODUCTION` 표지가 있으면
 > `--wipe-production` 없이는 거절하도록 막았다. 새 이미지 배포는 아래 「다음 배포」 절차로 한다.
 
-**다음 세션 첫 작업은 아래 「다음 세션 첫 작업」 ① HTTPS (2026-09-15 진행하기로 함).**
+**① HTTPS 는 2026-09-15 에 끝났다. 다음 세션 첫 작업은 아래 「다음 세션 첫 작업」 ② 표.**
 
 ---
 
@@ -168,45 +185,92 @@ DS218+의 Celeron J3355는 AES-NI를 가지고 있어 이 일에 훨씬 적합�
 
 ## 다음 세션 첫 작업
 
-> **2026-09-14 기준 — 4·5단계가 끝났고 운영은 NAS 다.** 남은 큰일은 6단계의 HTTPS·VPN 과 8단계 정리다.
+> **2026-09-15 기준 — HTTPS 까지 끝났다(①).** 남은 큰일은 **도구 이미지**다 — 교정 알림(10-01 기한)도, 다음 A/S 배포도
+> 그것 없이는 못 한다. 운영 수첩(HTML): https://claude.ai/artifact/JskhVwXpUU8Eots78vYrca
+>
+> ### 첫 명령 — 교정 알림 메일을 NAS 에서 (**2026-10-01 전**, ② 2번)
+> 이남준 님 PC 의 알림 작업은 꺼졌고 NAS 에서는 아직 안 돈다 — **이대로면 10월 알림이 아무에게도 안 간다.**
+> 1. `njlee/Dockerfile` 에 `tools` 스테이지 — runbook/05 **6절 길 ㄴ**. 운영 이미지에 없는 `tsx` 를 담아
+>    `npm run send-notify`(`tsx scripts/send-notify.ts`) 를 한 번 돌고 끝나는 이미지. njlee 는 **`sso-integration`** 브랜치 — `git add -A` 금지.
+> 2. `nas/docker-compose.nas.yml` 에 `profiles: [tools]` 서비스 `tools-meters` — `meters.env` · `DATABASE_URL` · `/data` 를 앱과 같게. 평소엔 뜨지 않는다.
+> 3. 개발 PC 에서 먼저 한 번 — 실제 메일이 나가지 않게 하는 길은 `njlee/docs/NOTIFY.md` 부터 본다.
+> 4. NAS: 이미지 운반(G5, 지문 대조) → DSM 작업 스케줄러 **"DSS 교정 알림" 매일 09:00 root** — 실제 발송은 매월 1일.
+>
+> **그다음** — 같은 틀로 `tools-as` 를 만들어 **A/S 배포**. NAS 는 마이그레이션 98건, 코드는 **100건**(0098 `quotes.investigation_excluded`,
+> 0099 견적서 첨부 — 열·enum 값·새 열의 제약만). **둘 다 더하기뿐이라 되돌리기는 「나」(이미지 태그만)**. 저녁 정지 창 절차는 runbook/05 8절.
+>
 > 2026-09-07 에 적었던 계획(G3 · 구멍 셋)은 대부분 끝났다 — 구멍 ㄱ·ㄷ 은 메웠고, G3 는 개발 PC 대신
-> NAS 예행으로 했다. 남은 것은 아래 ② 표에 옮겼다.
+> NAS 예행으로 했다. 남은 것은 아래 ② 표에 있다.
 
-### ① HTTPS — 2026-09-15 진행하기로 함 (사용자)
+### ① ~~HTTPS~~ — `dss21.co.kr` (2026-09-15 정함·전환 완료, 결정 I)
 
 근거·비용·방법·위험을 담은 발표 자료가 바탕화면 **`HTTPS_도입_제안.pptx`**(13장, 발표자 노트)에 있다. 요지:
 
-- `dss21.com` 의 DNS 는 **카페24** 이고, 인증서 자동 갱신 도구 **acme.sh 가 지원하는 DNS 목록에 카페24·가비아가
-  없다**(2026-09-14 확인). 그래서 **사내용 도메인을 새로 사서 DNS 는 Cloudflare(무료)** 에 두고, 인증서는
-  **acme.sh 의 DNS 인증(DNS-01)** 으로 받아 `synology_dsm` 배포 훅으로 DSM 에 넣는다. **NAS 를 인터넷에 열지 않는다.**
-- 이름 후보 `dss21.net` · `dss21.kr` · `dss21.co.kr` — 09-14 조회 때 DNS 기록 없음(구입 전 확인).
-  `.com` 은 2026-11-01 부터 $10.44 → $11.15. `.kr` 은 국내 업체 연 1.2~2.5만 원.
+- 이름은 **`dss21.co.kr`** — 09-15 KRNIC 조회 때 미등록. **등록·연장은 카페24**(회사가 이미 쓰는 계정, 연 22,000원),
+  **DNS 는 Cloudflare**(무료). 카페24 DNS 로는 자동 갱신이 안 된다 — acme.sh DNS 플러그인 195개에 카페24가 없다
+  (09-15 재확인). 그래서 카페24에는 **등록만** 두고 네임서버를 Cloudflare 로 돌린다. 인증서는 **acme.sh 의 DNS
+  인증(DNS-01)** 으로 받아 `synology_dsm` 훅으로 DSM 에 넣는다. **NAS 를 인터넷에 열지 않는다.**
+- **`dss21.com` 은 건드리지 않는다** — 카페24 DNS 에 회사 메일(MX·SPF)과 옛 홈페이지가 걸려 있다. 네 가지 일을
+  누가 맡는지(카페24 · 미리내 · 닷네임코리아)는 09-15 조회로 정리했다: https://claude.ai/artifact/EoLbuMATY3byzBdHYQEtbP
+  미리내에는 `dss21` 계정만 있고 역할은 미확인 — `dss21.com` 만료가 **2027-03-31** 이라 그 전에 누가 연장하는지 볼 것.
+- 인증서 최대 유효기간이 2026-03-15 부터 200일, 2027-03-15 부터 100일이다(CA/B Forum SC-081). 손 갱신은 곧 석 달마다.
 - 지금 HTTPS 가 없어서 **실제로 막힌 것은 A/S 두 가지뿐**: 브라우저 알림 팝업(`isSecureContext`)과 폰 앱 설치(PWA).
   클립보드·UUID 는 이미 http 대체 수단이 있다. 로그인·계측기는 영향 없음. 크롬 154(2026-10)의 http 경고는
   사설 IP 를 "당분간" 뺀다.
 
 **순서 — 첫 명령부터**
-1. (사람) 도메인 이름을 정해 구입 → Cloudflare 가입·도메인 연결(네임서버 변경) → **API 토큰**(그 도메인의
-   Zone · DNS · Edit 만). ⚠️ **토큰은 채팅에 붙이지 않는다** — `.env.nas` 처럼 파일로 NAS 에 둔다.
-2. (사람) Cloudflare 에 A 레코드 셋: `login` · `as` · `meters` → `192.168.0.222` (**프록시 끔 = 회색 구름**).
-3. **사내 PC·폰에서 `nslookup as.<도메인>` 이 `192.168.0.222` 를 돌려주는지** 먼저 본다 — 공유기·통신사 DNS 가
+1. ✅ (사람 · 카페24) **2026-09-15 구입** — KRNIC 조회: 등록인 `디에스에스` · 사용 종료일 **2036-09-15**(10년) ·
+   명부상 등록대행자 **메가존(hosting.kr)**(관리는 카페24 계정에서) · 네임서버 카페24 기본값. **자동연장은 켜지 않았다**(사용자).
+   ⚠️ **등록인이 `디에스에스` 로 올라갔다 — 등록증 상호는 `주식회사 디에스에스`**(사용자). 명부는 넣은 글자를 그대로 보인다
+   (`카페24 주식회사` · `(주)가비아`). 카페24 온라인 수정은 주소·이메일·전화뿐 → **고객센터에 사업자등록증으로 정정 요청** (남음).
+   구입 순서: https://claude.ai/artifact/VwouXpZtSPw3iajCAhHZiP
+2. (사람 · Cloudflare) 가입 → 사이트 추가 `dss21.co.kr`(Free) → 알려 주는 **네임서버 둘**을 카페24
+   「나의 서비스관리 → 도메인관리 → 네임서버 변경」에 적는다(본인인증). **카페24 네임서버는 하나도 남기지 않는다** —
+   Cloudflare 는 명부에 자기 것만 있어야 활성화한다. 반영은 최대 24시간, **Free 는 28일 안에 Active 가 안 되면 지워진다.**
+   순서: https://claude.ai/artifact/GhHEvt1q4jcoNZNLL5oYiL
+   새 도메인이라 지워질 기록이 없다.
+3. (사람 · Cloudflare) A 레코드 셋 `login` · `as` · `meters` → `192.168.0.222` (**프록시 끔 = 회색 구름**).
+   **API 토큰** — 내 프로필 → API 토큰 → 사용자 지정 토큰: 권한 **Zone · DNS · Edit**, 영역 리소스 **`dss21.co.kr` 만**.
+   ⚠️ **토큰은 채팅에 붙이지 않는다** — 5번 스크립트가 NAS 창에서 묻는다(화면에 안 보임).
+   ✅ **2026-09-15** — 카페24 네임서버 → `daniella` · `jake.ns.cloudflare.com`, `.kr` 상위 위임 **13:18 반영**. A 레코드 셋
+   (DNS only) 들어감. **토큰은 아직.**
+4. ✅ (09-15 · DSSTECH5 의 ASUS 공유기 DNS `192.168.1.1` 로 셋 다 `192.168.0.222` — 막히지 않음. ipTIME 쪽(`192.168.0.x`) 유선 PC 는 아직 안 봄)
+   **사내 PC·폰에서 `nslookup as.dss21.co.kr` 이 `192.168.0.222` 를 돌려주는지** 먼저 본다 — 공유기·통신사 DNS 가
    "공개 도메인 → 사설 IP" 응답을 막는지(rebinding 차단). 막히면 여기서 멈추고 공유기 DNS 설정을 본다.
-4. (Claude) acme.sh 를 NAS 에서 돌리는 스크립트 `nas/setup/04-*` — 컨테이너(`neilpang/acme.sh`)로 와일드카드
-   발급 + `synology_dsm` 훅. 갱신은 DSM 작업 스케줄러. 참고: acme.sh wiki "Synology NAS Guide".
-5. (사람) DSM 리버스 프록시를 **HTTPS 443 · 호스트 이름 기준** 규칙 셋으로.
-6. (저녁 10분) 주소 전환 — 시스템마다 네 곳:
+5. (사람 · NAS · `sudo`) **`bash /volume1/dss/setup/04-https-cert.sh`** — Zone ID 와 토큰을 묻고,
+   `dss21.co.kr` + `*.dss21.co.kr` 인증서를 Let's Encrypt 에서 받아 DSM 에 **"dss21.co.kr"** 이름으로 넣고,
+   갱신 작업 `jobs/acme-renew.sh` 를 둔다. acme.sh 는 **컨테이너가 아니라 NAS 에 직접**(`/volume1/dss/acme`, root 700) —
+   DSM 훅의 임시 관리자 방식이 NAS 의 `synouser` 를 써서, 컨테이너면 DSM 관리자 비밀번호를 파일로 남겨야 한다.
+   → DSM 작업 스케줄러 **"DSS 인증서 갱신" 매일 03:10**, root, `bash /volume1/dss/jobs/acme-renew.sh`.
+   ✅ **2026-09-15 13:28 · 15/15** — `*.dss21.co.kr` + `dss21.co.kr` (Let's Encrypt, RSA 2048) · 만료 **2026-12-14** ·
+   다음 갱신 **2026-11-13**(ARI 창) · DSM 에 "dss21.co.kr" 로 들어감 · 임시 관리자 `sc-acmesh-tmp` 지워짐 ·
+   갱신 작업 root 700 · 한 번 돌려 정상. 로그의 토큰 모양 문자열은 인증서 본문 조각뿐, 비밀 키 없음.
+   첫 실행은 **DSM 의 `/tmp` 가 `noexec`** 라 설치에서 막혔다 → 압축을 `/volume1/dss/acme/src` 에서 풀도록 고쳤다.
+   ⬜ 작업 스케줄러 등록은 사람 차례.
+6. (사람 · DSM) 리버스 프록시에 **HTTPS 443 · 호스트 이름 기준** 규칙 셋을 **더한다**(http 규칙 셋은 전환 날까지 둔다) →
+   제어판 → 보안 → 인증서 → 설정에서 세 규칙에 `dss21.co.kr` 인증서를 지정.
+   ✅ 규칙 셋 (09-15) — 이 PC 에서 `https://login·as·meters.dss21.co.kr` 가 각 앱의 307(`/signin` · `/dashboard` ·
+   `/api/auth/sso/start`)을 돌려준다. HSTS 끔 · WebSocket 머리글 없음(앱 셋 모두 쓰지 않음). ✅ 인증서 지정 (09-15) — 처음엔 기본(`synology.com`)에 붙어 있었다.
+   이 PC 에서 셋 다 `CN=dss21.co.kr` · Let's Encrypt `YR2` · openssl 검증 0(ok) · Windows curl `-k` 없이 307.
+   사슬: 서버 → YR2 → Root YR → (교차서명) ISRG Root X1.
+7. ✅ **2026-09-15 14:05 주소 전환** — 저녁이 아니라 낮에 했다(사용자). `bash /volume1/dss/setup/05-https-switch.sh` **34/34**:
+   먼저 확인(아홉 줄이 옛 값 · 컨테이너 안에서 새 주소에 닿음) → 사본 `backups/https-switch-20260915-140556/` → 포털 등록에 https
+   **더함**(옛 http 는 남김 — `false` 면 대조 전에 걸러진다) → env 아홉 줄 → 앱 셋만 재생성(**22초**) → iss `https://login.dss21.co.kr` ·
+   두 시스템 로그인 시작이 https redirect_uri 로 가고 포털이 받아 줌. 카카오 콘솔에 https 리다이렉트 URI 추가(사용자).
+   이 PC 의 `nas/env/*.env` 원본에도 같은 아홉 줄을 반영했다. 되돌리기: `05-https-switch.sh --rollback`.
+   원래 계획 — 시스템마다 네 곳:
    env 파일(`OIDC_ISSUER`/`SSO_ISSUER` · `SSO_REDIRECT_URI` · `KAKAO_REDIRECT_URI` · 계측기 `SITE_URL`) +
    포털 등록(NAS DB 의 `clients` — `02-rehearse.sh` 5단계와 같은 SQL 방식) + 카카오 콘솔.
    함께 `OIDC_ALLOW_HTTP_REDIRECT_URIS=false`, 계측기 `SESSION_COOKIE_SECURE=true`.
    env 파일은 NAS 에서 root 600 이라 **`sudo` 로 바꾸고 `docker compose up -d` 로 앱만 다시 띄운다(DB 는 그대로).**
-7. 되돌리기 — 지금 http 설정(env 셋 · 프록시 규칙 셋)을 그대로 보관해 둔다.
+8. 되돌리기 — 지금 http 설정(env 셋 · 프록시 규칙 셋)을 그대로 보관해 둔다.
 
 ### ② 전환 뒤 남은 것 — 급한 순서
 
 | | 할 일 | 기한 · 이유 |
 |---|---|---|
-| 1 | **이남준 님 PC** — 계측기 앱 끄기, 예약 작업 둘(`계측기 관리 시스템 백업` 18:30 · 교정 알림 09:00) "사용 안 함" | 사용자에게 부탁함, **완료 여부 미확인**. 그대로면 옛 계측기가 따로 돌고 10/1 알림 메일이 두 번 간다 |
-| 2 | **교정 알림 메일(`send-notify`)을 NAS 에서** — DSM 작업 스케줄러로 매일 09:00 (실제 발송은 매월 1일) | **2026-10-01 전.** `tsx` 가 운영 이미지에 없다 → 도구 이미지(runbook/05 6절 길 ㄴ)가 필요하다. 메일 계정은 `meters.env` 에 있다 |
+| 1 | ~~**이남준 님 PC** — 계측기 앱 끄기, 예약 작업 둘 "사용 안 함"~~ | ✅ **처리됨** (2026-09-15 사용자 확인) |
+| 2 | **교정 알림 메일(`send-notify`)을 NAS 에서** — DSM 작업 스케줄러로 매일 09:00 (실제 발송은 매월 1일) | **2026-10-01 전.** 이남준 님 PC 의 예약 작업은 꺼졌다(09-15 확인) — **이대로면 10월 알림이 아무에게도 안 간다.** `tsx` 가 운영 이미지에 없다 → 도구 이미지(runbook/05 6절 길 ㄴ)가 필요하다. 메일 계정은 `meters.env` 에 있다 |
 | 3 | NAS `setup/dumps/`(전환 최종 덤프 7개, 실자료)를 `backups/cutover-2026-09-14/`(root)로, `images/`(325M) 정리 | 사람이 `sudo`. 지금은 administrators 만 읽는 곳 |
 | 4 | A/S `users` 의 데모 계정 정리 | 뼈대에 딸려 온 계정(런북 01 Phase 1-A) |
 | 5 | **Phase 7 — 2026-09-17 이후**: 개발 PC 옛 볼륨 넷 회수 · `rehearsal/`(1.9MB 실자료) · `dss-auth/docker-compose.yml` · `DEV_POSTGRES_PASSWORD` | 아래 표의 계획 그대로. 그 전에는 지우지 않는다 |
@@ -214,6 +278,11 @@ DS218+의 Celeron J3355는 AES-NI를 가지고 있어 이 일에 훨씬 적합�
 | 7 | 도구 이미지 · `db:preflight` 「되돌리기 불가」 목록(05 11-ㄴ, A/S 저장소) | 다음 A/S 마이그레이션 전에 |
 | 8 | VPN (6단계) — 런북 03 의 남은 확인 넷 | 밖에서 쓸 사람이 생길 때 |
 | 9 | 개발 PC 의 A/S·계측기·포털이 **여전히 `{lan}` 으로 사내망에 보인다** — 직원이 옛 주소로 들어오면 개발 DB 에 쓴다 | 공지로 막았다. 필요하면 개발 서버를 `localhost` 전용으로 |
+| 10 | **DSM 의 옛 http 규칙 셋(3000·3100·3300)** — 로그인이 깨지는 입구로 남아 있다 | HTTPS 가 며칠 탈 없이 돌면 지운다. 옛 즐겨찾기를 살리려면 새 주소로 넘기는 작은 전달기(nginx, 127.0.0.1) — 09-15 에 검토만 했다 |
+| 11 | **`dss21.co.kr` 소유자명 정정** — KRNIC 에 `디에스에스`, 등록증은 `주식회사 디에스에스` | 카페24 고객센터에 사업자등록증으로 요청. 온라인 수정은 주소·이메일·전화뿐 |
+| 12 | **`dss21.com` 은 누가 연장하나** — 만료 **2027-03-31**, 등록기관 닷네임코리아, 미리내 `dss21` 계정은 비어 있음 | 미리내 로그인해 도메인·호스팅 관리 화면 확인. https://claude.ai/artifact/EoLbuMATY3byzBdHYQEtbP |
+| 13 | **NAS 백업을 되살려 본 적이 없다** — 야간 백업은 목차만 열어 본다(`pg_restore -l`). 복원 시험 절차가 없다 | 절차를 적고 한 번 해 본다(운영 수첩을 쓰며 찾은 빈칸). 계측기 문서는 월 1회 시험을 권한다 |
+| 14 | `dss21.co.kr` 에 **메일 위장 방지 TXT 세 줄**(SPF `-all` · DKIM 빈 열쇠 · DMARC `reject`) — 이 이름으로는 메일을 보내지 않는다 | 급하지 않다. Cloudflare 경고 풀이: https://claude.ai/artifact/Vy1UhzJrJxMG7SSR22icbT (노란 배너·www·이름 자체 권장은 사내 전용이라 무시) |
 
 ### 다음 배포(새 이미지) — 이 날 만든 길
 
@@ -222,6 +291,22 @@ DS218+의 Celeron J3355는 AES-NI를 가지고 있어 이 일에 훨씬 적합�
 2. (NAS · 사람 · `sudo`) `docker load` → compose 의 이미지 태그를 올리고 `docker compose ... up -d app-…` —
    **DB 는 건드리지 않는다.** 마이그레이션이 있으면 runbook/05 G4 · G6.
 3. ⚠️ `02-rehearse.sh --reset` 은 배포가 아니다 — **DB 를 지우고 전환 때 덤프로 되돌리는 것**이다.
+
+### 검증 — 2026-09-15 실제로 돌린 값 (HTTPS)
+
+| 무엇 | 어디서 | 값 |
+|---|---|---|
+| 인증서 `04-https-cert.sh` | NAS | **15/15** — 첫 실행은 설치에서 ✗(DSM `/tmp` 가 `noexec`) → 압축을 `/volume1/dss/acme/src` 에서 풀도록 고쳐 재실행 |
+| 주소 전환 `05-https-switch.sh` | NAS | **34/34 · 28초 · 앱 멈춤 22초** — 먼저 확인(컨테이너 안에서 새 주소에 닿음) · 사본 · 포털 등록 · env 아홉 줄 · iss · 로그인 시작 두 시스템 |
+| 인증서 검증 | 이 PC | 세 이름 모두 `CN=dss21.co.kr` · openssl `Verify return code: 0` · Windows curl `-k` 없이 307 · 사슬 YR2 → Root YR → ISRG Root X1 |
+| DNS | 이 PC · NAS | `.kr` 위임 **13:18** Cloudflare 로. Google·Cloudflare DoH·**ASUS 공유기 DNS(192.168.1.1)** 모두 `192.168.0.222`. ipTIME 쪽 유선은 **안 봤다** |
+| 인증서 갱신 작업 | NAS | 04 안에서 1회 · 작업 스케줄러 "실행" 1회(13:41) — 둘 다 정상, 다음 갱신 ARI 창 2026-11-13 |
+| 야간 백업 | NAS | 09-15 02:30 스케줄러 **성공** — auth 136K · meters 100K · as 524K · 2초 |
+| 브라우저 (사용자) | 사내 | 전환 뒤 `https://login.dss21.co.kr` 로그인 · A/S · 계측기 이동 **정상**. 09-14 전환 뒤 직원 로그인 문제 보고 없음 |
+| `npm run db:preflight` | A/S (개발 PC) | **전체 100 · 대기 0** — 세션 시작 때 98. 다른 세션이 2건을 더해 적용했다. **NAS 는 98 그대로** |
+
+**돌리지 않은 것** — `npm test`(dss-auth·A/S) · `npm run test:db` · `npm run check:oidc` — 앱 코드를 고치지 않았다.
+격리 검증·행 수 대조 — DB 를 건드리지 않아(포털 `clients` 네 칸만) 다시 돌리지 않았다.
 
 ### 검증 — 2026-09-14 실제로 돌린 값
 
@@ -295,6 +380,11 @@ A/S는 이관 후 `repair_cases`가 **0이어야** 정상이고, 계측기는 79
 
 ## 인계 메모
 
+- **2026-09-15 저녁 상태 (17:52 확인)** — NAS: 세 주소 `https://login·as·meters.dss21.co.kr` 모두 307, 포털 iss https,
+  인증서 Let's Encrypt `YR2` · 12-14 만료, 02:30 백업 성공, 인증서 갱신 작업 정상(스케줄러 수동 1회 포함), 켜진 지 1일 4시간.
+  개발 PC: Docker Desktop 켜짐 — `dss-pg-app`·`dss-pg-auth`·`dss-home-postgres-dev` 떠 있음, **옛 상자 셋 정지 · 볼륨 여섯 모두 살아 있음.**
+  다섯 저장소 중 미커밋은 dss-deploy 뿐(이 세션의 것). dss-auth·A/S 에 **다른 세션의 오늘 커밋**이 있다 — 손대지 않았다.
+  `dss-deploy/rehearsal/` 에 실자료 덤프 넷(git 제외) — Phase 7 에 지운다.
 - **2026-09-14 저녁 상태** — NAS: DB 둘 · 앱 셋 운영 중(로그 `/volume1/dss/setup/logs/`). 개발 PC: 서버 넷 모두
   꺼짐, **Docker Desktop 꺼짐**(컨테이너·볼륨 미확인 — 지운 것은 없다). 다섯 저장소 중 미커밋은 dss-deploy 뿐.
 - **NAS 접속** — `ssh dss-nas`(Windows 내장 ssh, 열쇠 `~/.ssh/dss_nas_ed25519`, 계정 `swhur`). **DSSTECH5 에서만 닿는다.**
@@ -351,7 +441,7 @@ A/S는 이관 후 `repair_cases`가 **0이어야** 정상이고, 계측기는 79
 | 3 | 이미지 | `Dockerfile` 3개, A/S에 `output: "standalone"`, 이미지에 `postgresql-client-17` | ✅ |
 | 4 | DB 이전 | NAS에 인스턴스 둘. 계측기·인증은 **통째로**(계측기는 개발 PC 사본, 결정 G), A/S는 **뼈대 20장만** (결정 D) | ✅ 09-14 |
 | 5 | 앱 이전 | NAS에 앱 컨테이너 셋(이미지 1.1), 앱 포트는 `127.0.0.1:13xxx` 에만 | ✅ 09-14 |
-| 6 | 접근 경계 | ~~리버스 프록시~~ ✅ · ~~`TRUSTED_PROXY_HOPS=1`~~ ✅ · 방화벽(DSM 꺼짐 · 앱 포트는 127.0.0.1) · **HTTPS ⬜ 09-15 착수** · **VPN ⬜** | 🔶 |
+| 6 | 접근 경계 | ~~리버스 프록시~~ ✅ · ~~`TRUSTED_PROXY_HOPS=1`~~ ✅ · 방화벽(DSM 꺼짐 · 앱 포트는 127.0.0.1) · **HTTPS ✅ 09-15** (`*.dss21.co.kr`, 옛 http 규칙 정리 ⬜) · **VPN ⬜** | 🔶 |
 | 7 | 주소 갱신 | NAS 사본의 포털 등록에 `192.168.0.222` 주소 · 카카오 콘솔 · 로그아웃 통보 확인 (HTTPS 때 한 번 더) | ✅ 09-14 |
 | 8 | 정리 | ~~야간 백업 02:30~~ ✅ · 옛 볼륨 회수(09-17 이후) ⬜ · NAS 밖 사본 ⬜ · 교정 알림 예약 작업(10/1 전) ⬜ | 🔶 |
 
@@ -375,6 +465,7 @@ NAS는 이미 검증된 형태를 그대로 세우기만 하면 된다.
 | 문서 | 내용 |
 |---|---|
 | [CLAUDE.md](./CLAUDE.md) | 저장소 넷의 경로·포트, 확정된 결정, 지켜야 할 것 |
+| [운영 수첩 (HTML)](https://claude.ai/artifact/JskhVwXpUU8Eots78vYrca) | **사후 유지 관리** — 달력(만료일) · 매일 도는 작업 · 정기 점검 명령 · 배포·되돌리기 · 고장 대응 · 열린 일 (2026-09-15). 이 README 가 원본이고 수첩이 따라간다 |
 | [runbook/01-postgres-통합.md](./runbook/01-postgres-통합.md) | 0·2·4단계 — 인스턴스 둘로 줄이기, 권한 설계, Phase 0–7 절차 |
 | [runbook/02-이미지-빌드.md](./runbook/02-이미지-빌드.md) | 3단계 — 빌드와 실행의 차이, 이미지를 NAS로 옮기는 법 |
 | [runbook/03-원격-접속.md](./runbook/03-원격-접속.md) | 6단계 앞쪽 — **밖에서 사내망으로 들어오는 길(VPN)**. 공유기 사정과 갈림길 |
@@ -390,6 +481,9 @@ NAS는 이미 검증된 형태를 그대로 세우기만 하면 된다.
 | [nas/setup/02-rehearse.sh](./nas/setup/02-rehearse.sh) | DB 둘 → 격리 검증 → 복원 → 행 수 대조 → 포털 등록(NAS 사본) → 앱 셋. **`--reset` 은 운영 자료를 지운다** |
 | [nas/setup/03-install-backup.sh](./nas/setup/03-install-backup.sh) | 야간 백업 스크립트를 root 만 고칠 수 있게 제자리에 두고 한 번 돌린다 |
 | [nas/jobs/backup-nightly.sh](./nas/jobs/backup-nightly.sh) | 매일 02:30 (DSM 작업 스케줄러, root) — DB 셋 · 파일. 빈 백업은 남기지 않고, 개수로 정리 |
+| [nas/setup/04-https-cert.sh](./nas/setup/04-https-cert.sh) | `dss21.co.kr` 인증서 — acme.sh 3.1.4(지문 고정)를 NAS 에 설치, Cloudflare DNS 인증, DSM 에 넣기(임시 관리자), 갱신 작업 두기. 사람이 `sudo` |
+| [nas/setup/05-https-switch.sh](./nas/setup/05-https-switch.sh) | 사내 주소를 https 로 — 먼저 확인 → 사본 → 포털 등록 → env 아홉 줄 → 앱만 재생성 → 확인. `--rollback` 으로 전환 전으로. 사람이 `sudo` |
+| [nas/jobs/acme-renew.sh](./nas/jobs/acme-renew.sh) | 매일 03:10 (DSM 작업 스케줄러, root) — 만료 30일 전쯤 갱신하고 DSM 인증서를 바꿔 끼운다. 21일 아래로 남으면 비정상 종료 |
 
 앞으로 늘어날 것: `04-리버스-프록시.md`(사내망 안에서 앱에 닿는 길)
 

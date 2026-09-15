@@ -36,16 +36,18 @@ compose가 넘긴다.
 ### 개발 PC용 값을 그대로 두지 않는다
 
 `.env.example`은 개발 PC를 전제로 쓰였다. NAS에서는 달라지는 것들이 있다.
-사내 주소는 **`http://192.168.0.222:<포트>`**로 정했다(2026-09-14) — 로그인 3100 · A/S 3000 · 계측기 3300.
+사내 주소는 **`http://192.168.0.222:<포트>`**로 정했다가(2026-09-14) 이튿날 **`https://login·as·meters.dss21.co.kr`**로
+바꿨다(2026-09-15, `setup/05-https-switch.sh`). 아래 NAS 칸은 바꾼 뒤의 값이다.
 
 | 값 | 개발 PC | NAS | 누가 넣나 |
 |---|---|---|---|
-| `OIDC_ISSUER` · `SSO_ISSUER` | `auto` | `http://192.168.0.222:3100` — 컨테이너 안에서 `auto`는 172.x를 잡는다 | env 파일 |
-| `SSO_REDIRECT_URI` | `auto` | `http://192.168.0.222:3000`(계측기 `:3300`)`/api/auth/sso/callback` | env 파일 |
-| `KAKAO_REDIRECT_URI` | `auto` | `http://192.168.0.222:3100/api/kakao/callback` — **카카오 콘솔에도 등록** | env 파일 |
-| `SITE_URL` (계측기) | `http://localhost:3300` | `http://192.168.0.222:3300` | env 파일 |
+| `OIDC_ISSUER` · `SSO_ISSUER` | `auto` | `https://login.dss21.co.kr` — 컨테이너 안에서 `auto`는 172.x를 잡는다 | env 파일 |
+| `SSO_REDIRECT_URI` | `auto` | `https://as.dss21.co.kr`(계측기 `https://meters.dss21.co.kr`)`/api/auth/sso/callback` | env 파일 |
+| `KAKAO_REDIRECT_URI` | `auto` | `https://login.dss21.co.kr/api/kakao/callback` — **카카오 콘솔에도 등록**(옛 http 값도 남아 있다) | env 파일 |
+| `SITE_URL` (계측기) | `http://localhost:3300` | `https://meters.dss21.co.kr` — 알림 메일 속 링크 | env 파일 |
 | `TRUSTED_PROXY_HOPS` | `0` | **`1`** (DSM 프록시 뒤. 앱 포트는 `127.0.0.1`에만 열려 우회로가 없다) | env 파일 |
-| `OIDC_ALLOW_HTTP_REDIRECT_URIS` | `true` | `true` — HTTPS 전환과 동시에 `false` | env 파일 |
+| `OIDC_ALLOW_HTTP_REDIRECT_URIS` | `true` | **`false`** — issuer 가 https 인데 `true` 면 포털이 **시작을 거부한다** | env 파일 |
+| `SESSION_COOKIE_SECURE` (계측기) | `false` | **`true`** — http 에서 켜면 쿠키가 저장되지 않는다 | env 파일 |
 | `DEMO_LOGIN_ENABLED` (A/S) | `true` | **`false`** — 운영에서 켜면 뒷문이다 | env 파일 |
 | 서명·세션 키 (`AUTH_TX_SECRET` · `AUTH_SESSION_SECRET` · `SSO_TX_SECRET` · `CUSTOMER_LINK_TOKEN_KEY`) | 개발용 | **운영용으로 새로 만든다** — 개발과 운영이 같은 비밀을 쓰지 않는다 | env 파일 |
 | 밖에 등록된 값 (카카오 키 · 메일 계정 · 포털 클라이언트 시크릿 · `AUTH_ACTIVE_KID`) | — | **개발 PC 것을 그대로** — 바꾸면 밖의 등록도 함께 바꿔야 한다 | env 파일 |
