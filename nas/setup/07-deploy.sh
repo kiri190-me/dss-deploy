@@ -146,8 +146,16 @@ step "2. 견적서 공유폴더 쓰기 시험 (컨테이너 uid 1000)"
 YEAR_DIR=$(ls -1d "$ARCHIVE_SRC"/*"$(date +%Y)"* 2>/dev/null | head -1)
 [ -n "$YEAR_DIR" ] && ok "올해 연도 폴더: $(basename "$YEAR_DIR")" || bad "올해 연도 폴더를 못 찾았다 (앱이 만들려 시도한다)"
 
-if "$DOCKER" run --rm -v "$ARCHIVE_SRC:/quote-archive" dss-as:1.2 \
-     sh -c 'set -e; id -u; t=/quote-archive/.dss-쓰기시험; : > "$t"; rm -f "$t"; d=/quote-archive/.dss-폴더시험; mkdir "$d"; rmdir "$d"' >/dev/null 2>&1; then
+# compose 의 app-as 와 **같은 조건**으로 시험해야 뜻이 있다 — gid 100(users)을 곁들인다.
+# 그것 없이는 Permission denied 다(2026-09-16 실측, 07a). 컨테이너의 node 는 DSM
+# 사용자가 아니라 이 폴더의 ACL 목록에 없고, 목록의 group:users 에만 걸린다.
+GA=(--group-add 100)
+grep -q 'group_add: \["100"\]' "$D/deploy/docker-compose.nas.yml" \
+  && ok "compose 의 app-as 에 group_add 100 이 있다" \
+  || { bad "compose 에 group_add 100 이 없다 — 시험만 통과하고 앱은 못 쓴다"; stop "새 compose 가 올라왔는지 보세요."; }
+
+if "$DOCKER" run --rm "${GA[@]}" -v "$ARCHIVE_SRC:/quote-archive" dss-as:1.2 \
+     sh -c 'set -e; t=/quote-archive/.dss-write-test; : > "$t"; rm -f "$t"; d=/quote-archive/.dss-dir-test; mkdir "$d"; rmdir "$d"' >/dev/null 2>&1; then
   ok "루트에 파일·폴더를 만들고 지울 수 있다"
 else
   bad "루트에 쓸 수 없다"
@@ -157,8 +165,30 @@ else
 fi
 
 if [ -n "$YEAR_DIR" ]; then
-  "$DOCKER" run --rm -v "$YEAR_DIR:/y" dss-as:1.2 sh -c 'set -e; t=/y/.dss-쓰기시험; : > "$t"; rm -f "$t"' >/dev/null 2>&1 \
+  "$DOCKER" run --rm "${GA[@]}" -v "$YEAR_DIR:/y" dss-as:1.2 sh -c 'set -e; t=/y/.dss-write-test; : > "$t"; rm -f "$t"' >/dev/null 2>&1 \
     && ok "올해 폴더 안에도 쓸 수 있다" || bad "올해 폴더 안에 쓸 수 없다"
+fi
+
+# 🔴 앱이 저장한 파일을 **직원이 열 수 있어야** 뜻이 있다. 만든 파일의 POSIX 모드는
+#    000 이고(주인이 DSM 사용자가 아니다) 접근은 물려받은 ACL 이 정한다. allow 가
+#    하나도 안 물려오면 직원 눈에 「열리지 않는 파일」만 쌓인다 — 없느니만 못하다.
+T="$ARCHIVE_SRC/.dss-inherit-test"
+"$DOCKER" run --rm "${GA[@]}" -v "$ARCHIVE_SRC:/quote-archive" dss-as:1.2 \
+  sh -c ': > /quote-archive/.dss-inherit-test' >/dev/null 2>&1
+if [ -e "$T" ]; then
+  ALLOW=$(synoacltool -get "$T" 2>/dev/null | grep -c ":allow:")
+  USERS_OK=$(synoacltool -get "$T" 2>/dev/null | grep -c "group:users:allow\|group:administrators:allow")
+  rm -f "$T"
+  if [ "${ALLOW:-0}" -gt 0 ] && [ "${USERS_OK:-0}" -gt 0 ]; then
+    ok "새 파일이 ACL 을 물려받는다 (allow ${ALLOW}줄 · users/administrators 포함) — 직원이 연다"
+  else
+    bad "새 파일에 allow 가 물려오지 않는다 (allow ${ALLOW:-0}줄)"
+    echo "    → 앱이 저장해도 직원이 못 여는 파일이 쌓인다. 공유폴더 저장은 빼는 것이 낫다:"
+    echo "      as.env 의 QUOTE_ARCHIVE_ 두 줄을 지우고 다시 돌리세요."
+    stop "앱은 아직 살아 있습니다."
+  fi
+else
+  bad "시험 파일을 만들지 못했다"
 fi
 
 [ "$FAIL" = 0 ] || stop "앱은 아직 살아 있습니다."

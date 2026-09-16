@@ -230,6 +230,18 @@ services:
     logging: *logging
     networks: [dss-data, dss-edge]
     ports: ["127.0.0.1:13000:3000"]
+    # ⚠️ 견적서 공유폴더 하나 때문에 붙인다 (2026-09-16 실측).
+    #    그 폴더는 /volume1/dss 와 달리 **Synology ACL 이 사람 이름으로 허용**하는
+    #    곳이다. ls 에 777 로 보여도 판정은 ACL 이 하고, 컨테이너의 node(uid 1000)는
+    #    DSM 사용자가 아니라 그 목록에 없다 — 그대로 두면 Permission denied 다.
+    #
+    #    목록에 group:users:allow 가 있어 **gid 100(users)만 곁들인다.** uid 와 주
+    #    그룹은 1000 그대로라 /data · /templates 의 주인은 바뀌지 않는다. ACL 을
+    #    걷는 길(01-prepare.sh 가 /volume1/dss 에 하는 것)은 여기에 쓰지 않는다 —
+    #    거기서 걷으면 **직원의 탐색기 접근이 끊긴다.**
+    #
+    #    이 그룹이 닿는 곳은 이 컨테이너에 붙인 볼륨뿐이다.
+    group_add: ["100"]
     env_file:
       - ./env/as.env
     environment:
