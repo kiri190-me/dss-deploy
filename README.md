@@ -425,6 +425,35 @@ DS218+의 Celeron J3355는 AES-NI를 가지고 있어 이 일에 훨씬 적합�
    **DB 는 건드리지 않는다.** 마이그레이션이 있으면 runbook/05 G4 · G6.
 3. ⚠️ `02-rehearse.sh --reset` 은 배포가 아니다 — **DB 를 지우고 전환 때 덤프로 되돌리는 것**이다.
 
+### 검증 — 2026-09-16 실제로 돌린 값
+
+| 무엇 | 어디서 | 값 |
+|---|---|---|
+| `npm test` (단위) | A/S | **3861 / 3862 · 실패 0** (마지막 `dss-as:1.4` 기준) |
+| `npm run test:components` | A/S | **1065 / 1065 · 실패 0** |
+| `npm run test:db` | A/S | **1838 / 1838 · 실패 0** |
+| 도우미 시험만 | A/S | **68 / 68** — 실제 PowerShell 을 돌린다. 풀리지 않는 서버 이름(`\\NOSUCHSERVER-DSS\share`)을 쓰는 것 포함(2.9초) |
+| `npx tsc --noEmit` | A/S · dss-auth · njlee | 전부 통과 |
+| `npm test` | dss-auth | **182 / 182 · 실패 0** (세 시스템 소식 · `package.json` 1.3 대조 포함) |
+| `npm run db:preflight` | A/S (개발 PC) | **101건 · 대기 0** |
+| `db:preflight` | **NAS** (`tools-as`) | 적용 전 **대기 3** → 적용 후 **101건 · 대기 0**. 0100 의 인덱스 삭제를 「살펴볼 문장」으로 스스로 짚었다 |
+| 0100 자료 옮기기 | NAS | GENERATOR **21** · MATCHER **21** · T/C **22**. (3,500,000 − 14×100,000) ÷ 100,000 = 21 · 2,200,000 ÷ 100,000 = 22 — **청구 금액 그대로** |
+| `06-notify-install.sh` | NAS | **13 / 13** — cafe24 SMTP 로그인 성공 · 막던 08-28 두 줄 지움 · `jobs/notify-daily.sh` root 700 |
+| `07-deploy.sh` | NAS | **20 / 24 · 앱 멈춤 51초** — ✗ 넷은 배포가 아니라 검사의 흠(대답 전 검사 · 307 · React 가 쪼갠 `v<!-- -->1.3`). 실제로는 세 포트 307 · iss 정상 · 화면 v1.2 |
+| `08-deploy.sh` · `09-deploy.sh` | NAS | 사용자 실행, 통과. 결과는 브라우저로 확인함 |
+| 이미지 지문 | 개발 PC ↔ NAS | tar 의 `manifest.json` → `Config` 로 대조. 올린 파일은 md5 로도 양쪽 일치 |
+| 공유폴더 쓰기 | NAS | uid 1000 그대로는 **거부**, `--group-add 100` 으로 **통과**. 새 파일이 ACL 을 물려받는 것까지 배포 스크립트가 본다 |
+| 도구 이미지 | 개발 PC | `dss-meters-tools:1` 1.07GB(gzip 211MB) · `dss-as-tools:1` 1.05GB(gzip 207MB). 둘 다 `.env.local` 없이 DB·본문까지 감 |
+| 열린 포트 | compose | **3개 뿐**(`127.0.0.1` 의 13000·13100·13300) · DB **0개**. 도구 서비스 둘을 더한 뒤에도 같다 |
+| 브라우저 (사용자) | 사내 | 업데이트 소식 세 갈래 · 견적서 공유폴더 저장 · **[폴더 열기] 열림**(1.4 + 도우미 재설치 뒤) |
+
+**돌리지 않은 것** — `npm run check:oidc`(dss-auth, 두 서버가 떠 있어야 한다) · `npm run test:db:safety` ·
+`check:sso` · 격리 검증 2건 · 행 수 대조(09-14 값 그대로. DB 구조만 바뀌었고 자료를 옮기지 않았다) ·
+njlee `npm test`(그 저장소에 test 스크립트가 없다).
+
+**확인하지 못한 것** — 교정 알림의 **실제 메일 발송**(SMTP 로그인까지만 봤다. 10-01 이 첫 실전) ·
+`DS0006`(2026-10 기한)의 09-01 알림 여부(덮기로 함, ②표 2-b).
+
 ### 검증 — 2026-09-15 실제로 돌린 값 (HTTPS)
 
 | 무엇 | 어디서 | 값 |
@@ -512,6 +541,28 @@ A/S는 이관 후 `repair_cases`가 **0이어야** 정상이고, 계측기는 79
 ---
 
 ## 인계 메모
+
+- **2026-09-16 세션 끝 상태 (15:29 확인)** — **중단 구간이 아니다.** NAS 의 세 포트와 직원이 쓰는 주소 셋이
+  모두 307, NAS 가동 2일. 다섯 저장소 **미커밋 0 · 원격과 같음**(그날 커밋 22개를 넷으로 나눠 밀었다).
+
+  **개발 PC (git 밖)** — Docker Desktop 켜짐. 떠 있는 것 `dss-pg-app` · `dss-pg-auth` ·
+  `dss-home-postgres-dev`(모두 healthy). **옛 상자 셋은 13일째 정지, 옛 볼륨 넷 모두 살아 있다**
+  (`dss-as`·`dss-auth`·`dss-meters`·`dss-home` `-postgres-dev-data`). **Phase 7 은 2026-09-17 이후** —
+  그 전에는 무슨 이유로도 지우지 않는다. 지금은 `docker start` 한 번으로 되돌아간다.
+
+  **남겨 둔 실자료 (git 제외 · 지우지 않았다)**
+  - `dss-deploy/rehearsal/` 1.9MB — 2단계 리허설의 덤프 넷과 행 수 표. ②표 5번(Phase 7) 몫이다.
+  - `RF_Service_System/backups/` 30MB — 08-18 개발 DB 백업 넷. 그 저장소의 살림이라 건드리지 않았다.
+  - `njlee/logs/notify-blocking-rows-20260916.sql` 450B — 지운 08-28 시험 발송 두 줄을 되살릴 `INSERT`.
+    같은 것이 NAS 의 `backups/notify-blocking-rows-*.sql`(root 600)에도 있다. 비밀값은 아니다.
+
+  **NAS (사람 권한이라 직접 못 읽는다)** — `setup/logs/` 로 검수했다. 오늘 새로 생긴 것:
+  `jobs/notify-daily.sh`(root 700) · `as-migrations/`(101건) · `backups/pre-deploy-20260916-*`(덤프 둘씩) ·
+  `backups/as.env.*` · `backups/docker-compose.nas.yml.*` · `images/` 에 tar 다섯(도구 둘 · 앱 셋).
+  **`images/` 가 커졌다** — ②표 3번에 정리가 걸려 있다.
+
+  **비밀값** — 오늘 올린 커밋 22개에 덤프·`.env`·비밀값 모양 **0건**. `nas/.env.nas` 와 `nas/env/*.env`
+  넷 모두 git 제외 확인. NAS 에 올릴 때 `setup/incoming/` 은 777 이라 **올리자마자 `chmod 600`** 했다.
 
 - **2026-09-16 상태** — **NAS 는 이번 세션에서 건드리지 않았다.** 개발 PC 작업만 했다(dss-auth 기능 하나).
   개발 PC: Docker Desktop 켜짐 — `dss-pg-app`·`dss-pg-auth`·`dss-home-postgres-dev` 떠 있음(healthy).
@@ -605,10 +656,10 @@ A/S는 이관 후 `repair_cases`가 **0이어야** 정상이고, 계측기는 79
 | 2 | **DB** 리허설 | **개발 PC에서 먼저** DB를 둘로 통합해 형태를 검증 | ✅ |
 | 3 | 이미지 | `Dockerfile` 3개, A/S에 `output: "standalone"`, 이미지에 `postgresql-client-17` | ✅ |
 | 4 | DB 이전 | NAS에 인스턴스 둘. 계측기·인증은 **통째로**(계측기는 개발 PC 사본, 결정 G), A/S는 **뼈대 20장만** (결정 D) | ✅ 09-14 |
-| 5 | 앱 이전 | NAS에 앱 컨테이너 셋(이미지 1.1), 앱 포트는 `127.0.0.1:13xxx` 에만 | ✅ 09-14 |
+| 5 | 앱 이전 | NAS에 앱 컨테이너 셋, 앱 포트는 `127.0.0.1:13xxx` 에만. 09-16 에 네 번 배포해 지금은 **`dss-auth:1.3` · `dss-as:1.4` · `dss-meters:1.1`**. 도구 컨테이너 둘(`tools-as`·`tools-meters`)은 `profiles: [tools]` 라 평소엔 뜨지 않는다 | ✅ 09-14 |
 | 6 | 접근 경계 | ~~리버스 프록시~~ ✅ · ~~`TRUSTED_PROXY_HOPS=1`~~ ✅ · 방화벽(DSM 꺼짐 · 앱 포트는 127.0.0.1) · **HTTPS ✅ 09-15** (`*.dss21.co.kr`, 옛 http 규칙 정리 ⬜) · **VPN ⬜** | 🔶 |
 | 7 | 주소 갱신 | NAS 사본의 포털 등록에 `192.168.0.222` 주소 · 카카오 콘솔 · 로그아웃 통보 확인 (HTTPS 때 한 번 더) | ✅ 09-14 |
-| 8 | 정리 | ~~야간 백업 02:30~~ ✅ · 옛 볼륨 회수(09-17 이후) ⬜ · NAS 밖 사본 ⬜ · 교정 알림 예약 작업(10/1 전) ⬜ | 🔶 |
+| 8 | 정리 | ~~야간 백업 02:30~~ ✅ · ~~교정 알림 예약 작업~~ ✅ 09-16(`06` 13/13 · DSM 매일 09:00 · **첫 실전은 10-01**) · 옛 볼륨 회수(09-17 이후) ⬜ · NAS 밖 사본 ⬜ · 백업 복원 시험 ⬜ | 🔶 |
 
 > ⚠️ **2단계의 「리허설」과 결정 B의 「배포 리허설」은 다른 것이다.** 2단계는 *DB의 모양*을
 > 개발 PC에서 먼저 만들어 본 것이고(끝났다), 결정 B가 약속한 것은 *배포 절차 전체*를
