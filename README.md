@@ -9,11 +9,15 @@
 
 ## 지금 어디까지 됐나
 
-### 🟡 2026-09-16 — 교정 알림 도구 이미지. 개발 PC 쪽은 끝났고 NAS 에 올려 두었다
+### 🟢 2026-09-16 — 교정 알림이 NAS 에서 돈다. `06-notify-install.sh` 13/13
 
 운영 이미지에 `tsx` 가 없어 NAS 에서 돌릴 수 없던 저장소 스크립트에 길을 냈다 — `njlee/Dockerfile` 의 네 번째 스테이지
 `tools`, compose 의 `profiles: [tools]` 서비스 `tools-meters`, NAS 쪽 `06-notify-install.sh` · `jobs/notify-daily.sh`.
-**NAS 에서 실행된 것은 아직 없다** — 파일 넷만 올려 두었다. 사람이 할 두 걸음은 위 「다음 세션 첫 작업」.
+**11:42~11:46 사람이 `sudo` 로 실행** — `docker load` → `06-notify-install.sh` **통과 13 · 실패 0** → DSM 작업 스케줄러
+**"DSS 교정 알림" 매일 09:00 root** 등록 · [실행] 1회 정상(종료 0, `setup/logs/notify-2026-09-16_1146.log`).
+**여기서 처음 확인된 둘** — cafe24 SMTP 로그인 **성공**(옛 TLS 예외가 리눅스 컨테이너에서도 통한다) ·
+NAS 의 막던 두 줄이 **개발 PC 에서 본 것과 똑같았다**(2026-11 1대·1명, 2026-12 2대·1명, 둘 다 08-28).
+다음 발송 **2026-10-01 → `DS0078` HV-PROBE 1대 → 3명**.
 
 **개발 PC 에서 실제로 돌린 값** — 도구 이미지 1.07GB(`docker save`+gzip **211MB**, md5 양쪽 일치) · `.env.local` 없는
 컨테이너에서 `send-notify --dry` 와 `preview-notify` 가 DB·본문(ko·ja)까지 · `typecheck` 통과 · compose 문법 통과 ·
@@ -31,8 +35,12 @@
    runbook/05 6절이 A/S 의 dotenv 를 두고 "문제되지 않는다"고 적어 둔 것이 **계측기에는 해당하지 않았다.**
    `njlee/scripts/load-env.ts` 한 곳에서 견디게 했다 — 개발 PC 동작은 그대로(환경변수가 파일을 이기는 것도 실측 확인).
 
-**확인 못 한 것** — 메일이 실제로 나가는 것(개발 PC 에 SMTP 계정이 없다. `06` 의 4단계가 NAS 에서 처음 확인) ·
-NAS DB 의 막힌 두 줄(`sudo` 없이 못 읽는다. `06` 의 2단계가 보여 준다) · `docker load` 뒤 이미지 지문 대조(사람).
+**이날 더 걸린 것 둘** — ① 이미지 지문: 개발 PC(containerd 저장소)의 `.Id` 는 *매니페스트* 지문이고 NAS(고전 저장소)는
+*config* 지문을 ID 로 보여 준다. 같은 이미지인데 숫자가 달라 한 번 헛걸음했다 — 맞춰 볼 값은 tar 안 `manifest.json` 의
+`Config`(runbook/05 G5 에 적었다). ② `06` 의 5단계가 **물어본 달이 틀렸다** — `+1 month` 라 이미 지나간 이번 달
+발송분(2026-10)을 물었다. 이달 1일 기준 `+2 months` 로 고쳤다. **그 실수가 ②표 2-a(`DS0006`)를 드러냈다.**
+
+**아직 확인 못 한 것** — 실제 메일 발송(로그인까지만 봤다. 10-01 이 첫 실전이다) · `DS0006` 의 09-01 알림(②표 2-a).
 작업 설명(HTML): https://claude.ai/artifact/RswGrCefPeQLgDtsg9FdwL
 
 ### 🟢 2026-09-15 — HTTPS. 사내 주소가 `https://*.dss21.co.kr` 로 바뀌었다
@@ -211,7 +219,8 @@ DS218+의 Celeron J3355는 AES-NI를 가지고 있어 이 일에 훨씬 적합�
 
 ## 다음 세션 첫 작업
 
-> **2026-09-16 기준 — 교정 알림 도구 이미지는 개발 PC 쪽이 끝났고 NAS 에 올려 두었다. 남은 것은 사람이 하는 두 걸음뿐이다(아래 「지금 할 것」).**
+> **2026-09-16 기준 — 교정 알림이 NAS 에서 돈다.** `06-notify-install.sh` **13/13** · DSM 작업 스케줄러 "DSS 교정 알림" 등록·실행 확인.
+> 남은 큰일은 같은 틀로 만드는 `tools-as` — 다음 A/S 배포가 그것 없이는 안 된다. **그리고 아래 ⚠️ DS0006 한 건.**
 > 그다음 큰일은 같은 틀로 만드는 `tools-as` — 다음 A/S 배포가 그것 없이는 안 된다.
 > 운영 수첩(HTML): https://claude.ai/artifact/JskhVwXpUU8Eots78vYrca
 > 이번 작업 설명(HTML): https://claude.ai/artifact/RswGrCefPeQLgDtsg9FdwL
@@ -327,7 +336,8 @@ DS218+의 Celeron J3355는 AES-NI를 가지고 있어 이 일에 훨씬 적합�
 | | 할 일 | 기한 · 이유 |
 |---|---|---|
 | 1 | ~~**이남준 님 PC** — 계측기 앱 끄기, 예약 작업 둘 "사용 안 함"~~ | ✅ **처리됨** (2026-09-15 사용자 확인) |
-| 2 | **교정 알림 메일(`send-notify`)을 NAS 에서** — 도구 이미지·compose·스크립트 둘을 **만들어 NAS 에 올려 두었다**(09-16). 남은 것은 사람이 하는 `docker load` + `06-notify-install.sh` + DSM 등록 | **2026-10-01 전.** 순서는 위 「지금 할 것」. ⚠️ 09-16 에 찾은 것 — `web_notifications` 의 **08-28 시험 발송 두 줄**(2026-11·2026-12)이 `result=SENT` 라 **10-01 과 11-01 이 조용히 건너뛰어진다.** 개발 PC 는 지웠고(사용자 승인) NAS 는 `06` 의 3단계가 한다 |
+| 2 | ~~**교정 알림 메일(`send-notify`)을 NAS 에서**~~ | ✅ **2026-09-16 끝.** `06-notify-install.sh` 13/13 · DSM "DSS 교정 알림" 매일 09:00 root · cafe24 로그인 성공 · 막고 있던 08-28 두 줄 지움(되살릴 SQL 은 `backups/`) · 다음 발송 **2026-10-01 → `DS0078` 1대 → 3명** |
+| 2-a | ⚠️ **`DS0006` Power Sensor (BIRD 4028A) — 교정 기한 2026-10.** 그 알림은 **2026-09-01 에 나갔어야** 했는데 NAS DB 에 기록이 없다 | **이달 안에 판단.** 기록이 없는 것은 당연할 수도 있다 — NAS 자료는 08-28 사본이라(결정 G) 이남준 님 PC 가 09-01 에 보냈다면 그 기록은 안 옮겨졌다. **받은편지함에 09-01 자 「[교산 대출 계측기] 2026-10 교정 기한 1대 관련」이 있는지 보면 끝난다.** 없으면 손으로 한 번: `docker compose … run --rm tools-meters npm run send-notify -- --force --ym=2026-10` (**실제로 3명에게 나간다**). 이 시스템은 매월 1일에 다음 달 것만 보내므로 **10-01 은 2026-11 을 보낸다 — 2026-10 은 다시 오지 않는다** |
 | 3 | NAS `setup/dumps/`(전환 최종 덤프 7개, 실자료)를 `backups/cutover-2026-09-14/`(root)로, `images/`(325M) 정리 | 사람이 `sudo`. 지금은 administrators 만 읽는 곳 |
 | 4 | A/S `users` 의 데모 계정 정리 | 뼈대에 딸려 온 계정(런북 01 Phase 1-A) |
 | 5 | **Phase 7 — 2026-09-17 이후**: 개발 PC 옛 볼륨 넷 회수 · `rehearsal/`(1.9MB 실자료) · `dss-auth/docker-compose.yml` · `DEV_POSTGRES_PASSWORD` | 아래 표의 계획 그대로. 그 전에는 지우지 않는다 |

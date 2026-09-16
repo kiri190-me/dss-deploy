@@ -7,8 +7,8 @@
 #   (NAS)         bash /volume1/dss/setup/06-notify-install.sh
 #
 # ── 하는 일 ─────────────────────────────────────────────────────────────
-#   1. 먼저 볼 것 — 도구 이미지·compose 의 tools-meters·DB (하나라도 아니면
-#      아무것도 바꾸지 않고 멈춘다)
+#   1. 먼저 볼 것 — 도구 이미지, compose 교체(옛것은 backups/ 로), DB, 받는 사람
+#      (하나라도 아니면 아무것도 바꾸지 않고 멈춘다)
 #   2. 지금 막혀 있는지 본다 — 08-28 시험 발송 기록이 10-01·11-01 을 막고 있다
 #   3. 그 기록을 치운다 — 되살릴 INSERT 문을 backups/ 에 남기고 지운다
 #   4. 메일 서버에 로그인만 해 본다 — 계정은 NAS 의 env/meters.env 에만 있어
@@ -65,11 +65,32 @@ else
   stop "먼저 images/ 의 tar 를 docker load 하고 지문을 개발 PC 값과 맞춰 보세요."
 fi
 
+# compose 파일 교체. 파일만 바뀌고 도는 컨테이너는 그대로다 — 다음 up -d 나
+# run 부터 반영된다. 되돌릴 수 있게 지금 것을 먼저 backups/ 로 옮겨 둔다.
+INCOMING=$D/setup/incoming/docker-compose.nas.yml
+if [ -s "$INCOMING" ] && ! cmp -s "$INCOMING" "$D/deploy/docker-compose.nas.yml"; then
+  cp -p "$D/deploy/docker-compose.nas.yml" "$D/backups/docker-compose.nas.yml.$STAMP" 2>/dev/null \
+    || { mkdir -p "$D/backups"; cp -p "$D/deploy/docker-compose.nas.yml" "$D/backups/docker-compose.nas.yml.$STAMP"; }
+  cp "$INCOMING" "$D/deploy/docker-compose.nas.yml"
+  chown root:root "$D/deploy/docker-compose.nas.yml"; chmod 644 "$D/deploy/docker-compose.nas.yml"
+  rm -f "$INCOMING"
+  ok "compose 를 새것으로 바꿨다 (옛것: backups/docker-compose.nas.yml.$STAMP)"
+fi
+
 if grep -q "^  tools-meters:" "$D/deploy/docker-compose.nas.yml"; then
   ok "compose 에 tools-meters 가 있다"
 else
   bad "deploy/docker-compose.nas.yml 에 tools-meters 가 없다"
-  stop "새 compose 파일이 아직 안 올라왔습니다."
+  stop "새 compose 파일이 setup/incoming/ 에도 deploy/ 에도 없습니다."
+fi
+
+# 바꾼 compose 로 지금 도는 다섯이 여전히 설명되는가. 여기서 문법이 깨지면
+# 다음 배포 때가 아니라 지금 안다.
+if "${COMPOSE[@]}" config --quiet 2>/dev/null; then
+  ok "compose 문법 통과"
+else
+  bad "compose 문법 오류"
+  stop "옛 파일이 backups/ 에 있습니다."
 fi
 
 if "$DOCKER" ps --format '{{.Names}}' | grep -qx dss-pg-app; then
@@ -145,8 +166,13 @@ fi
 
 # ══ 5. 무엇이 나갈지 본다 (메일은 나가지 않는다) ═══════════════════════
 step "5. 다음 발송에 무엇이 나갈지 — 메일은 보내지 않는다"
-YM=$(date -d "+1 month" +%Y-%m 2>/dev/null || date +%Y-%m)
-echo "  (다음 달 = $YM 기한 기준)"
+# 다음 발송일은 **매월 1일**이고, 그날 알리는 것은 **그 다음 달** 기한이다.
+# 그래서 오늘이 1일이 아니면 두 달 뒤가 된다 — "+1 month" 로 물으면 이미 지나간
+# 이번 달 발송분을 묻게 된다(2026-09-16 에 그렇게 물어 2026-10 이 나왔다).
+# 이달 1일을 기준으로 더한다 — 31일에 "+2 months" 하면 한 달을 건너뛴다.
+if [ "$(date +%d)" = "01" ]; then OFF="+1 month"; else OFF="+2 months"; fi
+YM=$(date -d "$(date +%Y-%m-01) $OFF" +%Y-%m 2>/dev/null || date +%Y-%m)
+echo "  (다음 발송일에 나갈 것 = $YM 기한)"
 echo
 "${COMPOSE[@]}" run --rm tools-meters npm run send-notify -- --dry --ym="$YM" 2>&1 | sed 's/^/  /'
 rc=${PIPESTATUS[0]}
