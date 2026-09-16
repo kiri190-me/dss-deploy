@@ -228,9 +228,19 @@ DS218+의 Celeron J3355는 AES-NI를 가지고 있어 이 일에 훨씬 적합�
 > cd /volume1/dss/images
 > /usr/local/bin/docker load -i dss-meters-tools-1.tar.gz
 > /usr/local/bin/docker image inspect dss-meters-tools:1 --format '{{.Id}}'
->     → sha256:757637db1be7638d87ecde0f6b69a46e52fd7b58ec8cdb05cd82a5b6ec559d08 와 같아야 한다
+>     → sha256:caea84573739461ac9971091701bbc4dad439ab0ac482ca00c71c8dfa9564fe4 와 같아야 한다
 > bash /volume1/dss/setup/06-notify-install.sh
 > ```
+>
+> ⚠️ **이 PC 의 `docker image inspect` 값을 그대로 옮겨 적지 않는다.** 개발 PC 는 containerd 이미지 저장소라 `.Id` 가
+> **매니페스트** 지문(`757637db…`)이고, NAS 의 Container Manager 24 는 **config** 지문(`caea8457…`)을 ID 로 보여 준다.
+> 같은 이미지인데 숫자가 다르다. **NAS 에서 맞춰 볼 값은 tar 안 `manifest.json` 의 `Config` 지문**이다:
+>
+> ```
+> tar -xzOf dss-meters-tools-1.tar.gz manifest.json    # → blobs/sha256/<이 값이 NAS 의 ID>
+> ```
+>
+> 2026-09-16 에 이것으로 한 번 헛걸음했다. 내용 자체는 레이어 11개 지문이 양쪽 모두 일치해 같은 이미지임을 확인했다.
 >
 > 그다음 DSM 작업 스케줄러 **"DSS 교정 알림" · root · 매일 09:00 · `bash /volume1/dss/jobs/notify-daily.sh`**,
 > 설정 탭의 「비정상 종료한 경우에만 실행 세부 정보 보내기」를 켠다. 등록 뒤 [실행] 한 번 —
