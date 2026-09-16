@@ -224,7 +224,8 @@ rc=${PIPESTATUS[0]}
 [ "$rc" = 0 ] && ok "적용 끝" || { bad "적용 실패 (종료 코드 $rc)"; stop "되돌리려면: bash $0 --rollback"; }
 
 "${COMPOSE[@]}" run --rm tools-as npm run db:preflight 2>&1 | sed 's/^/  /'
-left=$(q "select count(*) from __drizzle_migrations" 2>/dev/null)
+# 표는 public 이 아니라 drizzle 스키마에 있다.
+left=$(q "select count(*) from drizzle.__drizzle_migrations" 2>/dev/null)
 echo "  DB 의 마이그레이션 기록: ${left:-?}건"
 
 # ══ 6. 0100 이 옮긴 값 ═════════════════════════════════════════════════
@@ -236,24 +237,33 @@ echo "  document_hours 는 전부 NULL 이 정상이다 — 새 개념이라 옮
 # ══ 7. 새 이미지로 띄운다 ══════════════════════════════════════════════
 step "7. 새 이미지로 기동"
 "${COMPOSE[@]}" up -d app-auth app-as 2>&1 | sed 's/^/  /'
-for i in $(seq 1 30); do
-  up=$("$DOCKER" ps --format '{{.Names}}' | grep -cE '^dss-(auth|as)$')
-  [ "$up" = 2 ] && break
-  sleep 2
-done
-[ "${up:-0}" = 2 ] && ok "둘 다 떴다 ($((SECONDS - T0))초)" || bad "뜨지 않았다"
 
-for pair in "통합 로그인:13100:/signin" "A/S:13000:/dashboard"; do
-  name=${pair%%:*}; rest=${pair#*:}; port=${rest%%:*}; path=${rest#*:}
-  code=$(curl -s -o /dev/null -w '%{http_code}' -m 10 "http://127.0.0.1:$port$path")
-  case "$code" in 200|307|302) ok "$name 응답 $code";; *) bad "$name 응답 $code";; esac
-done
+# ⚠️ 컨테이너가 `docker ps` 에 보이는 것과 앱이 **대답하는** 것은 다르다.
+#    2026-09-16 에 여기서 걸렸다 — 컨테이너만 보고 51초에 검사를 시작했더니 넷이
+#    모두 ✗ 였고, 잠시 뒤 세 포트 모두 307 이었다. 멀쩡한 배포를 실패로 읽었다.
+#    이제 **대답할 때까지** 기다린다. 이것이 곧 직원이 다시 쓸 수 있게 된 시각이다.
+wait_http() { # 이름 포트 경로
+  local i code
+  for i in $(seq 1 60); do
+    code=$(curl -s -o /dev/null -w '%{http_code}' -m 5 "http://127.0.0.1:$2$3" 2>/dev/null)
+    case "$code" in 200|302|307) ok "$1 응답 $code ($((SECONDS - T0))초)"; return 0;; esac
+    sleep 2
+  done
+  bad "$1 이 120초 안에 대답하지 않았다 (마지막 $code)"
+  echo "    로그: $DOCKER logs --tail 50 dss-${1}"
+  return 1
+}
+wait_http "통합 로그인" 13100 /signin
+wait_http "A/S" 13000 /dashboard
 
 iss=$(curl -s -m 10 http://127.0.0.1:13100/.well-known/openid-configuration | grep -o '"issuer":"[^"]*"' | cut -d'"' -f4)
 [ "$iss" = "https://login.dss21.co.kr" ] && ok "포털 iss $iss" || bad "포털 iss 가 $iss"
 
-ver=$(curl -s -m 10 http://127.0.0.1:13100/signin | grep -o 'v1\.[0-9]*' | head -1)
-[ -n "$ver" ] && ok "로그인 화면에 보이는 번호 $ver (1.2 여야 한다)" || bad "화면에서 번호를 못 찾았다"
+# ⚠️ 307 이라 본문이 비어 있다 — 따라가야(-L) 화면이 나온다. 그리고 React 가
+#    글자를 쪼개 `v<!-- -->1.2<!-- -->` 로 내보내므로 주석을 걷어내고 찾는다.
+#    (2026-09-16 에 이 둘 때문에 "번호를 못 찾았다"가 나왔다. 화면은 멀쩡했다.)
+ver=$(curl -sL -m 15 http://127.0.0.1:13100/signin | sed 's/<!--[^>]*-->//g' | grep -oE 'v[0-9]+\.[0-9]+' | head -1)
+[ "$ver" = "v1.2" ] && ok "로그인 화면에 보이는 번호 $ver" || bad "화면의 번호가 '$ver' (v1.2 여야 한다)"
 
 # ══ 끝 ═════════════════════════════════════════════════════════════════
 echo
