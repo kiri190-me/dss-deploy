@@ -287,6 +287,43 @@ services:
         limits:
           memory: 512M
 
+  # ══ 도구 — 평소에는 뜨지 않는다 ═══════════════════════════════════════
+  #
+  # 운영 이미지에는 tsx 가 없다(devDependency). 그래서 저장소의 스크립트를
+  # 컨테이너 안에서 부를 수 없다. 이것이 그 자리를 맡는다 — runbook/05 6절 길 ㄴ.
+  #
+  # ⚠️ profiles 가 붙은 서비스는 `up -d` 로 **뜨지 않는다.** 여섯 번째 상시
+  #    서비스가 아니므로 위의 메모리 예산 2.7GB 를 건드리지 않는다. 불릴 때만
+  #    잠깐 떴다 사라진다:
+  #
+  #   docker compose -f docker-compose.nas.yml --env-file .env.nas \
+  #     run --rm tools-meters npm run send-notify
+  #
+  # 앱과 같은 설정 파일·같은 DB·같은 파일 볼륨을 본다. 접속 문자열을 밤에 손으로
+  # 다시 타이핑하지 않기 위해서다.
+  tools-meters:
+    image: dss-meters-tools:1
+    profiles: [tools]
+    # dss-edge 가 없으면 DB 는 읽히는데 메일만 안 나간다 — dss-data 는
+    # internal: true 라 바깥으로 못 나간다. 알림 메일은 cafe24 SMTP 로 나간다.
+    networks: [dss-data, dss-edge]
+    env_file:
+      - ./env/meters.env
+    environment:
+      TZ: Asia/Seoul
+      DATABASE_URL: postgres://dss_meters_app:${METERS_APP_PASSWORD}@dss-pg-app:5432/dss_meters
+      FILE_STORAGE_ROOT: /data
+    volumes:
+      - /volume1/dss/meters-files:/data
+    # 실행 기록은 컨테이너 안(/app/logs)이 아니라 이것을 부르는
+    # jobs/notify-daily.sh 가 root 로 setup/logs/ 에 남긴다 — 야간 백업과 같은
+    # 방식이다. 스크립트가 찍는 줄과 로그 파일에 남기는 줄이 같아서, 볼륨을
+    # 하나 더 붙이고 uid 1000 쓰기 권한을 맞추는 일이 없어진다.
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
 # ══ 메모리 예산 ═════════════════════════════════════════════════════════
 #
 #   db-app      768M
@@ -303,12 +340,15 @@ services:
 #
 # ══ 아직 여기 없는 것 ═══════════════════════════════════════════════════
 #
-# 1. 백업·마이그레이션·예약 작업을 돌리는 도구 컨테이너.
-#    tsx·drizzle-kit 이 devDependency 라 운영 이미지 안에서 npm run 이 안 된다.
-#    runbook/05-배포-리허설.md 6절에서 길 ㄴ(도구 이미지)으로 정했고 아직 굽지 않았다.
-#    계측기의 백업(BACKUP_ROOT)·성적서 가져오기(CERT_SOURCE_ROOT)·알림 메일
-#    (send-notify)도 이것이 생겨야 NAS 에서 돈다. 그 폴더는 NAS 의
-#    /volume1/2_AS센터/3. 계측기 관리/ 아래 8번·4번이다.
+# 1. A/S 의 도구 컨테이너 `tools-as`. 계측기 쪽은 위 tools-meters 로 생겼다
+#    (2026-09-16, 알림 메일이 먼저 급해서). 같은 틀을 복사하면 되지만 A/S 는
+#    붙일 것이 더 있다 — drizzle/ 을 이미지에 굽지 말고 볼륨으로(runbook/05 6절 ①),
+#    첨부·양식·백업 폴더. 그것이 생겨야 db:migrate·db:preflight 와 매일 밤
+#    purge 셋이 NAS 에서 돈다. 지금은 개발 PC 와 Windows 예약 작업이 하고 있다.
+#
+#    계측기 쪽에도 아직 안 붙인 것이 있다 — 백업(BACKUP_ROOT)·성적서 가져오기
+#    (CERT_SOURCE_ROOT). 그 폴더는 NAS 의 /volume1/2_AS센터/3. 계측기 관리/
+#    아래 8번·4번이고, 알림 메일과 달리 급하지 않아 볼륨을 붙이지 않았다.
 #
 # 2. VPN — 6단계에서. (HTTPS 는 2026-09-15 에 붙었다 — 이 파일 밖, DSM 과 setup/04·05 에서.)
 #    리버스 프록시 규칙(위 원칙 2의 그림 + 443 호스트 이름 셋)은 DSM
