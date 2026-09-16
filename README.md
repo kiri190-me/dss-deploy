@@ -9,6 +9,32 @@
 
 ## 지금 어디까지 됐나
 
+### 🟡 2026-09-16 — 교정 알림 도구 이미지. 개발 PC 쪽은 끝났고 NAS 에 올려 두었다
+
+운영 이미지에 `tsx` 가 없어 NAS 에서 돌릴 수 없던 저장소 스크립트에 길을 냈다 — `njlee/Dockerfile` 의 네 번째 스테이지
+`tools`, compose 의 `profiles: [tools]` 서비스 `tools-meters`, NAS 쪽 `06-notify-install.sh` · `jobs/notify-daily.sh`.
+**NAS 에서 실행된 것은 아직 없다** — 파일 넷만 올려 두었다. 사람이 할 두 걸음은 위 「다음 세션 첫 작업」.
+
+**개발 PC 에서 실제로 돌린 값** — 도구 이미지 1.07GB(`docker save`+gzip **211MB**, md5 양쪽 일치) · `.env.local` 없는
+컨테이너에서 `send-notify --dry` 와 `preview-notify` 가 DB·본문(ko·ja)까지 · `typecheck` 통과 · compose 문법 통과 ·
+**열린 포트는 전과 같은 3개**(127.0.0.1 의 13000·13100·13300), DB 0개 · `up -d` 로는 여전히 다섯만 뜬다.
+
+**이날 찾은 것 둘 — 둘 다 10-01 아침에야 "메일이 안 왔다"로 드러났을 것이다.**
+
+1. **`web_notifications` 의 08-28 시험 발송 두 줄**(2026-11 · 2026-12, 각 1~2대·**1명**. 등록된 받는 사람은 3명)이
+   `result=SENT` 로 남아 **10-01 과 11-01 발송을 막고 있었다.** 같은 기한은 두 번 보내지 않기 때문이다. 화면으로는
+   정상 동작과 구분되지 않는다. **사용자 결정 — 지운다.** 개발 PC 는 지웠고(되살릴 `INSERT` 는 `njlee/logs/`),
+   NAS 는 `06` 의 3단계가 사본을 `backups/` 에 남기고 그 두 줄만 지운다. `result` 에는 `CHECK (SENT|FAILED)` 가
+   걸려 있어 "값만 TEST 로 바꾼다"는 대안은 DB 가 거절했을 것이다.
+2. **계측기 스크립트 여덟이 컨테이너에서 첫 줄에 죽던 것** — `process.loadEnvFile(".env.local")` 은 dotenv 와 달리
+   파일이 없으면 **던진다**(ENOENT, node v24.18.1 실측). `.dockerignore` 가 `.env*` 를 막아 이미지 안에 그 파일이 없다.
+   runbook/05 6절이 A/S 의 dotenv 를 두고 "문제되지 않는다"고 적어 둔 것이 **계측기에는 해당하지 않았다.**
+   `njlee/scripts/load-env.ts` 한 곳에서 견디게 했다 — 개발 PC 동작은 그대로(환경변수가 파일을 이기는 것도 실측 확인).
+
+**확인 못 한 것** — 메일이 실제로 나가는 것(개발 PC 에 SMTP 계정이 없다. `06` 의 4단계가 NAS 에서 처음 확인) ·
+NAS DB 의 막힌 두 줄(`sudo` 없이 못 읽는다. `06` 의 2단계가 보여 준다) · `docker load` 뒤 이미지 지문 대조(사람).
+작업 설명(HTML): https://claude.ai/artifact/RswGrCefPeQLgDtsg9FdwL
+
 ### 🟢 2026-09-15 — HTTPS. 사내 주소가 `https://*.dss21.co.kr` 로 바뀌었다
 
 | 시스템 | 사내 주소 |
@@ -185,22 +211,43 @@ DS218+의 Celeron J3355는 AES-NI를 가지고 있어 이 일에 훨씬 적합�
 
 ## 다음 세션 첫 작업
 
-> **2026-09-15 기준 — HTTPS 까지 끝났다(①).** 남은 큰일은 **도구 이미지**다 — 교정 알림(10-01 기한)도, 다음 A/S 배포도
-> 그것 없이는 못 한다. 운영 수첩(HTML): https://claude.ai/artifact/JskhVwXpUU8Eots78vYrca
+> **2026-09-16 기준 — 교정 알림 도구 이미지는 개발 PC 쪽이 끝났고 NAS 에 올려 두었다. 남은 것은 사람이 하는 두 걸음뿐이다(아래 「지금 할 것」).**
+> 그다음 큰일은 같은 틀로 만드는 `tools-as` — 다음 A/S 배포가 그것 없이는 안 된다.
+> 운영 수첩(HTML): https://claude.ai/artifact/JskhVwXpUU8Eots78vYrca
+> 이번 작업 설명(HTML): https://claude.ai/artifact/RswGrCefPeQLgDtsg9FdwL
 >
-> ### 첫 명령 — 교정 알림 메일을 NAS 에서 (**2026-10-01 전**, ② 2번)
-> 이남준 님 PC 의 알림 작업은 꺼졌고 NAS 에서는 아직 안 돈다 — **이대로면 10월 알림이 아무에게도 안 간다.**
-> 1. `njlee/Dockerfile` 에 `tools` 스테이지 — runbook/05 **6절 길 ㄴ**. 운영 이미지에 없는 `tsx` 를 담아
->    `npm run send-notify`(`tsx scripts/send-notify.ts`) 를 한 번 돌고 끝나는 이미지. njlee 는 **`sso-integration`** 브랜치 — `git add -A` 금지.
-> 2. `nas/docker-compose.nas.yml` 에 `profiles: [tools]` 서비스 `tools-meters` — `meters.env` · `DATABASE_URL` · `/data` 를 앱과 같게. 평소엔 뜨지 않는다.
-> 3. 개발 PC 에서 먼저 한 번 — 실제 메일이 나가지 않게 하는 길은 `njlee/docs/NOTIFY.md` 부터 본다.
-> 4. NAS: 이미지 운반(G5, 지문 대조) → DSM 작업 스케줄러 **"DSS 교정 알림" 매일 09:00 root** — 실제 발송은 매월 1일.
+> ### 지금 할 것 — 교정 알림, 사람이 할 두 걸음 (**2026-10-01 전**, ② 2번)
 >
-> **그다음** — 같은 틀로 `tools-as` 를 만들어 **A/S 배포**. NAS 는 마이그레이션 98건, 코드는 **100건**(0098 `quotes.investigation_excluded`,
-> 0099 견적서 첨부 — 열·enum 값·새 열의 제약만). **둘 다 더하기뿐이라 되돌리기는 「나」(이미지 태그만)**. 저녁 정지 창 절차는 runbook/05 8절.
+> NAS 에 **이미 올라가 있는 것** — `images/dss-meters-tools-1.tar.gz`(211MB, md5 `bad7d548…`) ·
+> `setup/incoming/docker-compose.nas.yml` · `setup/06-notify-install.sh` · `setup/notify-daily.sh`.
+> **아직 아무것도 실행되지 않았다.** 도는 컨테이너도 NAS 의 DB 도 그대로다.
 >
-> 2026-09-07 에 적었던 계획(G3 · 구멍 셋)은 대부분 끝났다 — 구멍 ㄱ·ㄷ 은 메웠고, G3 는 개발 PC 대신
-> NAS 예행으로 했다. 남은 것은 아래 ② 표에 있다.
+> ```
+> ssh dss-nas
+> sudo -i
+> cd /volume1/dss/images
+> /usr/local/bin/docker load -i dss-meters-tools-1.tar.gz
+> /usr/local/bin/docker image inspect dss-meters-tools:1 --format '{{.Id}}'
+>     → sha256:757637db1be7638d87ecde0f6b69a46e52fd7b58ec8cdb05cd82a5b6ec559d08 와 같아야 한다
+> bash /volume1/dss/setup/06-notify-install.sh
+> ```
+>
+> 그다음 DSM 작업 스케줄러 **"DSS 교정 알림" · root · 매일 09:00 · `bash /volume1/dss/jobs/notify-daily.sh`**,
+> 설정 탭의 「비정상 종료한 경우에만 실행 세부 정보 보내기」를 켠다. 등록 뒤 [실행] 한 번 —
+> 1일이 아니라 아무것도 안 나가는 것이 정상이고 `setup/logs/notify-*.log` 에 남는다.
+>
+> `06` 이 하는 일 일곱: 먼저 볼 것(이미지·compose 교체·문법·DB·받는 사람) → 막는 기록 보여 주기 →
+> 그 기록 치우기(되살릴 INSERT 를 `backups/` 에 먼저) → **cafe24 로그인 시험** → `--dry` →
+> `jobs/notify-daily.sh` 제자리(root 700) → 한 번 실행.
+>
+> ⚠️ **`06` 이 NAS 의 `deploy/docker-compose.nas.yml` 을 바꾼다**(옛것은 `backups/` 로). 파일만 바뀌고
+> 도는 컨테이너는 그대로다 — 다음 `up -d` 나 `run` 부터 반영된다.
+>
+> ### 그다음 — `tools-as` 로 A/S 배포
+> 같은 틀을 복사한다. 다만 A/S 는 붙일 것이 더 있다 — `drizzle/` 을 이미지에 굽지 말고 볼륨으로
+> (runbook/05 6절 ①), 첨부·양식·백업 폴더. NAS 는 마이그레이션 98건, 코드는 **100건**
+> (0098 `quotes.investigation_excluded`, 0099 견적서 첨부 — 열·enum 값·새 열의 제약만).
+> **둘 다 더하기뿐이라 되돌리기는 「나」(이미지 태그만)**. 저녁 정지 창 절차는 runbook/05 8절.
 
 ### ① ~~HTTPS~~ — `dss21.co.kr` (2026-09-15 정함·전환 완료, 결정 I)
 
@@ -270,7 +317,7 @@ DS218+의 Celeron J3355는 AES-NI를 가지고 있어 이 일에 훨씬 적합�
 | | 할 일 | 기한 · 이유 |
 |---|---|---|
 | 1 | ~~**이남준 님 PC** — 계측기 앱 끄기, 예약 작업 둘 "사용 안 함"~~ | ✅ **처리됨** (2026-09-15 사용자 확인) |
-| 2 | **교정 알림 메일(`send-notify`)을 NAS 에서** — DSM 작업 스케줄러로 매일 09:00 (실제 발송은 매월 1일) | **2026-10-01 전.** 이남준 님 PC 의 예약 작업은 꺼졌다(09-15 확인) — **이대로면 10월 알림이 아무에게도 안 간다.** `tsx` 가 운영 이미지에 없다 → 도구 이미지(runbook/05 6절 길 ㄴ)가 필요하다. 메일 계정은 `meters.env` 에 있다 |
+| 2 | **교정 알림 메일(`send-notify`)을 NAS 에서** — 도구 이미지·compose·스크립트 둘을 **만들어 NAS 에 올려 두었다**(09-16). 남은 것은 사람이 하는 `docker load` + `06-notify-install.sh` + DSM 등록 | **2026-10-01 전.** 순서는 위 「지금 할 것」. ⚠️ 09-16 에 찾은 것 — `web_notifications` 의 **08-28 시험 발송 두 줄**(2026-11·2026-12)이 `result=SENT` 라 **10-01 과 11-01 이 조용히 건너뛰어진다.** 개발 PC 는 지웠고(사용자 승인) NAS 는 `06` 의 3단계가 한다 |
 | 3 | NAS `setup/dumps/`(전환 최종 덤프 7개, 실자료)를 `backups/cutover-2026-09-14/`(root)로, `images/`(325M) 정리 | 사람이 `sudo`. 지금은 administrators 만 읽는 곳 |
 | 4 | A/S `users` 의 데모 계정 정리 | 뼈대에 딸려 온 계정(런북 01 Phase 1-A) |
 | 5 | **Phase 7 — 2026-09-17 이후**: 개발 PC 옛 볼륨 넷 회수 · `rehearsal/`(1.9MB 실자료) · `dss-auth/docker-compose.yml` · `DEV_POSTGRES_PASSWORD` | 아래 표의 계획 그대로. 그 전에는 지우지 않는다 |
