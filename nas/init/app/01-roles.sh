@@ -8,30 +8,40 @@
 # initdb는 .sql에 psql 변수를 넘길 방법이 없어서, 여기서 -v로 환경변수를 건넨다.
 #
 # 필요한 환경변수 (compose의 environment로 넘긴다):
-#   AS_APP_PASSWORD      dss_app 의 비밀번호
-#   METERS_APP_PASSWORD  dss_meters_app 의 비밀번호
-# 둘은 **서로 달라야 한다.** 같은 값을 돌려쓰면 롤을 나눈 의미가 절반으로 준다.
+#   AS_APP_PASSWORD            dss_app 의 비밀번호
+#   METERS_APP_PASSWORD        dss_meters_app 의 비밀번호
+#   IMPROVEMENTS_APP_PASSWORD  dss_improvements_app 의 비밀번호 (2026-09-18 더함)
+# 셋은 **서로 달라야 한다.** 같은 값을 돌려쓰면 롤을 나눈 의미가 절반으로 준다.
+#
+# 🔴 NAS 는 이미 돌고 있다 — 이 파일을 고쳐도 저절로 적용되지 않는다.
+#    이미 만들어진 인스턴스에는 사람이 psql 로 같은 SQL 을 손으로 넣는다.
+#    그 절차는 runbook/06-개선요청-배포.md 2절에 그대로 적혀 있다.
 
 set -euo pipefail
 
 : "${AS_APP_PASSWORD:?AS_APP_PASSWORD 가 필요합니다}"
 : "${METERS_APP_PASSWORD:?METERS_APP_PASSWORD 가 필요합니다}"
+: "${IMPROVEMENTS_APP_PASSWORD:?IMPROVEMENTS_APP_PASSWORD 가 필요합니다}"
 
-if [ "$AS_APP_PASSWORD" = "$METERS_APP_PASSWORD" ]; then
-  echo "두 롤의 비밀번호가 같습니다. 서로 다른 값을 쓰세요." >&2
+if [ "$AS_APP_PASSWORD" = "$METERS_APP_PASSWORD" ] ||
+   [ "$AS_APP_PASSWORD" = "$IMPROVEMENTS_APP_PASSWORD" ] ||
+   [ "$METERS_APP_PASSWORD" = "$IMPROVEMENTS_APP_PASSWORD" ]; then
+  echo "롤 비밀번호가 겹칩니다. 셋 다 서로 다른 값을 쓰세요." >&2
   exit 1
 fi
 
 psql -v ON_ERROR_STOP=1 \
      --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" \
      -v as_pw="$AS_APP_PASSWORD" \
-     -v meters_pw="$METERS_APP_PASSWORD" <<-'SQL'
+     -v meters_pw="$METERS_APP_PASSWORD" \
+     -v improvements_pw="$IMPROVEMENTS_APP_PASSWORD" <<-'SQL'
 
 	-- 부트스트랩 슈퍼유저(POSTGRES_USER)는 앱이 쓰지 않는다.
 	-- 앱마다 롤 하나, 그 롤이 소유하는 DB 하나.
 
 	CREATE ROLE dss_app        LOGIN PASSWORD :'as_pw';
 	CREATE ROLE dss_meters_app LOGIN PASSWORD :'meters_pw';
+	CREATE ROLE dss_improvements_app LOGIN PASSWORD :'improvements_pw';
 
 	-- ICU 로케일을 쓰는 이유: 계측기·고객 이름에 한글·영문·숫자·한자가 섞인다.
 	-- 순수 한글만이면 바이트 순서로도 가나다 순이 되지만(U+AC00–U+D7A3이 이미
@@ -50,19 +60,30 @@ psql -v ON_ERROR_STOP=1 \
 	  LOCALE 'C.UTF-8'
 	  TEMPLATE template0;
 
-	-- ⚠️ 이 네 줄이 통합의 안전을 지탱한다.
+	-- 개선요청(2026-09-18). 같은 로케일을 쓰는 이유도 같다 — 글 제목에
+	-- 한글·영문·숫자가 섞인다.
+	CREATE DATABASE dss_improvements
+	  OWNER dss_improvements_app
+	  ENCODING 'UTF8'
+	  LOCALE_PROVIDER icu ICU_LOCALE 'ko-KR'
+	  LOCALE 'C.UTF-8'
+	  TEMPLATE template0;
+
+	-- ⚠️ 이 여섯 줄이 통합의 안전을 지탱한다.
 	-- PostgreSQL 기본값은 "모든 롤이 모든 DB에 접속 가능"이다. PUBLIC에 CONNECT가
 	-- 기본으로 부여돼 있기 때문이다. 걷어내지 않으면 dss_meters_app으로 dss_as에
 	-- 그냥 붙을 수 있고, 그러면 롤을 나눴다는 것이 착각이 된다.
-	REVOKE CONNECT ON DATABASE dss_as     FROM PUBLIC;
-	REVOKE CONNECT ON DATABASE dss_meters FROM PUBLIC;
-	GRANT  CONNECT ON DATABASE dss_as     TO dss_app;
-	GRANT  CONNECT ON DATABASE dss_meters TO dss_meters_app;
+	REVOKE CONNECT ON DATABASE dss_as           FROM PUBLIC;
+	REVOKE CONNECT ON DATABASE dss_meters       FROM PUBLIC;
+	REVOKE CONNECT ON DATABASE dss_improvements FROM PUBLIC;
+	GRANT  CONNECT ON DATABASE dss_as           TO dss_app;
+	GRANT  CONNECT ON DATABASE dss_meters       TO dss_meters_app;
+	GRANT  CONNECT ON DATABASE dss_improvements TO dss_improvements_app;
 
 	-- PostgreSQL 15부터 public 스키마의 CREATE 권한이 PUBLIC에서 기본 제거됐다.
 	-- 17을 쓰므로 여기서 추가로 할 일은 없다.
 
 SQL
 
-echo "dss-pg-app 초기화 완료 — dss_as / dss_meters, 롤 둘, CONNECT 분리"
+echo "dss-pg-app 초기화 완료 — dss_as / dss_meters / dss_improvements, 롤 셋, CONNECT 분리"
 echo "다음: 격리 검증을 돌린다 (runbook/01-postgres-통합.md 6절)"

@@ -417,6 +417,31 @@ DS218+의 Celeron J3355는 AES-NI를 가지고 있어 이 일에 훨씬 적합�
 | 13 | **NAS 백업을 되살려 본 적이 없다** — 야간 백업은 목차만 열어 본다(`pg_restore -l`). 복원 시험 절차가 없다 | 절차를 적고 한 번 해 본다(운영 수첩을 쓰며 찾은 빈칸). 계측기 문서는 월 1회 시험을 권한다 |
 | 14 | `dss21.co.kr` 에 **메일 위장 방지 TXT 세 줄**(SPF `-all` · DKIM 빈 열쇠 · DMARC `reject`) — 이 이름으로는 메일을 보내지 않는다 | 급하지 않다. Cloudflare 경고 풀이: https://claude.ai/artifact/Vy1UhzJrJxMG7SSR22icbT (노란 배너·www·이름 자체 권장은 사내 전용이라 무시) |
 
+### ③ 다음 배포는 **새 사이트**다 — 개선요청 (설정 파일만 준비됨, 2026-09-18)
+
+넷째 사내 시스템 **개선요청**(`dss-improvements`, 사내 시스템에 바라는 것을 적는 게시판)이
+NAS 배포 설정에 들어왔다. **아직 NAS 에서는 아무것도 돌지 않는다** — 이날 한 것은 파일뿐이다.
+
+| | 값 |
+|---|---|
+| 이미지 | `dss-improvements:0.1` · 도구 `dss-improvements-tools:1` |
+| 포트 | 컨테이너 `3500` → `127.0.0.1:13500` |
+| 주소 | `https://improvements.dss21.co.kr` (와일드카드 인증서가 이미 덮는다) |
+| DB | 공용 인스턴스 `dss-pg-app` 안에 `dss_improvements` · 롤 `dss_improvements_app` |
+| 업로드 | `/volume1/dss/improvements-uploads` → 컨테이너 `/data/uploads` |
+| 메모리 | 384M (합계 2.7GB → **3.0GB** / 6GB) |
+
+**절차는 [`runbook/06-개선요청-배포.md`](./runbook/06-개선요청-배포.md) 하나에 모았다.**
+그 문서 2절이 **사람이 손으로 하는 일** 일곱이다 — 비밀번호 한 줄 · 롤·DB 손으로
+만들기 · 업로드 폴더 권한 · 포털 등록(시크릿 발급) · Cloudflare A 레코드 ·
+DSM 리버스 프록시 규칙 · 설정 파일 올리기.
+
+🔴 **특히 둘을 놓치면 아프다.**
+- `nas/init/app/01-roles.sh` 를 고쳐도 **NAS 에는 저절로 적용되지 않는다**(볼륨이 빌 때
+  한 번만 도는 스크립트다). 이미 돌아가는 인스턴스에는 손으로 만든다 — 런북 06 의 2-ㄴ.
+- **야간 백업이 새 DB 와 업로드 폴더를 모르고 있다.** `nas/jobs/backup-nightly.sh` 는
+  DB 셋·폴더 셋을 이름으로 박아 두었다. 아직 고치지 않았다 — 런북 06 의 7절 1번.
+
 ### 다음 배포(새 이미지) — 이 날 만든 길
 
 1. (개발 PC) `git archive` 로 **커밋된 상태만** 뽑아 `docker build` → `docker save` → NAS `images/` 로 보내고 지문 대조.
@@ -686,9 +711,10 @@ NAS는 이미 검증된 형태를 그대로 세우기만 하면 된다.
 | [runbook/02-이미지-빌드.md](./runbook/02-이미지-빌드.md) | 3단계 — 빌드와 실행의 차이, 이미지를 NAS로 옮기는 법 |
 | [runbook/03-원격-접속.md](./runbook/03-원격-접속.md) | 6단계 앞쪽 — **밖에서 사내망으로 들어오는 길(VPN)**. 공유기 사정과 갈림길 |
 | [runbook/05-배포-리허설.md](./runbook/05-배포-리허설.md) | **결정 B가 약속한 것** — 새 기능이 운영에 닿기까지의 관문 일곱, 저녁 정지 창, 되돌리기, 확장-수축. 런북 02 8절을 길 ㄴ으로 닫는다 |
+| [runbook/06-개선요청-배포.md](./runbook/06-개선요청-배포.md) | **넷째 사이트의 첫 배포** (2026-09-18 작성, 아직 하지 않았다) — 없던 것이 생길 때만 필요한 다섯(롤·DB, 파일 볼륨, 포털 등록, DNS·프록시, 설정 파일). 2절이 **사람이 손으로 하는 일** |
 | [nas/init/app/01-roles.sh](./nas/init/app/01-roles.sh) | 업무용 인스턴스의 롤·DB·권한 |
 | [nas/init/auth/01-roles.sh](./nas/init/auth/01-roles.sh) | 인증용 인스턴스의 롤·DB·권한 |
-| [nas/docker-compose.nas.yml](./nas/docker-compose.nas.yml) | **운영 구성** — 2026-09-14 부터 NAS 에서 돈다. DB 둘·앱 셋, DB 포트 없음, 앱 포트는 `127.0.0.1` 에만 |
+| [nas/docker-compose.nas.yml](./nas/docker-compose.nas.yml) | **운영 구성** — 2026-09-14 부터 NAS 에서 돈다. DB 둘·앱 셋(+ 개선요청은 2026-09-18 에 적었고 아직 안 띄웠다), DB 포트 없음, 앱 포트는 `127.0.0.1` 에만 |
 | [nas/docker-compose.rehearsal.yml](./nas/docker-compose.rehearsal.yml) | **개발 PC 리허설용** — NAS 파일의 DB 둘을 `extends`로 끌어오고 포트만 연다. NAS로 가져가지 않는다 |
 | [nas/.env.nas.example](./nas/.env.nas.example) | 두 인스턴스가 읽는 비밀번호 자리 |
 | [nas/env/README.md](./nas/env/README.md) | 앱마다의 설정 파일을 만드는 법과 NAS에서 달라지는 값 |
