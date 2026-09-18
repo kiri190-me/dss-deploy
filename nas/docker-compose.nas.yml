@@ -264,13 +264,20 @@ services:
       TZ: Asia/Seoul
       DATABASE_URL: postgresql://dss_app:${AS_APP_PASSWORD}@dss-pg-app:5432/dss_as
       UPLOADS_DIR: /data
-      # 양식 여섯 — 아래 /templates 볼륨 안의 파일 이름과 글자 하나까지 같아야 한다.
+      # 양식 일곱 — 아래 /templates 볼륨 안의 파일 이름과 글자 하나까지 같아야 한다.
       # 하나라도 못 읽으면 그 출력(견적서·검사/수리 보고서)이 통째로 죽는다.
       # 이 줄들이 빠져 있던 것이 runbook/05 11절의 구멍 ㄱ 이다 (2026-09-14 메움).
+      #
+      # 🔴 setup/01-prepare.sh 는 아직 「xlsx 가 정확히 6개」를 검사한다. 케이블이
+      #    들어와 일곱이 되었으므로 그 스크립트를 다시 돌릴 일이 생기면 기대값을
+      #    7 로 고쳐야 한다 (첫 설치용이라 배포에는 쓰지 않는다).
       QUOTE_TEMPLATE_PATH: "/templates/내자견적서.xlsx"
       OH_QUOTE_TEMPLATE_PATH: "/templates/제너레이터 OH 견적서.xlsx"
       MATCHER_QUOTE_TEMPLATE_PATH: "/templates/매쳐 내자 견적서.xlsx"
       MATCHER_OH_QUOTE_TEMPLATE_PATH: "/templates/매쳐 OH 견적서.xlsx"
+      # 케이블 견적서 (2026-09-18 더함). 파일은 이미 NAS 에 올라가 있다 —
+      # -r-------- 1000:1000, sha256 7bfc64e9…(개발 PC 원본과 대조 확인).
+      CABLE_QUOTE_TEMPLATE_PATH: "/templates/케이블 견적서.xlsx"
       INSPECTION_REPORT_TEMPLATE_PATH: "/templates/검사보고서.xlsx"
       REPAIR_REPORT_TEMPLATE_PATH: "/templates/수리보고서.xlsx"
     volumes:
