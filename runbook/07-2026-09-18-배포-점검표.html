@@ -1,0 +1,808 @@
+<title>DSS 배포 점검표</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&family=IBM+Plex+Mono:wght@400;600&display=swap">
+<style>
+  :root{
+    --bg:#f6f8f8; --surface:#ffffff; --surface-2:#eef2f2;
+    --ink:#182229; --ink-2:#3d4c54; --muted:#5c6a72; --faint:#8b989e;
+    --line:#dde4e4; --line-2:#c6d1d1;
+    --accent:#0d7d7d; --accent-ink:#065e5e; --accent-wash:#e2f0ef;
+    --danger:#c2371f; --danger-wash:#fbeae6;
+    --warn:#a96a00; --warn-wash:#fcf2e0;
+    --ok:#2d7a3e; --ok-wash:#e6f2e8;
+    --sans:"Noto Sans KR",-apple-system,"Malgun Gothic",sans-serif;
+    --mono:"IBM Plex Mono","Cascadia Mono",Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root:not([data-theme="light"]){
+      --bg:#121819; --surface:#1a2325; --surface-2:#222d2f;
+      --ink:#e8eded; --ink-2:#c3cfcf; --muted:#94a3a3; --faint:#6e7d7d;
+      --line:#2c393b; --line-2:#3b4a4c;
+      --accent:#4fbdb5; --accent-ink:#7fd4cd; --accent-wash:#16302f;
+      --danger:#f08065; --danger-wash:#321a15;
+      --warn:#d99b3c; --warn-wash:#2e2412;
+      --ok:#68b97a; --ok-wash:#152b1b;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#121819; --surface:#1a2325; --surface-2:#222d2f;
+    --ink:#e8eded; --ink-2:#c3cfcf; --muted:#94a3a3; --faint:#6e7d7d;
+    --line:#2c393b; --line-2:#3b4a4c;
+    --accent:#4fbdb5; --accent-ink:#7fd4cd; --accent-wash:#16302f;
+    --danger:#f08065; --danger-wash:#321a15;
+    --warn:#d99b3c; --warn-wash:#2e2412;
+    --ok:#68b97a; --ok-wash:#152b1b;
+  }
+  *{box-sizing:border-box}
+  body{
+    background:var(--bg); color:var(--ink); font-family:var(--sans);
+    font-size:15px; line-height:1.7; margin:0;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:820px; margin:0 auto; padding-inline:16px; padding-block:0 64px}
+
+  /* ── 상단 진행 바 ───────────────────────────── */
+  .bar{
+    position:sticky; top:env(safe-area-inset-top,0px); z-index:50;
+    background:color-mix(in srgb, var(--bg) 92%, transparent);
+    backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--line);
+  }
+  .bar-in{
+    max-width:820px; margin:0 auto; padding-inline:16px;
+    padding-block:10px; display:flex; align-items:center; gap:12px; flex-wrap:wrap;
+  }
+  .bar-title{font-weight:700; font-size:14px; letter-spacing:-.01em; white-space:nowrap}
+  .track{flex:1 1 140px; min-width:100px; height:6px; background:var(--surface-2); border-radius:99px; overflow:hidden}
+  .fill{height:100%; width:0%; background:var(--accent); border-radius:99px; transition:width .25s ease}
+  .count{font-family:var(--mono); font-size:13px; color:var(--muted); font-variant-numeric:tabular-nums; white-space:nowrap}
+  .reset{
+    font:inherit; font-size:12px; color:var(--muted); background:none;
+    border:1px solid var(--line-2); border-radius:6px; padding:3px 9px; cursor:pointer;
+  }
+  .reset:hover{color:var(--ink); border-color:var(--muted)}
+  .reset:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+
+  /* ── 머리 ───────────────────────────────────── */
+  header.top{padding-block:32px 8px}
+  h1{font-size:28px; line-height:1.3; margin:0 0 6px; letter-spacing:-.02em; text-wrap:balance}
+  .sub{color:var(--muted); margin:0; font-size:15px}
+  .meta{
+    display:flex; gap:16px; flex-wrap:wrap; margin-top:16px;
+    font-family:var(--mono); font-size:12.5px; color:var(--faint);
+  }
+  .meta b{color:var(--ink-2); font-weight:600}
+
+  .lead{
+    background:var(--surface); border:1px solid var(--line); border-radius:10px;
+    padding:16px 18px; margin-top:20px;
+  }
+  .lead p{margin:0 0 8px}
+  .lead p:last-child{margin-bottom:0}
+
+  /* ── 단계 ───────────────────────────────────── */
+  section.step{margin-top:40px}
+  .step-head{display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; margin-bottom:4px}
+  .step-no{
+    font-family:var(--mono); font-size:12px; font-weight:600; color:var(--accent-ink);
+    background:var(--accent-wash); border-radius:5px; padding:2px 7px; letter-spacing:.02em;
+  }
+  h2{font-size:20px; margin:0; letter-spacing:-.01em; text-wrap:balance}
+  .step-where{font-family:var(--mono); font-size:12px; color:var(--faint)}
+  .step-note{color:var(--muted); margin:6px 0 14px; font-size:14px}
+
+  /* ── 항목 ───────────────────────────────────── */
+  .item{
+    background:var(--surface); border:1px solid var(--line); border-radius:10px;
+    padding:14px 16px; margin-bottom:10px; display:flex; gap:12px; align-items:flex-start;
+  }
+  .item.risk{border-left:4px solid var(--danger); padding-left:13px}
+  .item.care{border-left:4px solid var(--warn); padding-left:13px}
+  .item input[type=checkbox]{
+    appearance:none; flex:none; width:19px; height:19px; margin-top:3px;
+    border:1.5px solid var(--line-2); border-radius:5px; background:var(--surface);
+    cursor:pointer; display:grid; place-content:center;
+  }
+  .item input[type=checkbox]:checked{background:var(--ok); border-color:var(--ok)}
+  .item input[type=checkbox]:checked::after{
+    content:"✓"; color:#fff; font-size:13px; font-weight:700; line-height:1;
+  }
+  .item input[type=checkbox]:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+  .body{flex:1; min-width:0}
+  .item h3{font-size:15px; margin:0 0 4px; font-weight:500; line-height:1.5}
+  .item input:checked ~ .body h3{color:var(--faint); text-decoration:line-through; text-decoration-color:var(--line-2)}
+  .item p{margin:0 0 8px; color:var(--ink-2); font-size:14px}
+  .item p:last-child{margin-bottom:0}
+  .why{color:var(--muted); font-size:13.5px}
+
+  .tag{
+    display:inline-block; font-family:var(--mono); font-size:11px; font-weight:600;
+    padding:1px 6px; border-radius:4px; vertical-align:2px; margin-right:6px; letter-spacing:.02em;
+  }
+  .tag.r{background:var(--danger-wash); color:var(--danger)}
+  .tag.w{background:var(--warn-wash); color:var(--warn)}
+  .tag.i{background:var(--surface-2); color:var(--muted)}
+
+  pre{
+    background:var(--surface-2); border:1px solid var(--line); border-radius:7px;
+    padding:11px 13px; overflow-x:auto; margin:8px 0;
+    font-family:var(--mono); font-size:12.5px; line-height:1.65; color:var(--ink);
+  }
+  code{font-family:var(--mono); font-size:.92em; background:var(--surface-2); padding:1px 5px; border-radius:4px}
+  pre code{background:none; padding:0; font-size:1em}
+
+  .pass{
+    border-left:3px solid var(--ok); background:var(--ok-wash);
+    padding:7px 11px; border-radius:0 6px 6px 0; font-size:13.5px; color:var(--ink-2); margin:8px 0 0;
+  }
+  .pass b{color:var(--ok)}
+  .stop{
+    border-left:3px solid var(--danger); background:var(--danger-wash);
+    padding:7px 11px; border-radius:0 6px 6px 0; font-size:13.5px; color:var(--ink-2); margin:8px 0 0;
+  }
+  .stop b{color:var(--danger)}
+
+  table{width:100%; border-collapse:collapse; margin:10px 0; font-size:13.5px}
+  th,td{text-align:left; padding:7px 10px; border-bottom:1px solid var(--line); vertical-align:top}
+  th{font-weight:600; color:var(--muted); font-size:12.5px; white-space:nowrap}
+  td code{font-size:12px}
+  .tablewrap{overflow-x:auto}
+
+  .aside{
+    background:var(--warn-wash); border:1px solid color-mix(in srgb, var(--warn) 25%, transparent);
+    border-radius:10px; padding:14px 16px; margin-top:28px;
+  }
+  .aside h2{font-size:16px; margin-bottom:8px; color:var(--warn)}
+  .aside ol{margin:0; padding-left:20px; color:var(--ink-2); font-size:14px}
+  .aside li{margin-bottom:6px}
+  .aside li:last-child{margin-bottom:0}
+
+  footer{margin-top:44px; padding-top:20px; border-top:1px solid var(--line); color:var(--faint); font-size:13px}
+  footer code{font-size:12px}
+
+  @media (max-width:520px){
+    h1{font-size:23px}
+    .bar-title{font-size:13px}
+    .item{padding:12px 13px}
+    .item.risk,.item.care{padding-left:10px}
+  }
+  @media (prefers-reduced-motion:reduce){ .fill{transition:none} }
+</style>
+
+<div class="bar">
+  <div class="bar-in">
+    <span class="bar-title">배포 진행</span>
+    <span class="track"><span class="fill" id="fill"></span></span>
+    <span class="count" id="count">0 / 0</span>
+    <button class="reset" id="reset" type="button">전부 지우기</button>
+  </div>
+</div>
+
+<div class="wrap">
+
+<header class="top">
+  <h1>NAS 배포 — 사람이 하는 일</h1>
+  <p class="sub">2026-09-18 에 만든 것을 운영에 올리기까지. 순서대로 짚고, 하나씩 체크합니다.</p>
+  <div class="meta">
+    <span><b>포털</b> 1.3 → 1.4</span>
+    <span><b>A/S</b> 1.4 → 1.5</span>
+    <span><b>계측기</b> 1.1 → 1.2</span>
+    <span><b>개선요청</b> 첫 설치</span>
+    <span><b>마이그레이션</b> 0100~0105</span>
+  </div>
+</header>
+
+<div class="lead">
+  <p>전체 절차는 <code>dss-deploy/runbook/07-2026-09-18-배포.md</code> 에 있습니다. 이 페이지는 <b>그중 사람이 직접 하는 일만</b> 뽑아 순서대로 세운 것입니다.</p>
+  <p class="why">체크 상태는 이 브라우저에 남습니다. 다른 기기에서 열면 처음부터입니다.</p>
+</div>
+
+<!-- ─────────────── 0 ─────────────── -->
+<section class="step">
+  <div class="step-head">
+    <span class="step-no">0</span>
+    <h2>배포 전에 정하고 준비할 것</h2>
+    <span class="step-where">며칠 전 ~ 당일 낮</span>
+  </div>
+  <p class="step-note">여기서 막히면 저녁에 시작할 수 없습니다. 특히 2번과 3번은 시간이 걸립니다.</p>
+
+  <div class="item">
+    <input type="checkbox" id="c01" checked>
+    <div class="body">
+      <h3><span class="tag i">끝남</span>계측기 브랜치 — <code>main</code> 으로 합쳤다</h3>
+      <p>2026-09-18 에 <code>sso-integration</code> 을 <code>main</code> 으로 fast-forward 병합하고 올렸습니다(<code>6879ff6</code> → <code>c6aec54</code>, 15커밋). 이제 <b>네 저장소가 같은 모양</b>이라 「어느 브랜치냐」를 묻지 않습니다.</p>
+      <p class="why"><b>굽는 것은 <code>main</code></b> 입니다. 두 브랜치가 같은 커밋이라 결과는 어느 쪽이든 같지만, 앞으로를 위해 <code>main</code> 으로 통일했습니다. 🔴 이 병합으로 우리 <code>main</code> 이 이남준 님 원본에서 15커밋 앞서게 됐습니다 — 나중에 원본에 되돌려 보낼 일이 생기면 이 지점을 기억하세요.</p>
+    </div>
+  </div>
+
+  <div class="item risk">
+    <input type="checkbox" id="c02">
+    <div class="body">
+      <h3><span class="tag r">손대지 않는다</span><code>env/*.env</code> 를 올리지 않는다</h3>
+      <p><b>이번 배포에 새 환경변수가 하나도 없습니다.</b> 확인했습니다 — 견적서 결재는 새 변수가 없고, 메뉴바가 쓰는 <code>AUTH_SESSION_SECRET</code> 은 이미 있습니다. 케이블 양식 경로는 <b>compose 에 넣습니다</b>(4번).</p>
+      <div class="stop">이 PC 의 <code>as.env</code> 는 <b>9월 15일 것</b>이라 NAS 에 있는 <b>세 줄</b>이 없습니다 — <code>QUOTE_ARCHIVE_DIR</code> · <code>QUOTE_ARCHIVE_UNC_ROOT</code> · <code>QUOTE_ARCHIVE_UNC_ROOT_ALT</code>. <b>올리면 그 셋이 운영에서 사라집니다.</b> 손대지 않으면 NAS 것이 그대로 남습니다.</div>
+      <p class="why">배포 스크립트가 그 셋의 존재뿐 아니라 <b>값의 형태까지 검사합니다</b> — <code>UNC_ROOT</code> 가 IP 인지, <code>_ALT</code> 가 이름인지. 9월 16일에 그 차례를 바꾼 기록이 있습니다.</p>
+      <p class="why">로컬 사본이 NAS 와 갈라져 있다는 사실 자체는 언젠가 맞춰야 합니다 — <b>배포와 섞지 말고 따로</b> 하세요.</p>
+    </div>
+  </div>
+
+  <div class="item">
+    <input type="checkbox" id="c03" checked>
+    <div class="body">
+      <h3><span class="tag i">끝남</span>NAS 의 양식 여섯을 확인했다 <span class="tag i">9/18</span></h3>
+      <p>여섯 개가 다 있고 <b>compose 에 적힌 경로와 파일명이 글자 하나까지 맞습니다.</b> 권한도 정확합니다 — <code>-r--------</code>, 소유자 <code>1000:1000</code>.</p>
+      <div class="tablewrap"><table>
+        <tr><th>내자견적서.xlsx</th><td><code>QUOTE_TEMPLATE_PATH</code></td></tr>
+        <tr><th>제너레이터 OH 견적서.xlsx</th><td><code>OH_QUOTE_TEMPLATE_PATH</code></td></tr>
+        <tr><th>매쳐 내자 견적서.xlsx</th><td><code>MATCHER_QUOTE_TEMPLATE_PATH</code></td></tr>
+        <tr><th>매쳐 OH 견적서.xlsx</th><td><code>MATCHER_OH_QUOTE_TEMPLATE_PATH</code></td></tr>
+        <tr><th>검사보고서.xlsx</th><td><code>INSPECTION_REPORT_TEMPLATE_PATH</code></td></tr>
+        <tr><th>수리보고서.xlsx</th><td><code>REPAIR_REPORT_TEMPLATE_PATH</code></td></tr>
+      </table></div>
+      <p class="why">다시 볼 일이 있으면 <code>sudo ls -l /volume1/dss/as-templates/</code> — 🔴 <code>sudo</code> 없이는 <b>Permission denied</b> 입니다. 이 폴더는 <code>auth-keys</code> 와 같은 등급(<code>500/400</code>)으로 잠겨 있습니다. 직인과 계좌가 든 양식이라 <b>앱만 읽고 아무도 쓰지 못하게</b> 해 두었습니다.</p>
+    </div>
+  </div>
+
+  <div class="item">
+    <input type="checkbox" id="c04" checked>
+    <div class="body">
+      <h3><span class="tag i">끝남</span>케이블 양식을 NAS 에 올렸다 <span class="tag i">9/18</span></h3>
+      <p>지문을 대조해 깨지지 않은 것을 확인했고, 권한도 다른 여섯과 같게 맞췄습니다.</p>
+      <pre><code>-r-------- 1 1000 1000  50996  '케이블 견적서.xlsx'
+sha256  7bfc64e9…  (개발 PC 원본과 일치)</code></pre>
+      <p class="why">겪은 함정 둘 — ① 보내는 명령은 <b>개발 PC</b> 에서 돌립니다(NAS 에는 <code>C:</code> 가 없습니다). PowerShell 은 <code>&lt;</code> 를 지원하지 않아 <code>cmd /c</code> 로 감싸야 합니다. ② 갓 올라온 파일에는 Synology ACL(<code>+</code>)이 붙어 <code>chmod</code> 를 눌러 이깁니다 — <code>/usr/syno/bin/synoacltool -del</code> 로 먼저 걷어야 합니다.</p>
+    </div>
+  </div>
+
+  <div class="item">
+    <input type="checkbox" id="c04b" checked>
+    <div class="body">
+      <h3><span class="tag i">끝남</span>compose 에 케이블 경로를 넣었다 <span class="tag i">9/18</span></h3>
+      <p>견적서 넷 뒤·보고서 둘 앞에 넣고 커밋했습니다(<code>f2cc6e8</code>). YAML 을 파싱해 <b>양식 경로 일곱이 다 잡히는 것</b>을 확인했습니다.</p>
+      <pre><code>CABLE_QUOTE_TEMPLATE_PATH: "/templates/케이블 견적서.xlsx"</code></pre>
+      <p class="why">🔴 <b>덤</b>: 첫 설치 스크립트(<code>01-prepare.sh</code>)가 아직 「양식이 정확히 <b>6개</b>」인지 검사합니다. 이제 일곱이라 <b>그 검사가 깨집니다</b> — 이번 배포에는 영향이 없지만(첫 설치용이라 안 돌립니다), 다시 돌릴 일이 생기면 기대값을 7로 고쳐야 합니다. compose 주석에도 적어 뒀습니다.</p>
+    </div>
+  </div>
+
+  <div class="item">
+    <input type="checkbox" id="c05">
+    <div class="body">
+      <h3>직원에게 알린다</h3>
+      <p>저녁에 <b>A/S 와 통합 로그인이 10분쯤 멈춥니다.</b> 계측기는 잠깐이고, 개선요청은 아직 없습니다.</p>
+      <p class="why">창은 넉넉히 <b>30분</b> 잡으세요. 지난번은 51초였지만 이번엔 마이그레이션이 여섯이고 그중 둘이 자료를 옮깁니다.</p>
+    </div>
+  </div>
+
+  <div class="item">
+    <input type="checkbox" id="c06">
+    <div class="body">
+      <h3>배포 스크립트 <code>10-deploy.sh</code> 를 쓴다</h3>
+      <p><code>nas/setup/07-deploy.sh</code> 를 틀로 베껴 새로 씁니다. 07~09 는 그날치라 그대로 못 씁니다.</p>
+      <p class="why">틀에서 꼭 남길 것 — <b>앱을 멈추기 전에 볼 것을 다 보고, 어긋나면 앱이 살아 있는 채로 멈춘다.</b></p>
+    </div>
+  </div>
+</section>
+
+<!-- ─────────────── 1 ─────────────── -->
+<section class="step">
+  <div class="step-head">
+    <span class="step-no">1</span>
+    <h2>이미지를 굽는다</h2>
+    <span class="step-where">개발 PC</span>
+  </div>
+  <p class="step-note"><b>이 단계는 2026-09-18 에 끝났습니다.</b> 아래는 무엇을 어떻게 구웠는지의 기록이고, <b>2단계에서 맞춰 볼 지문이 여기 있습니다.</b> 다시 구울 일이 생기면 같은 순서로 하시면 됩니다.</p>
+
+  <div class="item">
+    <input type="checkbox" id="c11">
+    <div class="body">
+      <h3><span class="tag i">끝남</span>개발 서버를 끈다</h3>
+      <p>바탕화면 <b>「작업 종료」</b>. 켜져 있으면 <code>.next</code> 폴더를 두고 다툽니다.</p>
+    </div>
+  </div>
+
+  <div class="item risk">
+    <input type="checkbox" id="c12">
+    <div class="body">
+      <h3><span class="tag r">검사</span><span class="tag i">통과</span>굽기 전 세 줄 — 저장소마다</h3>
+      <p>작업 폴더에서 그대로 굽기 때문에 <b>「지금 폴더에 있는 것」이 곧 이미지가 됩니다.</b> 커밋 안 된 게 없는지 눈으로 보고 굽습니다.</p>
+      <pre><code>cd C:/Users/희만/Desktop/Development/RF_Service_System
+
+git status --porcelain              # 1. 아무것도 안 나와야 함
+git -C vendor/dss-ui status --porcelain   # 2. 아무것도 안 나와야 함
+git submodule status                # 3. 맨 앞 글자가 공백이어야 함
+git rev-parse HEAD                  # 4. 굽는 커밋을 기록</code></pre>
+      <div class="pass"><b>9/18 결과</b> — 세 저장소 모두 미커밋 0, 서브모듈 포인터 <code>c3428e2</code> 맨 앞 글자 공백. 계측기는 <code>main</code> 브랜치에서 구웠습니다.</div>
+      <div class="stop">3번이 <code>-</code> 면 <b>서브모듈이 빈 폴더</b>입니다. <code>git submodule update --init --recursive</code> 로 채운 뒤 다시 보세요. 그대로 구우면 빌드가 깨집니다.</div>
+    </div>
+  </div>
+
+  <div class="item">
+    <input type="checkbox" id="c13">
+    <div class="body">
+      <h3><span class="tag i">끝남</span>셋을 굽는다</h3>
+      <pre><code># 포털 (서브모듈 없음)
+cd .../dss-auth
+docker build -t dss-auth:1.4 .
+
+# A/S
+cd .../RF_Service_System
+docker build -t dss-as:1.5 .
+
+# 계측기 (main - 9/18 에 합쳤다)
+cd .../njlee
+git checkout main          # 두 브랜치가 같은 커밋이라 파일은 안 바뀐다
+docker build -t dss-meters:1.2 .</code></pre>
+      <p class="why">도구 이미지 <code>dss-as-tools</code> · <code>dss-meters-tools</code> 는 <b>다시 굽지 않습니다</b> — 의존성이 안 바뀌었습니다.</p>
+      <div class="stop"><b>개선요청은 이번에 굽지 않습니다.</b> 첫 설치를 다른 날로 미뤘습니다(8단계). compose 에서도 그 자리 셋을 주석으로 꺼 두었습니다.</div>
+    </div>
+  </div>
+
+  <div class="item risk">
+    <input type="checkbox" id="c14">
+    <div class="body">
+      <h3><span class="tag r">검사</span><span class="tag i">통과</span>메뉴바가 이미지에 실제로 들어갔는지 본다</h3>
+      <p><b>빌드가 성공한 것만으로는 부족합니다.</b> 서브모듈이 비어 있어도 빌드는 지나갈 수 있습니다.</p>
+      <pre><code>docker run --rm --entrypoint sh dss-as:1.5 -c \
+  "grep -rl 'dss-menu' /app/.next/static /app/.next/server 2>/dev/null | head -5"</code></pre>
+      <p>앱 이미지 <b>둘</b>(<code>dss-as:1.5</code> · <code>dss-meters:1.2</code>) 각각.</p>
+      <div class="pass"><b>줄이 하나라도 나오면</b> 들어간 것입니다. <b>9/18 결과</b> — 둘 다 나왔고, <b>오늘 고친 드롭다운 닫기</b>까지 들어갔습니다(<code>details.dss-menu__dropdown[open]</code> 으로 한 번 더 확인).</div>
+      <p class="why">포털에는 메뉴바가 없습니다 — 목록을 <b>내주는</b> 쪽이라 찾지 않습니다.</p>
+    </div>
+  </div>
+
+  <div class="item">
+    <input type="checkbox" id="c15">
+    <div class="body">
+      <h3><span class="tag i">끝남</span>저장하고 지문을 뽑는다</h3>
+      <pre><code>cd C:/Users/희만/Desktop/Development
+
+docker save dss-auth:1.4   | gzip -1 > dss-auth-1.4.tar.gz
+docker save dss-as:1.5     | gzip -1 > dss-as-1.5.tar.gz
+docker save dss-meters:1.2 | gzip -1 > dss-meters-1.2.tar.gz
+
+# NAS 에서 맞춰 볼 지문은 tar 가 들고 있다
+tar -xzOf dss-as-1.5.tar.gz manifest.json   # Config 값</code></pre>
+      <div class="stop"><b>이 PC 의 <code>docker image inspect</code> 값을 쓰지 마세요.</b> 개발 PC 와 NAS 가 서로 다른 지문을 ID 로 냅니다 — 9월 16일에 여기서 한 번 헛걸음했습니다.</div>
+    </div>
+  </div>
+
+  <div class="item care">
+    <input type="checkbox" id="c16">
+    <div class="body">
+      <h3><span class="tag w">받아적음</span>9/18 에 나온 지문 — 이걸로 맞춰 봅니다</h3>
+      <p>NAS 에서 <code>docker load</code> 한 뒤 나오는 ID 가 <b>image ID</b> 칸과 같아야 합니다. 파일이 오다가 깨졌는지는 <b>파일 지문</b> 칸으로 봅니다.</p>
+      <table>
+        <tr><th>파일</th><th>크기</th><th>NAS 의 image ID</th></tr>
+        <tr><td><code>dss-auth-1.4.tar.gz</code></td><td>107.4 MB</td><td><code>20feede0cd065db8457efa129fa991256dd3e7a6bb328813dfc69ea47c1a75da</code></td></tr>
+        <tr><td><code>dss-as-1.5.tar.gz</code></td><td>107.1 MB</td><td><code>d87f8ba0418aad0eeb62bf9ddbc90a3fd52734e527a58429919e8b49348c6afd</code></td></tr>
+        <tr><td><code>dss-meters-1.2.tar.gz</code></td><td>107.9 MB</td><td><code>5d0bb4d4ffcc7e2773055920e99bef8d37993448ed574a8eae3f3a195283f797</code></td></tr>
+      </table>
+      <table>
+        <tr><th>파일</th><th>파일 지문 (sha256)</th></tr>
+        <tr><td><code>dss-auth-1.4.tar.gz</code></td><td><code>c23f849159ead9e9b039dbbe44cd71b080123476190a3761c1cd919c3e12a17d</code></td></tr>
+        <tr><td><code>dss-as-1.5.tar.gz</code></td><td><code>c5c28c7422a2133787072d93f887acb5f938824c64ae9747bc43e68aefd90128</code></td></tr>
+        <tr><td><code>dss-meters-1.2.tar.gz</code></td><td><code>d7e65ba14c10055f4914335ac3e1d26713cd36a9282591247078f60755fc92d1</code></td></tr>
+        <tr><td><code>as-migrations.tar.gz</code></td><td><code>8ea3900a3345e3d8c187301ddbab8e5effb5bc4d4d82b87b77f613e1f1195247</code></td></tr>
+      </table>
+      <p class="why">NAS 에서 파일 지문을 보는 법 — <code>sha256sum /volume1/dss/images/dss-as-1.5.tar.gz</code></p>
+    </div>
+  </div>
+</section>
+
+<!-- ─────────────── 2 ─────────────── -->
+<section class="step">
+  <div class="step-head">
+    <span class="step-no">2</span>
+    <h2>NAS 로 옮긴다</h2>
+    <span class="step-where">개발 PC → NAS</span>
+  </div>
+  <p class="step-note">보낼 것은 <b>여섯</b>입니다 — 이미지 셋, 마이그레이션 묶음, 배포 스크립트, compose. <b>앱을 하나도 멈추지 않으므로 아무 때나 해도 됩니다.</b></p>
+
+  <div class="item">
+    <input type="checkbox" id="c21">
+    <div class="body">
+      <h3>이미지 셋을 보낸다</h3>
+      <p>개발 PC 의 <b>PowerShell</b> 에서, <code>Development</code> 폴더로 가서 그대로 붙여 넣으시면 됩니다.</p>
+      <pre><code>cd C:\Users\희만\Desktop\Development
+
+cmd /c "ssh dss-nas ""cat > /volume1/dss/images/dss-auth-1.4.tar.gz"" < dss-auth-1.4.tar.gz"
+cmd /c "ssh dss-nas ""cat > /volume1/dss/images/dss-as-1.5.tar.gz"" < dss-as-1.5.tar.gz"
+cmd /c "ssh dss-nas ""cat > /volume1/dss/images/dss-meters-1.2.tar.gz"" < dss-meters-1.2.tar.gz"</code></pre>
+      <div class="stop"><b>PowerShell 은 <code>&lt;</code> 를 모릅니다.</b> 그래서 <code>cmd /c</code> 로 감쌌습니다. 9/18 에 이걸로 한 번 막혔습니다.</div>
+      <p class="why"><code>scp</code> 는 DSM 에서 안 붙습니다(<code>Connection closed</code>). ssh 표준입력으로 보냅니다. 하나에 2~4분쯤 걸립니다.</p>
+    </div>
+  </div>
+
+  <div class="item care">
+    <input type="checkbox" id="c22">
+    <div class="body">
+      <h3><span class="tag w">주의</span>마이그레이션을 따로 보낸다</h3>
+      <p>A/S 의 <code>drizzle/</code> 은 이미지가 아니라 <b>볼륨</b>입니다. tar 로만 갈아 끼웁니다. <b>묶음은 9/18 에 이미 만들어 두었습니다</b>(<code>as-migrations.tar.gz</code>, 1.8 MB).</p>
+      <pre><code>cmd /c "ssh dss-nas ""cat > /volume1/dss/setup/incoming/as-migrations.tar.gz"" < as-migrations.tar.gz"</code></pre>
+      <div class="pass">스크립트가 <code>.sql</code> 파일 수를 셉니다. 이번 기대값은 <b>106</b> (지난번 101). <b>만들 때 세어 봤고 106 이었습니다.</b></div>
+    </div>
+  </div>
+
+  <div class="item risk">
+    <input type="checkbox" id="c23">
+    <div class="body">
+      <h3><span class="tag r">먼저</span>NAS 의 compose 가 우리 것과 갈라졌는지 본다</h3>
+      <p>보내기 <b>전에</b> NAS 것을 받아서 견줍니다. <code>as.env</code> 가 그랬듯 <b>NAS 쪽에만 있는 줄</b>이 있으면, 우리 사본을 덮어쓸 때 그게 조용히 사라집니다.</p>
+      <pre><code>cd C:\Users\희만\Desktop\Development
+
+cmd /c "ssh dss-nas ""cat /volume1/dss/deploy/docker-compose.nas.yml"" > nas-compose-now.yml"
+
+# 우리 것과 견준다
+git diff --no-index nas-compose-now.yml dss-deploy\nas\docker-compose.nas.yml</code></pre>
+      <div class="pass"><b>나와야 하는 차이만 나오면</b> 넘어갑니다 — 이미지 태그 셋(<code>1.3→1.4</code> · <code>1.4→1.5</code> · <code>1.1→1.2</code>), <code>CABLE_QUOTE_TEMPLATE_PATH</code> 한 줄, 개선요청 자리 셋이 주석으로 덮인 것.</div>
+      <div class="stop"><b>그 밖의 차이가 나오면 멈추고 알려 주세요.</b> NAS 에만 있는 줄이면 우리 사본에 먼저 옮겨 담아야 합니다. 스크립트가 옛것을 <code>backups/</code> 에 넣어 두긴 하지만, 되돌리는 것보다 안 잃는 게 낫습니다.</div>
+    </div>
+  </div>
+
+  <div class="item risk">
+    <input type="checkbox" id="c24">
+    <div class="body">
+      <h3><span class="tag r">잊기 쉬움</span>배포 스크립트와 compose 를 보낸다</h3>
+      <p>이 둘을 안 보내면 <b>1단계 검사에서 멈춥니다</b> — 케이블 견적서 경로(<code>CABLE_QUOTE_TEMPLATE_PATH</code>)가 우리 사본에만 있기 때문입니다.</p>
+      <pre><code>cmd /c "ssh dss-nas ""cat > /volume1/dss/setup/10-deploy.sh"" < dss-deploy\nas\setup\10-deploy.sh"
+cmd /c "ssh dss-nas ""cat > /volume1/dss/setup/incoming/docker-compose.nas.yml"" < dss-deploy\nas\docker-compose.nas.yml"
+
+# 보내자마자 잠급니다
+ssh dss-nas "chmod 600 /volume1/dss/setup/incoming/docker-compose.nas.yml"</code></pre>
+      <div class="stop"><code>setup/incoming/</code> 은 <b>777 폴더</b>입니다 — 옮겨지기 전까지 누구나 읽습니다. 보내자마자 <code>chmod 600</code> 하세요.</div>
+      <p class="why">스크립트가 <code>incoming/docker-compose.nas.yml</code> 을 보면 <b>문법을 먼저 검사한 뒤</b> 옛것을 <code>backups/</code> 로 옮기고 갈아 끼웁니다. 문법이 틀리면 <b>바꾸지 않고</b> 멈춥니다.</p>
+    </div>
+  </div>
+
+  <div class="item">
+    <input type="checkbox" id="c25">
+    <div class="body">
+      <h3>NAS 에 잘 도착했는지 본다</h3>
+      <pre><code>ssh dss-nas "ls -la /volume1/dss/images/*.tar.gz; echo ---; sha256sum /volume1/dss/images/dss-auth-1.4.tar.gz /volume1/dss/images/dss-as-1.5.tar.gz /volume1/dss/images/dss-meters-1.2.tar.gz"</code></pre>
+      <div class="pass">나온 지문 셋이 <b>1단계 지문 표</b>와 글자까지 같아야 합니다. 하나라도 다르면 그 파일만 다시 보내세요.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ─────────────── 3 ─────────────── -->
+<section class="step">
+  <div class="step-head">
+    <span class="step-no">3</span>
+    <h2>백업 — 무엇보다 먼저</h2>
+    <span class="step-where">NAS · sudo</span>
+  </div>
+  <p class="step-note">마이그레이션 0104 가 <b>운영의 개선요청 자료를 지웁니다.</b> 개발 백업은 운영을 못 지킵니다.</p>
+
+  <div class="item risk">
+    <input type="checkbox" id="c31">
+    <div class="body">
+      <h3><span class="tag r">필수</span>야간 백업을 손으로 한 번 돌린다</h3>
+      <pre><code>ssh dss-nas
+sudo -i                       # DSM 비밀번호. 한/영이 영문인지 먼저 확인
+bash /volume1/dss/jobs/backup-nightly.sh
+echo "종료 코드: $?"
+ls -lt /volume1/dss/backups/db/ | head -6</code></pre>
+      <div class="pass">마지막 줄이 <b>── 성공</b>, <code>dss_as</code>·<code>dss_auth</code>·<code>dss_meters</code> 세 줄에 ✓ 와 표 개수.</div>
+      <div class="stop">종료 코드가 <b>0 이 아니면 여기서 멈춥니다.</b> 배포를 시작하지 않습니다.</div>
+      <p class="why">이것은 되돌리기 지점이 <b>아닙니다.</b> 되돌리기 지점은 앱을 멈춘 뒤 뜨는 덤프입니다.</p>
+    </div>
+  </div>
+
+  <div class="item risk">
+    <input type="checkbox" id="c32">
+    <div class="body">
+      <h3><span class="tag r">0104 전용</span>개선요청 자료를 읽을 수 있는 꼴로 뽑는다</h3>
+      <p>0104 는 <code>improvement_requests</code> 표를 <b>통째로 지웁니다.</b> 덤프 안에는 있지만 <b>칸이 사라진 뒤에는 그대로 되돌려 넣을 수 없습니다</b> — 「읽어서 새 사이트에 다시 적는 것」입니다.</p>
+      <pre><code>S=$(date +%Y%m%d-%H%M%S); B=/volume1/dss/backups/improvements-before-0104-$S
+mkdir -p "$B"; chown root:root "$B"; chmod 700 "$B"
+
+# ① 몇 건인지 센다 — 0 이면 이 항목은 건너뛴다
+/usr/local/bin/docker exec dss-pg-app sh -c \
+  'psql -U "$POSTGRES_USER" -d dss_as -Atc "select count(*) from improvement_requests"'
+
+# ② 되살릴 수 있는 꼴
+/usr/local/bin/docker exec dss-pg-app sh -c \
+  'pg_dump -U "$POSTGRES_USER" -d dss_as -Fc -t improvement_requests' > "$B/improvement_requests.dump"
+
+# ③ 사람이 읽는 꼴 — 새 사이트에 다시 적을 때 이것을 본다
+/usr/local/bin/docker exec dss-pg-app sh -c \
+  'psql -U "$POSTGRES_USER" -d dss_as -c "\copy (select * from improvement_requests order by created_at) to stdout csv header"' \
+  > "$B/improvement_requests.csv"</code></pre>
+      <p class="why"><b>첨부 파일의 바이트는 안 지워집니다</b> — 사라지는 건 그 파일을 가리키던 DB 줄입니다. CSV 의 <code>stored_path</code> 가 파일을 다시 찾는 열쇠입니다.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ─────────────── 4 ─────────────── -->
+<section class="step">
+  <div class="step-head">
+    <span class="step-no">4</span>
+    <h2>정지 창 — 포털 + A/S</h2>
+    <span class="step-where">NAS · 30분</span>
+  </div>
+  <p class="step-note">뼈대는 <code>runbook/05</code> 8절 ①~⑪ 그대로입니다. 이번에 달라지는 것만 아래에 적습니다.</p>
+
+  <div class="item care">
+    <input type="checkbox" id="c41">
+    <div class="body">
+      <h3><span class="tag w">먼저</span>바꾸기 전 값을 찍어 로그에 남긴다</h3>
+      <p>0100 과 0103 이 <b>값을 건드립니다.</b> 바꾸기 전 표를 남겨야 나중에 견줄 수 있습니다.</p>
+      <p class="why"><code>repair_labor_settings</code> 와 <code>part_unit_prices</code>. <code>07-deploy.sh</code> 의 3·6단계가 그 틀입니다.</p>
+    </div>
+  </div>
+
+  <div class="item">
+    <input type="checkbox" id="c42">
+    <div class="body">
+      <h3>포털과 A/S 를 멈춘다</h3>
+      <p><code>app-auth</code> 와 <code>app-as</code> 둘만. <b>DB 와 계측기는 끄지 않습니다.</b></p>
+    </div>
+  </div>
+
+  <div class="item risk">
+    <input type="checkbox" id="c43">
+    <div class="body">
+      <h3><span class="tag r">되돌리기 지점</span>덤프를 뜬다</h3>
+      <p><code>dss_as</code> 와 <code>dss_auth</code> 둘 다. 그리고 첨부 스냅숏(<code>cp -al</code> — 하드링크라 즉시·공간 0).</p>
+      <div class="stop"><b>이것이 유일한 되돌리기 지점입니다.</b> 이 덤프와 전환 사이에 들어온 자료는 사라집니다.</div>
+    </div>
+  </div>
+
+  <div class="item">
+    <input type="checkbox" id="c44">
+    <div class="body">
+      <h3>이미지를 싣고 지문을 맞춘다</h3>
+      <p>tar <b>셋</b>을 <code>docker load</code> 하고, <b>1단계 지문 표의 image ID</b> 와 NAS 의 <code>.Id</code> 를 대조합니다. 스크립트가 알아서 하고, 어긋나면 <b>앱이 살아 있는 채로 멈춥니다.</b></p>
+    </div>
+  </div>
+
+  <div class="item care">
+    <input type="checkbox" id="c45">
+    <div class="body">
+      <h3><span class="tag w">예정된 경고</span>preflight 가 「되돌리기 불가」를 보고한다</h3>
+      <p>0103 의 DELETE·DROP COLUMN, 0104 의 DROP TABLE 때문입니다. <b>예정된 것이므로 멈추지 않습니다.</b></p>
+      <div class="stop">대신 <b>3단계의 자료 뽑기를 했는지</b> 여기서 다시 확인하세요.</div>
+    </div>
+  </div>
+
+  <div class="item">
+    <input type="checkbox" id="c46">
+    <div class="body">
+      <h3>마이그레이션을 적용한다</h3>
+      <p><code>tools-as</code> 로 <code>db:migrate</code>.</p>
+      <div class="pass">끝나면 <code>drizzle.__drizzle_migrations</code> 가 <b>106</b> 이어야 합니다.</div>
+    </div>
+  </div>
+
+  <div class="item risk">
+    <input type="checkbox" id="c47">
+    <div class="body">
+      <h3><span class="tag r">반드시</span>0100 적용 뒤 NULL 을 본다</h3>
+      <pre><code>/usr/local/bin/docker exec dss-pg-app sh -c 'psql -U "$POSTGRES_USER" -d dss_as -c \
+ "select equipment_kind, base_cost, power_test_hours, investigation_hours, document_hours \
+  from repair_labor_settings order by equipment_kind"'</code></pre>
+      <div class="stop"><code>investigation_hours</code> 가 <b>NULL 인 줄이 있으면 그 장비의 기본 작업비가 0 이 됩니다.</b> 7단계에서 화면으로 채워야 합니다.</div>
+      <p class="why"><code>document_hours</code> 는 <b>전부 NULL 인 것이 맞습니다</b> — 새 개념이라 정해진 값이 없습니다.</p>
+    </div>
+  </div>
+
+  <div class="item care">
+    <input type="checkbox" id="c48">
+    <div class="body">
+      <h3><span class="tag w">주의</span>태그를 올리고 띄운다</h3>
+      <pre><code>$C up -d --no-deps app-auth app-as</code></pre>
+      <div class="stop"><b>인자 없이 <code>up -d</code> 를 부르지 마세요.</b> 설정 지문이 바뀐 DB 컨테이너까지 다시 만듭니다.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ─────────────── 5 ─────────────── -->
+<section class="step">
+  <div class="step-head">
+    <span class="step-no">5</span>
+    <h2>계측기</h2>
+    <span class="step-where">NAS · 1분</span>
+  </div>
+
+  <div class="item">
+    <input type="checkbox" id="c51">
+    <div class="body">
+      <h3>태그만 바꾼다</h3>
+      <p>마이그레이션이 없어 되돌리기가 1분입니다.</p>
+      <pre><code># compose 의 dss-meters:1.1 → 1.2 로 고친 뒤
+$C up -d --no-deps app-meters</code></pre>
+    </div>
+  </div>
+</section>
+
+<!-- ─────────────── 6 ─────────────── -->
+<section class="step">
+  <div class="step-head">
+    <span class="step-no">6</span>
+    <h2>확인 — 이 순서로</h2>
+    <span class="step-where">NAS · 브라우저</span>
+  </div>
+
+  <div class="item">
+    <input type="checkbox" id="c61">
+    <div class="body">
+      <h3>컨테이너가 <b>대답하는지</b></h3>
+      <pre><code>curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:13100/   # ·13000 ·13300</code></pre>
+      <div class="pass">2xx 또는 3xx.</div>
+      <p class="why"><code>docker ps</code> 에 보이는 것과 대답하는 것은 다릅니다. <b>대답할 때까지 기다린 시각이 곧 「멈춘 시간」의 끝</b>입니다.</p>
+    </div>
+  </div>
+
+  <div class="item">
+    <input type="checkbox" id="c62">
+    <div class="body">
+      <h3>포트가 새지 않았는지 · 밖에서 닿는지</h3>
+      <pre><code>netstat -tln | grep 13</code></pre>
+      <p><code>127.0.0.1</code> 의 13000·13100·13300 만 보여야 합니다. 그리고 브라우저로 <code>login·as·meters.dss21.co.kr</code>.</p>
+    </div>
+  </div>
+
+  <div class="item risk">
+    <input type="checkbox" id="c63">
+    <div class="body">
+      <h3><span class="tag r">핵심</span>메뉴바가 보이는지</h3>
+      <p>A/S 에 로그인해서 머리말을 봅니다. <b>드롭다운 단추 하나</b>가 보이고, 누르면 쓸 수 있는 시스템 목록이 펼쳐지고, <b>바깥을 누르거나 Esc 로 접혀야</b> 합니다.</p>
+      <div class="tablewrap"><table>
+        <tr><th>안 보이면</th><td>① 포털이 정말 <b>1.4</b> 인가 ② <b>로그아웃했다 다시 로그인</b>했나 ③ 1단계의 이미지 검사</td></tr>
+      </table></div>
+      <p class="why">목록은 <b>로그인할 때만</b> 토큰에 실려 나옵니다. 이미 로그인해 둔 사람은 다시 로그인해야 보입니다.</p>
+    </div>
+  </div>
+
+  <div class="item">
+    <input type="checkbox" id="c64">
+    <div class="body">
+      <h3>견적서 결재가 들어갔는지</h3>
+      <p>견적서 화면에 <b>[견적서 결재] 탭</b>이 있고, 사용자 관리 → 승인 절차에 <b>「견적서 승인」</b> 용도가 보이면 0105 가 들어간 것입니다.</p>
+    </div>
+  </div>
+
+  <div class="item">
+    <input type="checkbox" id="c65">
+    <div class="body">
+      <h3>남의 것이 안 흔들렸는지</h3>
+      <p>계측기와 포털 화면이 평소대로인지.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ─────────────── 7 ─────────────── -->
+<section class="step">
+  <div class="step-head">
+    <span class="step-no">7</span>
+    <h2>배포 뒤에 할 일</h2>
+    <span class="step-where">며칠 안</span>
+  </div>
+
+  <div class="item risk">
+    <input type="checkbox" id="c71">
+    <div class="body">
+      <h3><span class="tag r">빠뜨리면 금액이 틀립니다</span>작업 비용의 빈 칸을 채운다</h3>
+      <p>4단계에서 <code>investigation_hours</code> 가 NULL 로 남은 장비가 있으면, <b>A/S 화면(작업 비용 설정)에서 사람이 채웁니다.</b></p>
+      <div class="stop">채우기 전까지 <b>그 장비의 견적서 금액이 틀립니다.</b></div>
+    </div>
+  </div>
+
+  <div class="item">
+    <input type="checkbox" id="c72">
+    <div class="body">
+      <h3>포털 「업데이트 소식」을 고친다</h3>
+      <p>A/S 번호가 <code>1.3</code> 으로 하나 낮게 적혀 있습니다. 이번에 <code>1.5</code> 항목과 함께 고칩니다.</p>
+      <p class="why"><code>package.json</code> 의 <code>version</code> 과 <code>RELEASES</code> 맨 앞 번호를 <b>같이</b> 올려야 시험이 통과합니다.</p>
+    </div>
+  </div>
+
+  <div class="item">
+    <input type="checkbox" id="c73">
+    <div class="body">
+      <h3><code>[폴더 열기]</code> 도우미를 다시 설치한다</h3>
+      <p>값이 바뀌면 <b>PC 마다</b> 다시 설치해야 합니다.</p>
+    </div>
+  </div>
+
+  <div class="item">
+    <input type="checkbox" id="c74">
+    <div class="body">
+      <h3>README 를 갱신한다</h3>
+      <p><code>dss-deploy/README.md</code> 의 「지금 어디까지 됐나」에 이 배포를 적고 단계 표의 태그를 고칩니다.</p>
+      <p class="why">다음 세션이 그 표로 이어받습니다.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ─────────────── 8 ─────────────── -->
+<section class="step">
+  <div class="step-head">
+    <span class="step-no">8</span>
+    <h2>개선요청 — 다른 날에</h2>
+    <span class="step-where">따로 잡기를 권함</span>
+  </div>
+  <p class="step-note">절차는 <code>runbook/06-개선요청-배포.md</code> 에 전부 있습니다. 여기서는 <b>언제 할지</b>만 정합니다.</p>
+
+  <div class="item care">
+    <input type="checkbox" id="c81">
+    <div class="body">
+      <h3><span class="tag w">결정</span>같은 날인가, 다른 날인가</h3>
+      <div class="tablewrap"><table>
+        <tr><th>같은 날</th><td>메뉴바에 네 시스템이 처음부터 다 뜬다. 대신 <b>사람 손 일곱</b>이 더 붙고 DNS·포털 등록은 시간이 걸린다</td></tr>
+        <tr><th>다른 날</th><td>정지 창이 짧고 문제 원인이 하나다. 대신 그날까지 메뉴에 개선요청이 안 보인다</td></tr>
+      </table></div>
+      <p class="why">개선요청이 메뉴에 뜨려면 <b>포털에 사이트를 등록하는 것이 먼저</b>입니다. 띄우는 것과 메뉴에 보이는 건 다른 일입니다.</p>
+    </div>
+  </div>
+
+  <div class="item">
+    <input type="checkbox" id="c82">
+    <div class="body">
+      <h3>띄운 뒤 — 야간 백업에 더한다</h3>
+      <p><code>dss_improvements</code> 와 <code>improvements-uploads</code> 를 <code>backup-nightly.sh</code> 에 넣고 <code>03-install-backup.sh</code> 로 다시 설치합니다.</p>
+      <div class="stop">안 하면 <b>개선요청 자료가 한 번도 백업되지 않습니다.</b></div>
+    </div>
+  </div>
+</section>
+
+<!-- 비상 -->
+<div class="aside">
+  <h2>잘못됐을 때</h2>
+  <ol>
+    <li><b>스모크를 통과하지 못하면 무조건 되돌립니다.</b> 「조금만 더 보면 될 것 같다」가 가장 비싼 판단입니다.</li>
+    <li>포털·계측기·개선요청은 <b>태그만 되돌리면</b> 끝입니다(마이그레이션이 없습니다).</li>
+    <li>🔴 <b>A/S 는 태그만으로 안 됩니다.</b> 덤프 복원이 유일한 길입니다 — 4단계에서 뜬 <code>pre-deploy</code> 덤프를 씁니다.</li>
+    <li>🔴 <b>정지 창을 넘기면 사실상 되돌릴 수 없습니다.</b> 되돌릴지 말지는 창 안에서 정하세요.</li>
+    <li>되돌리기 전체 표는 <code>runbook/05</code> 9절에 있습니다. 다만 <b>백업을 되살려 본 적은 한 번도 없습니다</b> — 실제로 쓰면 그 자리에서 처음 해 보는 것이 됩니다.</li>
+  </ol>
+</div>
+
+<footer>
+  <p>전체 절차 · 근거 · 확인하지 못한 것 아홉 가지는 <code>dss-deploy/runbook/07-2026-09-18-배포.md</code> 에 있습니다.<br>
+  이 페이지는 그중 <b>사람이 직접 하는 일</b>만 추린 것입니다 — 명령의 정확한 형태와 예외는 원문을 보세요.</p>
+</footer>
+
+</div>
+
+<script>
+(function(){
+  var KEY = "dss-deploy-20260918";
+  var boxes = Array.prototype.slice.call(document.querySelectorAll('.item input[type=checkbox]'));
+  var fill = document.getElementById('fill');
+  var count = document.getElementById('count');
+  var reset = document.getElementById('reset');
+
+  function read(){
+    try { return JSON.parse(localStorage.getItem(KEY) || "{}"); }
+    catch(e){ return {}; }
+  }
+  function write(state){
+    try { localStorage.setItem(KEY, JSON.stringify(state)); } catch(e){}
+  }
+  function paint(){
+    var done = boxes.filter(function(b){ return b.checked; }).length;
+    count.textContent = done + " / " + boxes.length;
+    fill.style.width = boxes.length ? (done / boxes.length * 100) + "%" : "0%";
+  }
+
+  var saved = read();
+  boxes.forEach(function(b){
+    if (saved[b.id]) b.checked = true;
+    b.addEventListener('change', function(){
+      var s = read();
+      if (b.checked) s[b.id] = 1; else delete s[b.id];
+      write(s);
+      paint();
+    });
+  });
+  paint();
+
+  reset.addEventListener('click', function(){
+    boxes.forEach(function(b){ b.checked = false; });
+    write({});
+    paint();
+  });
+})();
+</script>
