@@ -224,15 +224,18 @@ done
 #    명령이 **통째로** 실패한다 — 멈춘 앱을 다시 띄우지도 못하게 된다.
 INCOMING=$D/setup/incoming/docker-compose.nas.yml
 if [ -s "$INCOMING" ] && ! cmp -s "$INCOMING" "$CF"; then
+  # 🔴 주석 줄은 빼고 본다. 2026-09-18 에 개선요청 자리 셋을 **주석으로** 덮었는데
+  #    (compose 파일 자체 참조), 주석까지 세면 `#   - ./env/improvements.env` 가 잡혀
+  #    **꺼 놓은 서비스 때문에 멈춘다.** compose 는 주석을 안 읽으므로 우리도 안 읽는다.
   MISS=""
-  for e in $(grep -oE '\./env/[A-Za-z0-9_.-]+\.env' "$INCOMING" | sort -u); do
+  for e in $(sed '/^[[:space:]]*#/d' "$INCOMING" | grep -oE '\./env/[A-Za-z0-9_.-]+\.env' | sort -u); do
     [ -f "$D/deploy/${e#./}" ] || MISS="$MISS ${e#./}"
   done
   if [ -n "$MISS" ]; then
     bad "새 compose 가 **없는 설정 파일**을 가리킨다:$MISS"
     say "    → 하나만 없어도 docker compose 가 통째로 실패한다."
     say "    → 개선요청은 아직 첫 설치 전이다(runbook/06 2-ㅅ 가 env/improvements.env 를 만든다)."
-    say "      이번에 개선요청을 올리지 않는다면, 새 compose 에서 app-improvements 블록을 빼고 다시 올리세요."
+    say "      그 서비스 둘은 compose 에 **주석으로 꺼 두었다** — 누가 벗겨 놓았는지 본다."
     stop "compose 를 바꾸지 않았습니다. 앱은 그대로 돕니다."
   fi
   if "$DOCKER" compose --project-directory "$D/deploy" -f "$INCOMING" --env-file "$ENV_NAS" --profile tools config --quiet >/dev/null 2>&1; then
