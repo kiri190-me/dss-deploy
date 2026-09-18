@@ -56,12 +56,13 @@ echo "── DB"
 dump dss-pg-auth dss_auth_app   dss_auth
 dump dss-pg-app  dss_meters_app dss_meters
 dump dss-pg-app  dss_app        dss_as
+dump dss-pg-app  dss_improvements_app dss_improvements
 
 # ── 파일 ──────────────────────────────────────────────────────────────
 # 쌓아 올린다(--delete 없음). 이름이 UUID 라 한 번 생긴 파일은 바뀌지 않으므로
 # 새로 생긴 것만 복사되고, 화면에서 지운 사진도 백업에는 남는다.
 echo "── 파일"
-for p in meters-files as-attachments auth-keys; do
+for p in meters-files as-attachments auth-keys improvements-uploads; do
   if rsync -a "$D/$p/" "$B/files/$p/"; then
     echo "  ✓ $p · 파일 $(find "$B/files/$p" -type f | wc -l)개 · $(du -sh "$B/files/$p" | cut -f1)"
   else echo "  ✗ $p 복사 실패"; FAIL=1; fi

@@ -148,7 +148,7 @@ services:
       #    영향이 없지만(초기화는 이미 끝났다), 인자 없는 `up -d` 는 그 차이를 보고
       #    **DB 를 다시 만든다**(자료는 볼륨에 남는다). 앱을 띄울 때는
       #    `up -d --no-deps app-…` 로 부른다 — runbook/06 4절.
-      # IMPROVEMENTS_APP_PASSWORD: ${IMPROVEMENTS_APP_PASSWORD}
+      IMPROVEMENTS_APP_PASSWORD: ${IMPROVEMENTS_APP_PASSWORD}
     volumes:
       - dss-pg-app-data:/var/lib/postgresql/data
       # ⚠️ 이 스크립트는 데이터 폴더가 비어 있을 때 **한 번만** 돈다.
@@ -386,54 +386,54 @@ services:
   #       ③ tools-improvements)를 **함께** 벗겨야 한다 — 하나만 벗기면 또 깨진다.
   #       벗기는 법: 아래 줄들의 맨 앞 두 칸 뒤에 붙은 `# ` 만 지운다.
   #
-  # app-improvements:
-  #   image: dss-improvements:0.1
-  #   container_name: dss-improvements
-  #   restart: unless-stopped
-  #   logging: *logging
-  #   networks: [dss-data, dss-edge]
-  #   # dss-edge 가 필요한 이유: 로그인 토큰 교환이 https://login.dss21.co.kr 로
-  #   # 나갔다 들어온다(NAS 자신의 443 이지만 컨테이너에서는 바깥이다).
-  #   #
-  #   # 3500 → 13500. 위 원칙 2 와 같은 규칙(앞에 1 을 붙인 번호).
-  #   ports: ["127.0.0.1:13500:3500"]
-  #   env_file:
-  #     - ./env/improvements.env
-  #   environment:
-  #     TZ: Asia/Seoul
-  #     DATABASE_URL: postgres://dss_improvements_app:${IMPROVEMENTS_APP_PASSWORD}@dss-pg-app:5432/dss_improvements
-  #     # 🔴 스크린샷의 **바이트가 놓이는 곳**이다. DB 에는 이 루트 기준 상대
-  #     #    경로만 적힌다(그 저장소 src/lib/db/schema.ts 의 stored_path 주석).
-  #     #    아래 볼륨과 짝이라 한쪽만 바꾸면 올린 파일을 찾지 못한다.
-  #     #    값이 없으면 앱이 던진다 — 조용한 기본값이 없다(그 저장소가 일부러
-  #     #    그렇게 두었다).
-  #     UPLOADS_DIR: /data/uploads
-  #     # PORT 는 적지 않는다 — 이미지가 ENV PORT=3500 으로 들고 있다.
-  #     # 여기서 또 적으면 같은 값이 두 곳에 생기고 언젠가 한쪽만 바뀐다.
-  #   volumes:
-  #     # 🔴 이 한 줄이 이 서비스에서 가장 중요하다. 빠지면 올린 스크린샷이
-  #     #    컨테이너 안 임시 디스크에 쌓이고, **다음 배포에서 컨테이너를 새로
-  #     #    만드는 순간 전부 사라진다.** 앱은 DB 에 적힌 상대 경로로 파일을
-  #     #    찾으므로 화면에는 첨부가 있는데 바이트만 없는 상태가 된다.
-  #     #
-  #     #    NAS 쪽 경로는 계측기(meters-files)·A/S(as-attachments)에서 그대로
-  #     #    가져왔다 — /volume1/dss/<시스템>-<용도>. 그 폴더들은 01-prepare.sh 가
-  #     #    Synology ACL 을 걷고 node(uid 1000)에게 준 자리라 권한 처리도 같다.
-  #     #    (A/S 의 /quote-archive 같은 「직원이 쓰는 공유폴더」가 아니다.)
-  #     #
-  #     #    컨테이너 쪽만 /data 가 아니라 /data/uploads 다. 그 저장소의
-  #     #    .env.example 이 운영 값으로 그렇게 적어 두었고, 나중에 볼륨이
-  #     #    하나 더 붙어도 /data 아래로 나란히 들어간다.
-  #     - /volume1/dss/improvements-uploads:/data/uploads
-  #   depends_on:
-  #     db-app:
-  #       condition: service_healthy
-  #   deploy:
-  #     resources:
-  #       limits:
-  #         # 앱 넷 중 가장 작게 준다 — 첨부는 20MB 를 스트림으로 디스크에 흘려
-  #         # 쓰고(한 글에 5장), A/S 의 엑셀 파싱 같은 봉우리가 없다. 포털과 같다.
-  #         memory: 384M
+  app-improvements:
+    image: dss-improvements:0.1
+    container_name: dss-improvements
+    restart: unless-stopped
+    logging: *logging
+    networks: [dss-data, dss-edge]
+    # dss-edge 가 필요한 이유: 로그인 토큰 교환이 https://login.dss21.co.kr 로
+    # 나갔다 들어온다(NAS 자신의 443 이지만 컨테이너에서는 바깥이다).
+    #
+    # 3500 → 13500. 위 원칙 2 와 같은 규칙(앞에 1 을 붙인 번호).
+    ports: ["127.0.0.1:13500:3500"]
+    env_file:
+      - ./env/improvements.env
+    environment:
+      TZ: Asia/Seoul
+      DATABASE_URL: postgres://dss_improvements_app:${IMPROVEMENTS_APP_PASSWORD}@dss-pg-app:5432/dss_improvements
+      # 🔴 스크린샷의 **바이트가 놓이는 곳**이다. DB 에는 이 루트 기준 상대
+      #    경로만 적힌다(그 저장소 src/lib/db/schema.ts 의 stored_path 주석).
+      #    아래 볼륨과 짝이라 한쪽만 바꾸면 올린 파일을 찾지 못한다.
+      #    값이 없으면 앱이 던진다 — 조용한 기본값이 없다(그 저장소가 일부러
+      #    그렇게 두었다).
+      UPLOADS_DIR: /data/uploads
+      # PORT 는 적지 않는다 — 이미지가 ENV PORT=3500 으로 들고 있다.
+      # 여기서 또 적으면 같은 값이 두 곳에 생기고 언젠가 한쪽만 바뀐다.
+    volumes:
+      # 🔴 이 한 줄이 이 서비스에서 가장 중요하다. 빠지면 올린 스크린샷이
+      #    컨테이너 안 임시 디스크에 쌓이고, **다음 배포에서 컨테이너를 새로
+      #    만드는 순간 전부 사라진다.** 앱은 DB 에 적힌 상대 경로로 파일을
+      #    찾으므로 화면에는 첨부가 있는데 바이트만 없는 상태가 된다.
+      #
+      #    NAS 쪽 경로는 계측기(meters-files)·A/S(as-attachments)에서 그대로
+      #    가져왔다 — /volume1/dss/<시스템>-<용도>. 그 폴더들은 01-prepare.sh 가
+      #    Synology ACL 을 걷고 node(uid 1000)에게 준 자리라 권한 처리도 같다.
+      #    (A/S 의 /quote-archive 같은 「직원이 쓰는 공유폴더」가 아니다.)
+      #
+      #    컨테이너 쪽만 /data 가 아니라 /data/uploads 다. 그 저장소의
+      #    .env.example 이 운영 값으로 그렇게 적어 두었고, 나중에 볼륨이
+      #    하나 더 붙어도 /data 아래로 나란히 들어간다.
+      - /volume1/dss/improvements-uploads:/data/uploads
+    depends_on:
+      db-app:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          # 앱 넷 중 가장 작게 준다 — 첨부는 20MB 를 스트림으로 디스크에 흘려
+          # 쓰고(한 글에 5장), A/S 의 엑셀 파싱 같은 봉우리가 없다. 포털과 같다.
+          memory: 384M
 
   # ══ 도구 — A/S ═══════════════════════════════════════════════════════
   #
@@ -534,19 +534,19 @@ services:
   #       ② app-improvements · ③ 여기)를 **함께** 벗긴다.
   #       벗기는 법: 아래 줄들의 맨 앞 두 칸 뒤에 붙은 `# ` 만 지운다.
   #
-  # tools-improvements:
-  #   image: dss-improvements-tools:1
-  #   profiles: [tools]
-  #   networks: [dss-data, dss-edge]
-  #   env_file:
-  #     - ./env/improvements.env
-  #   environment:
-  #     TZ: Asia/Seoul
-  #     DATABASE_URL: postgres://dss_improvements_app:${IMPROVEMENTS_APP_PASSWORD}@dss-pg-app:5432/dss_improvements
-  #   deploy:
-  #     resources:
-  #       limits:
-  #         memory: 512M
+  tools-improvements:
+    image: dss-improvements-tools:1
+    profiles: [tools]
+    networks: [dss-data, dss-edge]
+    env_file:
+      - ./env/improvements.env
+    environment:
+      TZ: Asia/Seoul
+      DATABASE_URL: postgres://dss_improvements_app:${IMPROVEMENTS_APP_PASSWORD}@dss-pg-app:5432/dss_improvements
+    deploy:
+      resources:
+        limits:
+          memory: 512M
 
 # ══ 메모리 예산 ═════════════════════════════════════════════════════════
 #
