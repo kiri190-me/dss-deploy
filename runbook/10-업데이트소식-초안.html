@@ -201,9 +201,16 @@
       <td><code>version</code> 을 <b>실제로 구운 이미지 태그</b>로, <code>date</code> 를
           <b>배포한 날</b>로 고칩니다.</td></tr>
   <tr><td class="c">3</td>
-      <td>🔴 <b>통합 로그인 항목은 이번에 없습니다.</b> 그래서
-          <code>package.json</code> 의 <code>version</code> 은 <b>그대로 둡니다</b>
-          — 올리면 시험이 잡습니다(<code>APP_VERSION</code> 은 통합 로그인 항목에서만 뽑습니다).</td></tr>
+      <td>🔴 <b>포털 판 번호를 정합니다 — 2026-09-28 에 이 항목을 고쳤습니다.</b><br>
+          처음에는 「통합 로그인 항목이 없으니 <code>package.json</code> 을 그대로 둔다」고 적었는데,
+          <b>포털 이미지가 실제로 바뀌므로</b>(글이 그 저장소에 있습니다) 화면의 v번호와
+          이미지 태그가 어긋나게 됩니다.<br><br>
+          <b>권장</b> — 포털을 <code>1.5</code> 로 올리고 <b>통합 로그인 항목도 한 줄 더합니다</b>:
+          <br><span class="muted">「업데이트 소식에 <b>PO / 내자</b>와 <b>개선요청</b>의 소식도 함께 보입니다.」</span>
+          <br>그러면 <code>package.json</code> 의 <code>version</code> 도 <code>1.5</code>,
+          이미지도 <code>dss-auth:1.5</code> 로 맞아떨어집니다.
+          <br><br>올리지 않기로 하면 <code>package.json</code> 을 건드리지 말고
+          이미지를 <code>dss-auth:1.4</code> 로 다시 굽습니다.</td></tr>
   <tr><td class="c">4</td>
       <td><code>npm test</code> 로 확인합니다 — 날짜 내림차순 · 시스템별 번호 순서 ·
           번호와 날짜 꼴 · 빈 항목을 시험이 잽니다.</td></tr>
