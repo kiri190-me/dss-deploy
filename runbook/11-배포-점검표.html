@@ -276,15 +276,25 @@ docker save dss-as-tools:1 -o dss-as-tools-1.tar
 docker save dss-po:0.1 -o dss-po-0.1.tar
 docker save dss-auth:1.5 -o dss-auth-1.5.tar</pre></div>
   <div class="why dang">🔴 <b>옮길 곳은 <code>/volume1/dss/images/</code> 입니다</b>
-    — <code>deploy</code> 가 아닙니다. 기존 이미지 tar 들이 거기 모여 있습니다.
-    <span class="muted">File Station 으로 <code>dss</code> › <code>images</code> 에 끌어다 놓으면 됩니다.</span></div>
+    — <code>deploy</code> 가 아닙니다. 기존 이미지 tar 들이 거기 모여 있습니다.</div>
   <div class="why">🔴 <b>옮기기 전에 지문을 적어 두세요.</b> NAS 에서 <code>load</code> 한 뒤 맞춰 보면
     옮기다 깨졌는지, 엉뚱한 이미지가 올라갔는지 잡힙니다.</div>
   <div class="cmd" data-label="PowerShell — 지문 넷을 적어 둡니다"><pre>docker image inspect dss-as:1.7 --format "{{.Id}}"
 docker image inspect dss-as-tools:1 --format "{{.Id}}"
 docker image inspect dss-po:0.1 --format "{{.Id}}"
 docker image inspect dss-auth:1.5 --format "{{.Id}}"</pre></div>
-  <div class="why muted">참고 — 이웃 런북은 <code>| gzip -1 &gt; …tar.gz</code> 로 압축해 옮깁니다.
+  <div class="cmd" data-label="PowerShell — 🔴 scp 에 -O 를 반드시 붙입니다 (아래 까닭)"><pre>cd "C:\Users\희만\Desktop"
+scp -O dss-as-1.7.tar dss-nas:/volume1/dss/images/
+scp -O dss-as-tools-1.tar dss-nas:/volume1/dss/images/
+scp -O dss-po-0.1.tar dss-nas:/volume1/dss/images/
+scp -O dss-auth-1.5.tar dss-nas:/volume1/dss/images/</pre></div>
+  <div class="why dang">🔴 <b><code>-O</code> 없이 <code>scp</code> 만 쓰면 실패합니다</b> —
+    <code>subsystem request failed on channel 0</code>. DSM 에 <b>sftp 하위시스템이 없어서</b>
+    요즘 <code>scp</code> 의 기본 방식(SFTP)이 안 붙습니다. <code>-O</code> 가 옛 방식으로 돌립니다.
+    <span class="muted">(2026-09-28 실측 — 세 방법을 작은 파일로 시험해 가른 결과입니다.)</span></div>
+  <div class="why muted">⚠️ 연결할 때마다 「post-quantum key exchange」 경고가 뜹니다 —
+    새 ssh 클라이언트가 옛 서버에 붙을 때 나는 <b>알림</b>이고 전송에는 지장이 없습니다.<br>
+    참고 — 이웃 런북은 <code>| gzip -1 &gt; …tar.gz</code> 로 압축해 옮깁니다.
     <code>docker load</code> 는 둘 다 읽으므로 이미 <code>.tar</code> 로 만드셨다면 그대로 옮기셔도 됩니다.</div>
 </div></div></div>
 
@@ -299,6 +309,9 @@ $f = Get-ChildItem -LiteralPath $B -Recurse -File
 "장수    : {0}" -f $f.Count
 "총바이트 : {0}" -f ($f | Measure-Object -Property Length -Sum).Sum</pre></div>
   <div class="why">2026-09-28 실측 — <b>장수 143 · 총바이트 436,850,078</b>. 달라졌으면 멈추고 확인하세요.</div>
+  <div class="cmd" data-paste="whole" data-label="PowerShell — 폴더째 보냅니다 (🔴 -O 필수)"><pre>ssh dss-nas "mkdir -p /volume1/dss/kyosan-converted"
+scp -O -r "C:\Users\희만\Desktop\_백업\2026-09-28-연락서원본\kyosan-xls-converted\*" dss-nas:/volume1/dss/kyosan-converted/</pre></div>
+  <div class="why">143장 · 약 417MB 라 몇 분 걸립니다. 끝나면 2단계에서 장수와 바이트를 대조합니다.</div>
 </div></div></div>
 
 <!-- ══════════════════ 2 ══════════════════ -->
