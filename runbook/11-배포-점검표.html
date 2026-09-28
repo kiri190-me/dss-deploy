@@ -257,6 +257,20 @@ sudo chown -R 1000:1000 /volume1/dss/kyosan-converted</pre><button class="cp">�
   </table>
   <div class="why dang">🔴 <code>launcher_url</code> 이 없거나 틀리면 <b>다른 사이트의 메뉴바에 PO 가 안 뜹니다.</b></div>
   <div class="why">화면별 권한은 포털이 아니라 <b>A/S 의 「사용자 관리 › 역할별 접근 권한」</b>이 정합니다 — 두 시스템이 같은 설정을 봅니다.</div>
+  <div class="why warn">⚠️ 화면이 아니라 <b>SQL</b> 로 넣습니다(포털에는 도구 이미지가 없습니다).
+    시크릿은 개발 PC 에서 만들어 <code>po.env</code> 에 바로 적고 <b>해시만</b> NAS 로 들고 갑니다 —
+    풀이는 <code>12-막히는-곳-풀이.html</code> 4번.</div>
+</div></div></div>
+
+<div class="step"><div class="hd"><input type="checkbox"><div class="t">
+  <b>🔴 PO 접근 권한을 사람들에게 준다</b><span class="tag man">사람</span>
+  <div class="why dang">🔴 <b>등록만 하고 이걸 안 하면 아무도 못 들어갑니다.</b>
+    PO 는 <code>requires_grant = true</code> — 「명단에 있는 사람만」입니다.
+    포털 타일에도 안 보이고 로그인도 막힙니다.</div>
+  <div class="why">개발 포털 실측 — A/S 는 <b>5명 전원</b>, PO 는 <b>1명</b>뿐입니다.
+    <b>권장</b>: 지금 A/S 에서 견적서·내자를 쓰는 사람들에게 똑같이 줍니다.</div>
+  <div class="why">🔴 <b>먼저 「누가 받게 되는지」를 조회로 보고</b> 넣으세요.
+    SQL 은 <code>12-막히는-곳-풀이.html</code> 5번에서 저에게 시키시면 됩니다.</div>
 </div></div></div>
 
 <div class="step"><div class="hd"><input type="checkbox"><div class="t">
