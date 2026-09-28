@@ -12,19 +12,19 @@
     --man:#b45309; --manbg:#fffbeb; --manline:#fde68a;
     --dang:#991b1b; --dangbg:#fef2f2; --dangline:#fecaca;
     --ok:#065f46; --okbg:#ecfdf5; --okline:#a7f3d0;
+    --bot:#5b21b6; --botbg:#f5f3ff; --botline:#ddd6fe;
   }
   *{box-sizing:border-box}
   body{margin:0;padding:1.6rem 1.1rem 6rem;
     font:15px/1.7 -apple-system,"Segoe UI","Malgun Gothic",sans-serif;
     color:var(--ink);background:var(--bg)}
-  .wrap{max-width:60rem;margin:0 auto}
+  .wrap{max-width:62rem;margin:0 auto}
   header.top{margin-bottom:1.2rem;padding-bottom:1rem;border-bottom:2px solid var(--ink)}
   h1{margin:0 0 .35rem;font-size:1.4rem;letter-spacing:-.01em}
   .sub{color:var(--dim);font-size:.92rem}
   code{background:#f4f4f5;padding:.08rem .3rem;border-radius:.25rem;font:.88em ui-monospace,Consolas,monospace}
 
-  /* 진행 막대 */
-  .bar-wrap{position:sticky;top:0;z-index:10;background:var(--bg);
+  .bar-wrap{position:sticky;top:0;z-index:20;background:var(--bg);
     padding:.7rem 0 .6rem;border-bottom:1px solid var(--line);margin-bottom:1.2rem}
   .bar{height:.55rem;border-radius:999px;background:#e4e4e7;overflow:hidden}
   .bar i{display:block;height:100%;background:var(--ok);width:0;transition:width .2s}
@@ -34,8 +34,7 @@
     background:#fff;border-radius:.3rem;cursor:pointer;color:var(--dim)}
   .bar-note button:hover{background:#f4f4f5}
 
-  /* 단계 */
-  .phase{margin:1.8rem 0 .7rem;padding:.55rem .85rem;border-radius:.45rem;
+  .phase{margin:1.9rem 0 .7rem;padding:.55rem .85rem;border-radius:.45rem;
     font-size:1.02rem;font-weight:700;display:flex;align-items:center;gap:.5rem}
   .phase .where{font-size:.72rem;font-weight:600;padding:.12rem .5rem;border-radius:.3rem;border:1px solid}
   .phase.dev{background:var(--devbg);color:var(--dev);border:1px solid var(--devline)}
@@ -45,15 +44,14 @@
   .phase.gate{background:var(--dangbg);color:var(--dang);border:1px solid var(--dangline)}
   .phase.gate .where{background:#fff;border-color:var(--dangline);color:var(--dang)}
 
-  /* 항목 */
   .step{background:#fff;border:1px solid var(--line);border-radius:.5rem;
     margin:.55rem 0;padding:.75rem .9rem}
   .step.done{background:#fafffc;border-color:var(--okline)}
   .step .hd{display:flex;gap:.6rem;align-items:flex-start}
   .step input[type=checkbox]{margin-top:.28rem;width:1.05rem;height:1.05rem;flex:0 0 auto;cursor:pointer}
-  .step .t{flex:1}
+  .step .t{flex:1;min-width:0}
   .step .t b{font-size:.97rem}
-  .step.done .t b{color:var(--dim);text-decoration:line-through}
+  .step.done .t>b:first-child{color:var(--dim);text-decoration:line-through}
   .step .why{margin-top:.25rem;color:var(--dim);font-size:.88rem}
   .step .why.warn{color:var(--man)}
   .step .why.dang{color:var(--dang);font-weight:600}
@@ -61,18 +59,49 @@
     border-radius:.28rem;border:1px solid;margin-left:.35rem;vertical-align:.08em}
   .tag.man{background:var(--manbg);border-color:var(--manline);color:var(--man)}
   .tag.gate{background:var(--dangbg);border-color:var(--dangline);color:var(--dang)}
+  .tag.me{background:var(--botbg);border-color:var(--botline);color:var(--bot)}
+
+  /* 접었다 펴는 풀이 */
+  details.howto{margin:.55rem 0 .2rem;border:1px solid var(--line);border-radius:.4rem;background:#fcfcfd}
+  details.howto>summary{cursor:pointer;padding:.42rem .7rem;font-size:.85rem;font-weight:600;color:var(--dim);
+    list-style:none}
+  details.howto>summary::-webkit-details-marker{display:none}
+  details.howto>summary::before{content:"▸ ";color:var(--faint)}
+  details.howto[open]>summary::before{content:"▾ "}
+  details.howto>summary:hover{background:#f4f4f5}
+  details.howto .inner{padding:.2rem .7rem .7rem}
 
   /* 명령 상자 */
-  .cmd{position:relative;margin:.6rem 0 .2rem}
-  .cmd pre{margin:0;background:#18181b;color:#e4e4e7;padding:.7rem 3.4rem .7rem .9rem;
-    border-radius:.4rem;overflow-x:auto;font:.83rem/1.65 ui-monospace,Consolas,monospace;
-    white-space:pre;tab-size:2}
-  .cmd .cp{position:absolute;top:.45rem;right:.45rem;font:inherit;font-size:.72rem;
-    padding:.22rem .55rem;border:1px solid #3f3f46;background:#27272a;color:#d4d4d8;
-    border-radius:.3rem;cursor:pointer}
-  .cmd .cp:hover{background:#3f3f46;color:#fff}
-  .cmd .cp.ok{background:#065f46;border-color:#065f46;color:#fff}
-  .cmd .lbl{font-size:.76rem;color:var(--faint);margin-bottom:.2rem}
+  .cmd{margin:.6rem 0 .3rem;border:1px solid #27272a;border-radius:.45rem;overflow:hidden;background:#18181b}
+  .cmd .lbl{font-size:.75rem;color:#a1a1aa;padding:.4rem .7rem .3rem;
+    display:flex;justify-content:space-between;align-items:center;gap:.6rem;flex-wrap:wrap}
+  .cmd .lbl .all{font:inherit;font-size:.7rem;padding:.16rem .5rem;border:1px solid #3f3f46;
+    background:#27272a;color:#d4d4d8;border-radius:.28rem;cursor:pointer;white-space:nowrap}
+  .cmd .lbl .all:hover{background:#3f3f46;color:#fff}
+  .cmd .lbl .all.ok{background:#065f46;border-color:#065f46;color:#fff}
+  .cmd .rows{padding:0 0 .4rem}
+  .cmd .row{display:flex;align-items:flex-start;gap:.5rem;padding:.06rem .7rem}
+  .cmd .row pre{margin:0;flex:1;min-width:0;color:#e4e4e7;background:none;padding:.1rem 0;
+    font:.83rem/1.6 ui-monospace,Consolas,monospace;white-space:pre-wrap;word-break:break-all}
+  .cmd .row.cmt pre{color:#71717a}
+  .cmd .row .one{flex:0 0 auto;font:inherit;font-size:.68rem;padding:.08rem .42rem;margin-top:.15rem;
+    border:1px solid #3f3f46;background:#27272a;color:#a1a1aa;border-radius:.25rem;cursor:pointer;opacity:.45}
+  .cmd .row:hover .one{opacity:1}
+  .cmd .row .one:hover{background:#3f3f46;color:#fff}
+  .cmd .row .one.ok{background:#065f46;border-color:#065f46;color:#fff;opacity:1}
+  .cmd .row .spacer{flex:0 0 auto;width:2.1rem}
+  .cmd .whole{padding:.1rem .7rem .3rem}
+  .cmd .whole pre{margin:0;color:#e4e4e7;background:none;padding:0;
+    font:.83rem/1.6 ui-monospace,Consolas,monospace;white-space:pre-wrap;word-break:break-word}
+  .cmd .hint{font-size:.72rem;color:#a1a1aa;padding:0 .7rem .45rem}
+
+  .prompt{border:1px solid var(--botline);background:var(--botbg);border-radius:.45rem;
+    padding:.6rem .75rem;margin:.6rem 0}
+  .prompt .h{font-size:.8rem;font-weight:700;color:var(--bot);margin-bottom:.35rem}
+  .prompt .cmd{background:#2e1065;border-color:#4c1d95}
+  .prompt .cmd .row pre,.prompt .cmd .whole pre{color:#ede9fe}
+  .prompt .cmd .lbl{color:#c4b5fd}
+  .prompt .cmd .lbl .all,.prompt .cmd .row .one{background:#4c1d95;border-color:#6d28d9;color:#ddd6fe}
 
   .box{margin:.6rem 0;padding:.65rem .85rem;border-radius:.4rem;font-size:.88rem;border:1px solid}
   .box.dang{background:var(--dangbg);border-color:var(--dangline);color:var(--dang)}
@@ -84,8 +113,11 @@
   th{background:#f4f4f5;font-weight:600;font-size:.83rem}
   td.c{text-align:center;white-space:nowrap}
   .muted{color:var(--faint)}
+  ol.steps{margin:.4rem 0 .4rem 1.25rem;padding:0}
+  ol.steps li{margin:.3rem 0;font-size:.9rem}
   footer{margin-top:3rem;padding-top:1rem;border-top:1px solid var(--line);color:var(--faint);font-size:.85rem}
-  @media print{ .bar-wrap,.cmd .cp,.bar-note button{display:none} .step{break-inside:avoid} }
+  @media print{ .bar-wrap,.cmd .lbl .all,.cmd .row .one,.bar-note button{display:none}
+    .step{break-inside:avoid} details.howto{ } details.howto>summary{display:none} }
 </style>
 </head>
 <body>
@@ -94,9 +126,13 @@
 <header class="top">
   <h1>배포 점검표 — 연락서 이식 + PO / 내자 첫 배포</h1>
   <p class="sub">
-    2026-09-28 작성 · 자세한 까닭은 <code>09-연락서-이식.md</code> 와
-    <code>08-PO-배포.md</code> 에 있습니다. 이 문서는 <b>순서대로 따라가며 체크하는 표</b>입니다.
+    2026-09-28 · <b>이 문서 하나로 끝까지 갑니다.</b> 막히는 곳의 풀이와
+    저에게 시킬 프롬프트를 각 단계 안에 접어 두었습니다 — <b>「어떻게 하나」를 누르면 펴집니다.</b>
     체크 상태는 이 브라우저에 저장되니 중간에 닫아도 됩니다.
+  </p>
+  <p class="sub" style="margin-top:.4rem">
+    까닭과 배경은 <code>08-PO-배포.md</code> · <code>09-연락서-이식.md</code> 에,
+    붙일 글은 <code>10-업데이트소식-초안.html</code> 에 있습니다.
   </p>
 </header>
 
@@ -104,7 +140,11 @@
   <div class="bar"><i id="barfill"></i></div>
   <div class="bar-note">
     <span id="barnote">0 / 0</span>
-    <button onclick="resetAll()">전부 지우기</button>
+    <span>
+      <button onclick="openAll(true)">풀이 모두 펴기</button>
+      <button onclick="openAll(false)">모두 접기</button>
+      <button onclick="resetAll()">체크 지우기</button>
+    </span>
   </div>
 </div>
 
@@ -114,273 +154,360 @@
   ② <b>백업 없이 시작하지 않습니다.</b> 이 배포는 <b>운영 DB 에 자료를 넣는</b> 첫 작업입니다 — 코드와 달리 되돌려도 흔적이 남습니다.
 </div>
 
-<!-- ══════════ 0 ══════════ -->
+<div class="box ok">
+  ✅ <b>이번 배포의 판 번호 — 2026-09-28 확정</b><br>
+  <code>dss-as:<b>1.7</b></code> · <code>dss-as-tools:<b>1</b></code>(태그 그대로 다시) ·
+  <code>dss-po:<b>0.1</b></code> · <code>dss-auth:<b>1.5</b></code><br>
+  🔴 포털은 <b>1.5</b> 입니다 — <code>package.json</code> 의 <code>version</code> 도 <b>함께 1.5</b> 로 올리고,
+  통합 로그인 항목도 한 줄 넣습니다.
+</div>
+
+<div class="box warn">
+  ⚠️ <b>명령 상자 읽는 법</b> — 딱지가 <b>PowerShell</b> 이면 이 PC 의 파워셸 창,
+  <b>NAS 터미널 (SSH)</b> 이면 NAS 에 접속해서, <b>psql 안</b> 이면 DB 에 붙은 그 안에서 칩니다.
+  줄마다 <b>작은 복사 단추</b>가 있고, 오른쪽 위 <b>[전체 복사]</b> 는 덩어리째입니다.
+  <b>통째로</b> 라고 적힌 상자는 한 줄씩 나누면 안 됩니다.
+</div>
+
+<!-- ══════════════════ 0 ══════════════════ -->
 <div class="phase dev"><span class="where">개발 PC</span> 0단계 — 굽기 전 준비</div>
 
 <div class="step"><div class="hd"><input type="checkbox"><div class="t">
   <b>미푸시가 0 인지 확인</b>
   <div class="why">이 PC 가 고장 나면 안 올린 만큼 잃습니다. 이미지를 굽기 전에 먼저 올립니다.</div>
-  <div class="cmd"><div class="lbl">PowerShell — 네 저장소를 한 번에 확인 (전부 0 이어야 합니다)</div><pre>cd "C:\Users\희만\Desktop\Development"
+  <div class="cmd" data-paste="whole" data-label="PowerShell — 네 저장소 · 전부 0 이어야 합니다"><pre>cd "C:\Users\희만\Desktop\Development"
 foreach ($r in "RF_Service_System","dss-po","dss-auth","dss-deploy") {
   "{0,-20} {1}" -f $r, (git -C $r rev-list --count origin/main..HEAD)
-}</pre><button class="cp">복사</button></div>
+}</pre></div>
+  <div class="why warn">⚠️ 0 이 아닌 것이 있으면 저에게 「미푸시 올려줘」라고 하세요.</div>
 </div></div></div>
 
 <div class="step"><div class="hd"><input type="checkbox"><div class="t">
-  <b>업데이트 소식 글을 넣는다</b><span class="tag man">사람</span>
+  <b>업데이트 소식 글을 넣는다</b><span class="tag me">저에게</span>
   <div class="why"><code>10-업데이트소식-초안.html</code> 의 글 셋을
-    <code>dss-auth/src/lib/release-notes.ts</code> 의 <code>RELEASES</code> <b>맨 앞</b>에.
-    🔴 <b>최신이 맨 앞</b>입니다.</div>
-  <div class="why dang">🔴 판 번호(<code>version</code>)와 날짜를 <b>실제로 굽는 번호·배포하는 날</b>로 고칩니다.</div>
-</div></div></div>
+    <code>dss-auth</code> 의 소식 목록 <b>맨 앞</b>에 넣습니다.</div>
 
-<div class="step"><div class="hd"><input type="checkbox"><div class="t">
-  <b>포털 판 번호를 정한다</b><span class="tag man">사람</span>
-  <div class="why">🔴 <b>초안 문서의 3번을 여기서 바로잡습니다.</b> 초안에는
-    「<code>package.json</code> 은 그대로 둔다」고 적었는데, <b>포털 이미지가 실제로 바뀌므로</b>
-    번호를 올리는 편이 맞습니다.</div>
-  <div class="why"><b>권장</b> — 포털을 <code>1.5</code> 로 올리고, <b>통합 로그인 항목도 한 줄 더합니다</b>:
-    「업데이트 소식에 <b>PO / 내자</b>와 <b>개선요청</b>의 소식도 함께 보입니다.」<br>
-    그러면 <code>package.json</code> 의 <code>version</code> 도 <code>1.5</code> 로,
-    이미지도 <code>dss-auth:1.5</code> 로 맞아떨어집니다.</div>
-  <div class="why warn">⚠️ 올리지 않기로 하면 <code>package.json</code> 을 건드리지 말고 이미지도
-    <code>dss-auth:1.4</code> 로 다시 굽습니다 — 화면의 v번호와 이미지 태그가 어긋나면 안 됩니다.</div>
-  <div class="cmd"><div class="lbl">PowerShell — 시험으로 확인 (날짜 순서 · 번호 꼴 · package.json 대조)</div><pre>cd "C:\Users\희만\Desktop\Development\dss-auth"
-npm run typecheck
-npm run lint
-npm test</pre><button class="cp">복사</button></div>
-  <div class="why warn">⚠️ 세 줄을 <b>한 줄씩</b> 보세요. PowerShell 5.1 에는 <code>&amp;&amp;</code> 가 없어
-    한 번에 이으면 앞이 실패해도 뒤가 그냥 돕니다.</div>
+  <details class="howto"><summary>어떻게 하나 · 프롬프트</summary><div class="inner">
+    <p class="why">업데이트 소식은 자동으로 만들어지지 않습니다. <b>파일 하나에 사람이 손으로 적는 목록</b>입니다.</p>
+    <table>
+      <tr><th style="width:20%">어디</th><td><code>dss-auth/src/lib/release-notes.ts</code></td></tr>
+      <tr><th>무엇</th><td><code>RELEASES</code> 라는 목록. <b>목록의 맨 위가 화면의 맨 위</b>입니다.</td></tr>
+    </table>
+    <div class="cmd" data-paste="whole" data-label="파일에 들어 있는 모양 — 붙여넣는 것이 아니라 읽는 것입니다"><pre>export const RELEASES = [
+  {                        ← 새 배포는 여기, 맨 앞에
+    system: "A/S 관리",     ← 어느 시스템
+    version: "1.6",         ← 도커 이미지 태그와 같은 번호
+    date: "2026-09-18",     ← 배포한 날
+    title: "…",             ← 한 줄 요약
+    items: [
+      { kind: "개선", text: "…" },   ← 추가 · 개선 · 고침
+    ],
+  },
+  … 그 아래는 지난 배포들
+]</pre></div>
+    <div class="box warn">⚠️ <b>왜 미리 안 넣어 두나</b> — 그 파일이 스스로 적어 두었습니다.
+      「미리 적어 두면 화면은 <b>아직 돌지도 않는 판을 광고</b>하게 된다」. 그래서 <b>굽는 날</b> 넣습니다.</div>
+
+    <h4 style="margin:.9rem 0 .3rem;font-size:.9rem">판 번호는 세 곳에 나옵니다</h4>
+    <table>
+      <tr><th style="width:34%">어디</th><th>이번 값</th></tr>
+      <tr><td>도커 이미지 태그</td><td><code>dss-auth:1.5</code> — 실제로 도는 것</td></tr>
+      <tr><td>소식의 <code>version</code></td><td><code>1.5</code> — 화면에 보이는 번호</td></tr>
+      <tr><td>🔴 <code>dss-auth/package.json</code></td><td><code>1.5</code> — <b>포털만</b> 해당. 로그인 화면 아래 v번호</td></tr>
+    </table>
+    <div class="box warn">⚠️ 셋째 줄은 <b>포털에만</b> 해당합니다. A/S 나 PO 번호 때문에 건드리면 안 됩니다.</div>
+
+    <div class="prompt">
+      <div class="h">🤖 저에게 이렇게 말씀하세요</div>
+      <div class="cmd" data-paste="whole" data-label="프롬프트"><pre>업데이트 소식 글을 넣어줘.
+10-업데이트소식-초안.html 의 글 셋을 dss-auth 의 RELEASES 맨 앞에 넣어줘.
+판 번호는 A/S 1.7 · PO 0.1 · 개선요청 0.1 · 포털 1.5, 날짜는 오늘로.
+포털 1.5 니까 통합 로그인 항목도 한 줄 넣고 package.json 도 1.5 로 올려줘.
+넣고 시험까지 돌려서 보여줘.</pre></div>
+    </div>
+  </div></details>
 </div></div></div>
 
 <div class="step"><div class="hd"><input type="checkbox"><div class="t">
   <b>서브모듈이 채워져 있는지 확인</b>
   <div class="why dang">🔴 비어 있으면 <b>빌드가 크게 실패합니다.</b> 조용히 옛 코드가 쓰이지는 않습니다.</div>
-  <div class="cmd"><div class="lbl">PowerShell — 네 줄이 나오고 앞에 <code>-</code> 가 붙으면 안 됩니다</div><pre>cd "C:\Users\희만\Desktop\Development"
+  <div class="cmd" data-label="PowerShell — 네 줄이 나오고 앞에 - 가 붙으면 안 됩니다"><pre>cd "C:\Users\희만\Desktop\Development"
 git -C RF_Service_System submodule status
-git -C dss-po submodule status</pre><button class="cp">복사</button></div>
+git -C dss-po submodule status</pre></div>
 </div></div></div>
 
-<!-- ══════════ 1 ══════════ -->
+<!-- ══════════════════ 1 ══════════════════ -->
 <div class="phase dev"><span class="where">개발 PC</span> 1단계 — 이미지 넷을 굽는다</div>
 
 <div class="box warn">
-  ⚠️ <b>넷입니다.</b> A/S 앱도 포함입니다 — 지금 운영은 <code>dss-as:1.6</code>(9/18)인데
-  그 뒤 A/S 의 소스가 크게 바뀌었습니다. <br>
-  ⚠️ 호스트에서 <code>npm run build</code> 를 따로 돌리지 마세요. <code>docker build</code> 는
-  개발 서버가 떠 있어도 괜찮습니다(<code>.dockerignore</code> 가 <code>.next</code> 를 막습니다).
+  ⚠️ <b>넷입니다.</b> A/S 앱도 포함입니다 — 지금 운영은 <code>dss-as:1.6</code>(9/18)인데 그 뒤 소스가 크게 바뀌었습니다.<br>
+  ⚠️ 호스트에서 <code>npm run build</code> 를 따로 돌리지 마세요. <code>docker build</code> 는 개발 서버가 떠 있어도 괜찮습니다.
 </div>
 
 <div class="step"><div class="hd"><input type="checkbox"><div class="t">
-  <b>A/S 앱 이미지 — <code>dss-as:1.7</code></b>
-  <div class="cmd"><div class="lbl">PowerShell</div><pre>cd "C:Users희만DesktopDevelopmentRF_Service_System"
-docker build -t dss-as:1.7 .</pre><button class="cp">복사</button></div>
+  <b>이미지 넷을 굽는다</b>
+  <div class="cmd" data-label="PowerShell — 한 줄씩 돌리고 끝나는 것을 보고 다음 줄로"><pre>cd "C:\Users\희만\Desktop\Development\RF_Service_System"
+docker build -t dss-as:1.7 .
+docker build --target tools -t dss-as-tools:1 .
+cd "C:\Users\희만\Desktop\Development\dss-po"
+docker build -t dss-po:0.1 .
+cd "C:\Users\희만\Desktop\Development\dss-auth"
+docker build -t dss-auth:1.5 .</pre></div>
+  <div class="why dang">🔴 <code>dss-as-tools</code> 에 <b>연락서 러너와 되돌리기</b>가 들어 있습니다. 지금 NAS 것은 9월 16일 것이라 없습니다.</div>
 </div></div></div>
 
 <div class="step"><div class="hd"><input type="checkbox"><div class="t">
-  <b>A/S 도구 이미지 — <code>dss-as-tools:1</code> (다시 굽는다)</b>
-  <div class="why dang">🔴 연락서 러너와 되돌리기가 여기 들어 있습니다. 지금 NAS 것은 <b>9월 16일</b> 것이라 없습니다.</div>
-  <div class="cmd"><div class="lbl">PowerShell</div><pre>cd "C:Users희만DesktopDevelopmentRF_Service_System"
-docker build --target tools -t dss-as-tools:1 .</pre><button class="cp">복사</button></div>
-</div></div></div>
-
-<div class="step"><div class="hd"><input type="checkbox"><div class="t">
-  <b>PO 이미지 — <code>dss-po:0.1</code></b>
-  <div class="cmd"><div class="lbl">PowerShell</div><pre>cd "C:Users희만DesktopDevelopmentdss-po"
-docker build -t dss-po:0.1 .</pre><button class="cp">복사</button></div>
-</div></div></div>
-
-<div class="step"><div class="hd"><input type="checkbox"><div class="t">
-  <b>포털 이미지 — <code>dss-auth:1.5</code></b>
-  <div class="why">0단계에서 정한 번호로 굽습니다.</div>
-  <div class="cmd"><div class="lbl">PowerShell</div><pre>cd "C:Users희만DesktopDevelopmentdss-auth"
-docker build -t dss-auth:1.5 .</pre><button class="cp">복사</button></div>
-</div></div></div>
-
-<div class="step"><div class="hd"><input type="checkbox"><div class="t">
-  <b>넷을 파일로 내보내 NAS 로 옮긴다</b>
+  <b>넷을 파일로 내보낸다</b>
   <div class="why">약 1.8GB 입니다. NAS 디스크 여유를 먼저 보세요.</div>
-  <div class="cmd"><div class="lbl">PowerShell</div><pre>cd "C:Users희만Desktop"
-docker save dss-as:1.7        -o dss-as-1.7.tar
-docker save dss-as-tools:1    -o dss-as-tools-1.tar
-docker save dss-po:0.1        -o dss-po-0.1.tar
-docker save dss-auth:1.5      -o dss-auth-1.5.tar</pre><button class="cp">복사</button></div>
+  <div class="cmd" data-label="PowerShell"><pre>cd "C:\Users\희만\Desktop"
+docker save dss-as:1.7 -o dss-as-1.7.tar
+docker save dss-as-tools:1 -o dss-as-tools-1.tar
+docker save dss-po:0.1 -o dss-po-0.1.tar
+docker save dss-auth:1.5 -o dss-auth-1.5.tar</pre></div>
+  <div class="why">만들어진 <code>.tar</code> 넷을 NAS 로 옮깁니다<span class="muted"> (File Station 으로 끌어다 놓으면 됩니다)</span>.</div>
 </div></div></div>
 
 <div class="step"><div class="hd"><input type="checkbox"><div class="t">
   <b>연락서 변환본 143장을 NAS 로 올린다</b><span class="tag man">사람</span>
-  <div class="why"><code>C:\Users\희만\Desktop\_백업\2026-09-28-연락서원본\kyosan-xls-converted</code>
+  <div class="why">개발 PC 의
+    <code>C:\Users\희만\Desktop\_백업\2026-09-28-연락서원본\kyosan-xls-converted</code>
     → NAS 의 <code>/volume1/dss/kyosan-converted</code></div>
   <div class="why dang">🔴 이 143장은 <b>이 PC 에만</b> 있습니다. <code>.xls</code> 를 엑셀로 바꾼 것이고 엑셀은 NAS 에서 안 돕니다.</div>
-  <div class="cmd"><div class="lbl">PowerShell — 올리기 전에 장수와 총 바이트를 적어 둡니다</div><pre>$B = "C:\Users\희만\Desktop\_백업\2026-09-28-연락서원본\kyosan-xls-converted"
+  <div class="cmd" data-paste="whole" data-label="PowerShell — 올리기 전에 장수와 총 바이트를 적어 둡니다"><pre>$B = "C:\Users\희만\Desktop\_백업\2026-09-28-연락서원본\kyosan-xls-converted"
 $f = Get-ChildItem -LiteralPath $B -Recurse -File
 "장수    : {0}" -f $f.Count
-"총바이트 : {0}" -f ($f | Measure-Object -Property Length -Sum).Sum</pre><button class="cp">복사</button></div>
-  <div class="why">2026-09-28 실측값 — <b>장수 143 · 총바이트 436,850,078</b>. 달라졌으면 멈추고 확인하세요.</div>
+"총바이트 : {0}" -f ($f | Measure-Object -Property Length -Sum).Sum</pre></div>
+  <div class="why">2026-09-28 실측 — <b>장수 143 · 총바이트 436,850,078</b>. 달라졌으면 멈추고 확인하세요.</div>
 </div></div></div>
 
-<!-- ══════════ 2 ══════════ -->
+<!-- ══════════════════ 2 ══════════════════ -->
 <div class="phase nas"><span class="where">NAS · 포털 · DSM</span> 2단계 — 자리 만들기 (PO 첫 설치용)</div>
 
 <div class="box warn">
-  ⚠️ <b>순서가 있습니다</b> — 포털 등록(시크릿 발급) → <code>po.env</code> → compose.
-  🔴 <code>po.env</code> 가 NAS 에 없는데 compose 의 주석을 벗기면
-  <code>docker compose</code> 명령이 <b>통째로</b> 안 먹습니다.
+  ⚠️ <b>순서가 있습니다</b> — 포털 등록(시크릿) → <code>po.env</code> → compose.
+  🔴 <code>po.env</code> 가 NAS 에 없는데 compose 의 주석을 벗기면 <code>docker compose</code> 명령이 <b>통째로</b> 안 먹습니다.
 </div>
 
 <div class="step"><div class="hd"><input type="checkbox"><div class="t">
   <b>올린 143장을 대조한다</b>
-  <div class="cmd"><div class="lbl">NAS 터미널 (SSH) — 위 PowerShell 값(143 · 436,850,078)과 같아야 합니다</div><pre>find "/volume1/dss/kyosan-converted" -type f | wc -l
+  <div class="cmd" data-label="NAS 터미널 (SSH) — 위 PowerShell 값과 같아야 합니다"><pre>find "/volume1/dss/kyosan-converted" -type f | wc -l
 find "/volume1/dss/kyosan-converted" -type f -exec ls -l {} + | awk '{s+=$5} END {print s}'
-sudo chown -R 1000:1000 /volume1/dss/kyosan-converted</pre><button class="cp">복사</button></div>
+sudo chown -R 1000:1000 /volume1/dss/kyosan-converted</pre></div>
   <div class="why">개수만 보지 말고 <b>총 바이트도</b> 보세요.
-    <span class="muted">크기를 <code>ls -l</code> 다섯째 칸으로 세는 것은 DSM 의 <code>find</code> 가
-    <code>-printf</code> 를 모를 수 있어서입니다.</span></div>
+    <span class="muted">크기를 <code>ls -l</code> 다섯째 칸으로 세는 것은 DSM 의 <code>find</code> 가 <code>-printf</code> 를 모를 수 있어서입니다.</span></div>
 </div></div></div>
 
 <div class="step"><div class="hd"><input type="checkbox"><div class="t">
   <b>연락서 원본 공유폴더가 NAS 어디인지 확인</b>
-  <div class="cmd"><div class="lbl">NAS 터미널 (SSH)</div><pre>ls -d "/volume1/2_as센터/1. 수리 관련/3. 연락서(활용)/2. 연락서"</pre><button class="cp">복사</button></div>
+  <div class="cmd" data-label="NAS 터미널 (SSH)"><pre>ls -d "/volume1/2_as센터/1. 수리 관련/3. 연락서(활용)/2. 연락서"</pre></div>
   <div class="why warn">⚠️ 없으면 그 공유가 다른 볼륨에 있는 것입니다. DSM <b>제어판 › 공유 폴더</b>에서 확인하고 경로를 고칩니다.
     <b>추측으로 넘어가지 마세요</b> — 틀리면 실패가 아니라 「문서 아님」 0건으로 조용히 끝납니다.</div>
 </div></div></div>
 
 <div class="step"><div class="hd"><input type="checkbox"><div class="t">
-  <b>포털에 <code>dss-po</code> 클라이언트를 등록하고 시크릿을 받는다</b><span class="tag man">사람</span>
-  <table>
-    <tr><th style="width:30%">항목</th><th>값</th></tr>
-    <tr><td><code>client_id</code></td><td><code>dss-po</code></td></tr>
-    <tr><td>이름</td><td><code>DSS PO / 내자</code></td></tr>
-    <tr><td><code>redirect_uri</code></td><td><code>https://po.dss21.co.kr/api/auth/sso/callback</code></td></tr>
-    <tr><td><code>launcher_url</code></td><td><code>https://po.dss21.co.kr</code></td></tr>
-    <tr><td>백채널 로그아웃</td><td><code>https://po.dss21.co.kr/api/auth/sso/backchannel-logout</code></td></tr>
-  </table>
-  <div class="why dang">🔴 <code>launcher_url</code> 이 없거나 틀리면 <b>다른 사이트의 메뉴바에 PO 가 안 뜹니다.</b></div>
-  <div class="why">화면별 권한은 포털이 아니라 <b>A/S 의 「사용자 관리 › 역할별 접근 권한」</b>이 정합니다 — 두 시스템이 같은 설정을 봅니다.</div>
-  <div class="why warn">⚠️ 화면이 아니라 <b>SQL</b> 로 넣습니다(포털에는 도구 이미지가 없습니다).
-    시크릿은 개발 PC 에서 만들어 <code>po.env</code> 에 바로 적고 <b>해시만</b> NAS 로 들고 갑니다 —
-    풀이는 <code>12-막히는-곳-풀이.html</code> 4번.</div>
+  <b>포털에 <code>dss-po</code> 를 등록하고 시크릿을 받는다</b><span class="tag man">사람</span>
+
+  <details class="howto"><summary>어떻게 하나 · 프롬프트</summary><div class="inner">
+    <div class="box warn">⚠️ <b>왜 화면이 아닌가</b> — 포털의 등록 명령은 <code>tsx</code> 로 도는 스크립트인데
+      NAS 의 포털 이미지에는 그것이 없습니다. A/S·계측기와 달리 <b>포털에는 도구 이미지가 없습니다.</b>
+      그래서 <b>SQL 로 직접</b> 넣습니다.</div>
+    <ol class="steps">
+      <li><b>개발 PC 에서</b> 시크릿을 만들어 <code>po.env</code> 에 <b>바로 적고</b>, <b>해시만</b> 화면에 찍습니다.</li>
+      <li><b>그 해시</b>를 들고 NAS 로 가서 SQL 을 한 번 돌립니다.</li>
+      <li>🔴 <b>여기서 끝이 아닙니다</b> — 다음 항목(권한 주기)까지 해야 들어갈 수 있습니다.</li>
+    </ol>
+    <div class="cmd" data-paste="whole" data-label="PowerShell (개발 PC) — 시크릿을 파일에 적고 해시만 출력"><pre>cd "C:\Users\희만\Desktop\Development\dss-deploy\nas\env"
+node -e "const c=require('crypto'),fs=require('fs');const s=c.randomBytes(32).toString('base64url');fs.appendFileSync('po.env','SSO_CLIENT_SECRET='+s+'\n');console.log(c.createHash('sha256').update(s,'utf8').digest('hex'))"</pre></div>
+    <p class="why">화면에 찍힌 <b>긴 16진수 한 줄</b>이 SQL 의 <code>client_secret_hash</code> 자리에 들어갑니다.
+      평문은 화면에 남기지 않습니다.</p>
+    <div class="box ok">✅ 등록할 값은 <b>개발 포털에 이미 있는 줄</b>을 본으로 씁니다. 2026-09-28 실측 —
+      <code>dss-po</code> · 아이콘 <code>📋</code> · <code>sort_order</code> <b>15</b> ·
+      <code>requires_grant</code> <b>true</b>(A/S 와 같습니다).</div>
+    <table>
+      <tr><th style="width:30%">항목</th><th>값</th></tr>
+      <tr><td><code>client_id</code></td><td><code>dss-po</code></td></tr>
+      <tr><td>이름</td><td><code>DSS PO / 내자</code></td></tr>
+      <tr><td><code>redirect_uri</code></td><td><code>https://po.dss21.co.kr/api/auth/sso/callback</code></td></tr>
+      <tr><td><code>launcher_url</code></td><td><code>https://po.dss21.co.kr</code></td></tr>
+      <tr><td>백채널 로그아웃</td><td><code>https://po.dss21.co.kr/api/auth/sso/backchannel-logout</code></td></tr>
+    </table>
+    <div class="why dang">🔴 <code>launcher_url</code> 이 없거나 틀리면 <b>다른 사이트의 메뉴바에 PO 가 안 뜹니다.</b></div>
+    <div class="prompt">
+      <div class="h">🤖 SQL 은 제가 만들어 드립니다</div>
+      <div class="cmd" data-paste="whole" data-label="프롬프트"><pre>포털에 PO 를 등록할 SQL 을 만들어줘.
+개발 포털의 dss-po 줄을 본보기로 하고, 주소는 po.dss21.co.kr 로.
+client_secret_hash 는 <여기에 넣으세요> 로 비워 두고,
+어디에 붙여넣는 명령인지도 같이 알려줘.</pre></div>
+    </div>
+  </div></details>
 </div></div></div>
 
 <div class="step"><div class="hd"><input type="checkbox"><div class="t">
   <b>🔴 PO 접근 권한을 사람들에게 준다</b><span class="tag man">사람</span>
   <div class="why dang">🔴 <b>등록만 하고 이걸 안 하면 아무도 못 들어갑니다.</b>
-    PO 는 <code>requires_grant = true</code> — 「명단에 있는 사람만」입니다.
-    포털 타일에도 안 보이고 로그인도 막힙니다.</div>
-  <div class="why">개발 포털 실측 — A/S 는 <b>5명 전원</b>, PO 는 <b>1명</b>뿐입니다.
-    <b>권장</b>: 지금 A/S 에서 견적서·내자를 쓰는 사람들에게 똑같이 줍니다.</div>
-  <div class="why">🔴 <b>먼저 「누가 받게 되는지」를 조회로 보고</b> 넣으세요.
-    SQL 은 <code>12-막히는-곳-풀이.html</code> 5번에서 저에게 시키시면 됩니다.</div>
+    PO 는 <code>requires_grant = true</code> — 「명단에 있는 사람만」입니다. 포털 타일에도 안 보입니다.</div>
+
+  <details class="howto"><summary>어떻게 하나 · 프롬프트</summary><div class="inner">
+    <table>
+      <tr><th style="width:26%">설정</th><th>뜻</th><th class="c">쓰는 곳</th></tr>
+      <tr><td><code>requires_grant = false</code></td><td>포털에 로그인되는 <b>모든 직원</b>이 쓴다</td><td class="c">계측기 · 휴가 · 개선요청</td></tr>
+      <tr><td><code>requires_grant = true</code></td><td><b>명단에 있는 사람만</b></td><td class="c">A/S · <b>PO</b></td></tr>
+    </table>
+    <p class="why">개발 포털 실측 — A/S 는 <b>5명 전원</b>, PO 는 <b>1명</b>뿐입니다.</p>
+    <p class="why"><b>권장</b> — 지금 A/S 에서 견적서·내자를 쓰는 사람들에게 똑같이 줍니다.
+      🔴 <b>화면별 권한은 따로입니다</b> — 그건 A/S 의 「사용자 관리 › 역할별 접근 권한」이 정하고
+      두 시스템이 같은 설정을 봅니다. 포털 명단은 <b>「이 사이트에 들어갈 수 있는가」</b>까지입니다.</p>
+    <div class="prompt">
+      <div class="h">🤖 프롬프트 — 🔴 먼저 보고 나중에 넣는 순서로</div>
+      <div class="cmd" data-paste="whole" data-label="프롬프트"><pre>PO 접근 권한을 줄 SQL 을 만들어줘.
+운영 포털에서 지금 A/S 를 쓸 수 있는 사람 전원에게 똑같이 주는 걸로.
+먼저 「누가 받게 되는지」를 보는 조회부터 만들고,
+실제로 넣는 SQL 은 그다음에 따로 줘.</pre></div>
+    </div>
+  </div></details>
 </div></div></div>
 
 <div class="step"><div class="hd"><input type="checkbox"><div class="t">
-  <b><code>po.env</code> 를 만들어 NAS 에 올린다</b><span class="tag man">사람</span>
-  <div class="cmd"><div class="lbl">PowerShell (개발 PC) — 원본을 복사해서 시작</div><pre>cd "C:Users희만DesktopDevelopmentdss-deploy
-asenv"
-Copy-Item ....dss-po.env.example .po.env</pre><button class="cp">복사</button></div>
-  <div class="why"><b>지울 셋</b> — <code>DATABASE_URL</code> · <code>UPLOADS_DIR</code>(compose 가 넘깁니다) · <code>PORT</code>(이미지가 들고 있습니다)</div>
-  <div class="cmd"><div class="lbl">PowerShell (개발 PC) — 새로 만들 비밀값 둘 (32자 이상) · 🔴 A/S 와 다른 값 · <b>두 번 돌립니다</b></div><pre>node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))"</pre><button class="cp">복사</button></div>
-  <table>
-    <tr><th style="width:38%">이름</th><th>값</th></tr>
-    <tr><td><code>AUTH_SESSION_SECRET</code></td><td>새로 만든 값</td></tr>
-    <tr><td><code>SSO_TX_SECRET</code></td><td>새로 만든 값</td></tr>
-    <tr><td><code>SESSION_COOKIE_SECURE</code></td><td><code>true</code></td></tr>
-    <tr><td><code>SSO_ISSUER</code></td><td><code>https://login.dss21.co.kr</code></td></tr>
-    <tr><td><code>SSO_CLIENT_ID</code></td><td><code>dss-po</code></td></tr>
-    <tr><td><code>SSO_CLIENT_SECRET</code></td><td>앞 단계에서 받은 값</td></tr>
-    <tr><td><code>SSO_REDIRECT_URI</code></td><td><code>https://po.dss21.co.kr/api/auth/sso/callback</code></td></tr>
-    <tr><td>양식 다섯</td><td><code>/templates/…</code> — 아래 compose 와 <b>같은 값</b></td></tr>
-    <tr><td><code>QUOTE_ARCHIVE_DIR</code></td><td><code>/quote-archive</code></td></tr>
-    <tr><td><code>QUOTE_ARCHIVE_UNC_ROOT</code> · <code>_ALT</code></td><td>🔴 <code>as.env</code> 의 같은 줄을 <b>그대로</b> 베낍니다</td></tr>
-    <tr><td><code>AS_APP_BASE_URL</code></td><td><code>https://as.dss21.co.kr</code></td></tr>
-  </table>
-  <div class="why dang">🔴 <code>AS_APP_BASE_URL</code> 은 <b>브라우저가 갈 곳</b>입니다. 컨테이너 주소를 적으면 링크를 눌러도 사람은 못 갑니다.</div>
-  <div class="why">NAS 에 올린 뒤 <b>root 600</b> 으로 만듭니다.</div>
+  <b><code>po.env</code> 를 만들어 NAS 에 올린다</b><span class="tag me">저에게</span>
+
+  <details class="howto"><summary>어떻게 하나 · 프롬프트</summary><div class="inner">
+    <p class="why">「19개를 채운다」가 막막한데, <b>사람이 정하는 것은 둘뿐</b>입니다.</p>
+    <table>
+      <tr><th class="c" style="width:12%">갈래</th><th style="width:34%">어떤 것</th><th>어떻게</th></tr>
+      <tr><td class="c">🔴 <b>만든다</b></td><td><code>AUTH_SESSION_SECRET</code> · <code>SSO_TX_SECRET</code></td>
+          <td><b>사람이</b> 만듭니다. 🔴 A/S 와 <b>다른 값</b></td></tr>
+      <tr><td class="c">받는다</td><td><code>SSO_CLIENT_SECRET</code></td><td>앞 항목의 명령이 <b>파일에 저절로 적습니다</b></td></tr>
+      <tr><td class="c">베낀다</td><td><code>QUOTE_ARCHIVE_UNC_ROOT</code> · <code>_ALT</code></td>
+          <td>NAS 의 <code>as.env</code> 에서 <b>그대로</b>. 고쳐 쓰지 마세요</td></tr>
+      <tr><td class="c">정해짐</td><td>나머지 열넷</td><td>양식 다섯 · 주소 넷 등 — <b>제가 채워 드립니다</b></td></tr>
+      <tr><td class="c">지운다</td><td><code>DATABASE_URL</code> · <code>UPLOADS_DIR</code> · <code>PORT</code></td>
+          <td>compose 와 이미지가 넘깁니다. 두 곳에 있으면 언젠가 한쪽만 바뀝니다</td></tr>
+    </table>
+    <div class="cmd" data-paste="whole" data-label="PowerShell (개발 PC) — 비밀값 만들기 · 🔴 두 번 돌려 둘을 만듭니다"><pre>node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))"</pre></div>
+    <div class="box warn">⚠️ <b>비밀값은 제가 만들지 않습니다.</b> 만들어 드리면 그 값이 우리 대화에 남습니다.
+      자리만 비워 드리고 만드는 명령을 알려 드립니다.</div>
+    <p class="why">다 채운 <code>po.env</code> 를 NAS 의 <code>setup/incoming/</code> 에 올리고,
+      사람이 <code>sudo</code> 로 <code>deploy/env/po.env</code> 에 옮긴 뒤 <b>root 600</b> 으로 만듭니다.</p>
+    <div class="prompt">
+      <div class="h">🤖 프롬프트</div>
+      <div class="cmd" data-paste="whole" data-label="프롬프트"><pre>po.env 를 만들어줘. 정해진 값은 다 채우고,
+사람이 넣어야 하는 자리는 <여기에 넣으세요> 로 비워 둬.
+저장소에는 올리지 말고, NAS 로 올리는 법도 알려줘.</pre></div>
+    </div>
+  </div></details>
 </div></div></div>
 
 <div class="step"><div class="hd"><input type="checkbox"><div class="t">
-  <b>compose 를 두 군데 고친다</b><span class="tag man">사람</span>
-  <div class="why">① <code>tools-as</code> 에 <b>볼륨 둘 + <code>group_add: ["100"]</code></b> 추가 (런북 09 · 3-ㅁ)<br>
-    ② <code>app-po</code> 의 <b>주석을 벗긴다</b> — 줄 앞의 <code># </code> 만 지웁니다 (런북 08 · 3-ㅂ)</div>
-  <div class="cmd"><div class="lbl">고친 뒤 — 문법이 맞고 app-po 가 목록에 뜨는지</div><pre>cd /volume1/dss/deploy
-sudo docker compose -f docker-compose.nas.yml --env-file .env.nas config --services</pre><button class="cp">복사</button></div>
+  <b>compose 를 네 군데 고친다</b><span class="tag me">저에게</span>
+
+  <details class="howto"><summary>어떻게 하나 · 프롬프트</summary><div class="inner">
+    <p class="why"><code>docker-compose.nas.yml</code> 은 <b>NAS 에서 무엇이 어떻게 도는지를 적은 설계도</b>입니다.</p>
+    <table>
+      <tr><th class="c" style="width:7%">#</th><th style="width:34%">무엇</th><th>왜</th></tr>
+      <tr><td class="c">①</td><td><code>app-as</code> 태그를 <code>dss-as:1.7</code> 로</td><td>A/S 앱을 새 것으로</td></tr>
+      <tr><td class="c">②</td><td><code>app-auth</code> 태그를 <code>dss-auth:1.5</code> 로</td><td>소식 글이 포털에 있어서</td></tr>
+      <tr><td class="c">③</td><td><code>app-po</code> 의 <b>주석을 벗긴다</b></td><td>지금은 줄 앞에 <code>#</code> 가 붙어 꺼져 있습니다</td></tr>
+      <tr><td class="c">④</td><td><code>tools-as</code> 에 <b>볼륨 둘 + <code>group_add</code></b></td><td>연락서 원본을 컨테이너가 봐야 해서</td></tr>
+    </table>
+    <h4 style="margin:.9rem 0 .3rem;font-size:.9rem">고친 파일이 NAS 로 가는 길</h4>
+    <ol class="steps">
+      <li>제가 개발 PC 의 <code>dss-deploy/nas/docker-compose.nas.yml</code> 을 고칩니다.</li>
+      <li>그 파일을 NAS 의 <code>setup/incoming/docker-compose.nas.yml</code> 에 올립니다.</li>
+      <li>배포 스크립트가 <b>바꾸기 전에 문법과 설정 파일 존재를 먼저 검사</b>하고 갈아 끼웁니다.
+          옛 파일은 <code>backups/</code> 에 남습니다.</li>
+    </ol>
+    <div class="box warn">⚠️ 스크립트를 안 쓰고 손으로 옮긴다면 <b>옛 파일을 먼저 복사해 두고</b>
+      <code>deploy/docker-compose.nas.yml</code> 에 <code>sudo</code> 로 옮깁니다(root:root 644).</div>
+    <div class="prompt">
+      <div class="h">🤖 프롬프트</div>
+      <div class="cmd" data-paste="whole" data-label="프롬프트"><pre>compose 를 배포용으로 고쳐줘.
+① app-as 태그를 dss-as:1.7 로 ② app-auth 를 dss-auth:1.5 로
+③ app-po 주석 벗기고 ④ tools-as 에 연락서 볼륨 둘과 group_add 추가.
+고친 뒤 문법 검사랑 서비스 목록까지 확인해서 보여줘.</pre></div>
+    </div>
+  </div></details>
+
+  <div class="cmd" data-paste="whole" data-label="NAS 터미널 (SSH) — 올린 뒤: 문법이 맞고 app-po 가 목록에 뜨는지"><pre>cd /volume1/dss/deploy
+sudo docker compose -f docker-compose.nas.yml --env-file .env.nas config --services</pre></div>
   <div class="why">목록에 <code>app-po</code> 가 <b>보여야</b> 합니다.</div>
 </div></div></div>
 
 <div class="step"><div class="hd"><input type="checkbox"><div class="t">
   <b>DNS 와 리버스 프록시</b><span class="tag man">사람</span>
-  <div class="why"><code>po.dss21.co.kr</code> → <code>http://127.0.0.1:13600</code> ·
-    인증서는 기존 와일드카드 · WebSocket 켜기</div>
+  <details class="howto"><summary>어떻게 하나</summary><div class="inner">
+    <table>
+      <tr><th style="width:26%">어디</th><th>무엇</th></tr>
+      <tr><td>Cloudflare</td><td><code>po.dss21.co.kr</code> → <code>192.168.0.222</code> (A 레코드 한 줄)</td></tr>
+      <tr><td>DSM 리버스 프록시</td><td><code>po.dss21.co.kr</code> → <code>http://127.0.0.1:13600</code> · WebSocket 켜기</td></tr>
+      <tr><td>인증서</td><td><b>새로 안 받습니다</b> — 이미 있는 <code>*.dss21.co.kr</code> 가 덮습니다</td></tr>
+    </table>
+  </div></details>
 </div></div></div>
 
-<!-- ══════════ 3 ══════════ -->
+<!-- ══════════════════ 3 ══════════════════ -->
 <div class="phase nas"><span class="where">NAS</span> 3단계 — 백업 (🔴 건너뛰지 않습니다)</div>
 
-<div class="box dang">
-  🔴 <b>개발 백업은 운영을 지키지 못합니다.</b> 이 배포는 운영 DB 에 <b>자료를 넣습니다.</b>
-</div>
+<div class="box dang">🔴 <b>개발 백업은 운영을 지키지 못합니다.</b> 이 배포는 운영 DB 에 <b>자료를 넣습니다.</b></div>
 
 <div class="step"><div class="hd"><input type="checkbox"><div class="t">
   <b>운영 DB 백업 (<code>dss_as</code>)</b>
-  <div class="why">절차는 <code>runbook/07</code> 의 그 절.</div>
+  <div class="why">절차는 <code>runbook/07</code> 의 그 절. 연락서 469장이 <b>이 DB 에 들어갑니다.</b></div>
 </div></div></div>
 
 <div class="step"><div class="hd"><input type="checkbox"><div class="t">
   <b>첨부 파일 폴더 백업</b>
-  <div class="why"><code>/volume1/dss/as-attachments</code> — 🔴 이식이 <b>연락서 파일을 첨부로 붙입니다.</b></div>
+  <div class="why"><code>/volume1/dss/as-attachments</code> — 🔴 이식이 <b>연락서 파일을 첨부로 붙입니다</b>(개발 4건에서 84개).</div>
 </div></div></div>
 
-<!-- ══════════ 4 ══════════ -->
+<!-- ══════════════════ 4 ══════════════════ -->
 <div class="phase nas"><span class="where">NAS</span> 4단계 — 이미지를 올리고 A/S 를 교체한다</div>
 
 <div class="step"><div class="hd"><input type="checkbox"><div class="t">
   <b>이미지 넷을 <code>load</code></b>
-  <div class="cmd"><div class="lbl">NAS 터미널 (SSH)</div><pre>cd /volume1/dss/deploy
+  <div class="cmd" data-label="NAS 터미널 (SSH)"><pre>cd /volume1/dss/deploy
 sudo docker load -i dss-as-1.7.tar
 sudo docker load -i dss-as-tools-1.tar
 sudo docker load -i dss-po-0.1.tar
-sudo docker load -i dss-auth-1.5.tar</pre><button class="cp">복사</button></div>
+sudo docker load -i dss-auth-1.5.tar</pre></div>
 </div></div></div>
 
 <div class="step"><div class="hd"><input type="checkbox"><div class="t">
   <b>🔴 도구 이미지에 러너가 실제로 들어 있는지 확인</b>
   <div class="why dang">🔴 태그가 <code>:1</code> 로 같아서 <b>눈으로는 옛 것과 구별이 안 됩니다.</b> 빠뜨리면 옛 이미지가 조용히 돕니다.</div>
-  <div class="cmd"><div class="lbl">NAS 터미널 (SSH)</div><pre>sudo docker images dss-as-tools:1 --format "{{.CreatedAt}}"
-sudo docker run --rm --entrypoint sh dss-as-tools:1 -c "ls -1 /app/scripts | grep kyosan; ls -1 /app/scripts/lib | grep kyosan"</pre><button class="cp">복사</button></div>
-  <table>
-    <tr><th>나와야 하는 것</th></tr>
-    <tr><td><code>import-kyosan-reports.ts</code> · <code>revert-kyosan-import.ts</code> ·
-      <code>kyosan-import-run.ts</code> · <code>kyosan-import-revert.ts</code></td></tr>
-  </table>
-  <div class="why">하나라도 없으면 <b>옛 이미지</b>입니다. <code>load</code> 를 다시 하세요.</div>
+  <div class="cmd" data-label="NAS 터미널 (SSH)"><pre>sudo docker images dss-as-tools:1 --format "{{.CreatedAt}}"
+sudo docker run --rm --entrypoint sh dss-as-tools:1 -c "ls -1 /app/scripts | grep kyosan; ls -1 /app/scripts/lib | grep kyosan"</pre></div>
+  <div class="why">날짜가 <b>오늘</b>이어야 하고, 아래 넷이 <b>다 나와야</b> 합니다 —
+    <code>import-kyosan-reports.ts</code> · <code>revert-kyosan-import.ts</code> ·
+    <code>kyosan-import-run.ts</code> · <code>kyosan-import-revert.ts</code>.
+    하나라도 없으면 <b>옛 이미지</b>입니다.</div>
 </div></div></div>
 
 <div class="step"><div class="hd"><input type="checkbox"><div class="t">
   <b>마이그레이션을 먼저 본다 (읽기만)</b>
-  <div class="cmd"><div class="lbl">NAS 터미널 (SSH)</div><pre>cd /volume1/dss/deploy
+  <div class="cmd" data-paste="whole" data-label="NAS 터미널 (SSH)"><pre>cd /volume1/dss/deploy
 sudo docker compose -f docker-compose.nas.yml --env-file .env.nas --profile tools \
-  run --rm tools-as npm run db:preflight</pre><button class="cp">복사</button></div>
+  run --rm tools-as npm run db:preflight</pre></div>
   <div class="why warn">⚠️ 적용할 것이 있으면 <code>npm run db:migrate</code> 로. <b>무엇이 도는지 먼저 읽고</b> 하세요.</div>
 </div></div></div>
 
 <div class="step"><div class="hd"><input type="checkbox"><div class="t">
   <b>A/S 앱을 새 이미지로 교체</b>
-  <div class="why">compose 의 <code>app-as</code> 이미지 태그를 <code>dss-as:1.7</code> 로 고친 뒤:</div>
-  <div class="cmd"><div class="lbl">NAS 터미널 (SSH)</div><pre>sudo docker compose -f docker-compose.nas.yml --env-file .env.nas up -d app-as
-sudo docker compose -f docker-compose.nas.yml --env-file .env.nas ps app-as</pre><button class="cp">복사</button></div>
+  <div class="cmd" data-label="NAS 터미널 (SSH)"><pre>cd /volume1/dss/deploy
+sudo docker compose -f docker-compose.nas.yml --env-file .env.nas up -d app-as
+sudo docker compose -f docker-compose.nas.yml --env-file .env.nas ps app-as</pre></div>
   <div class="why">A/S 에 로그인해 화면이 뜨는지 먼저 봅니다. <b>여기서 이상하면 연락서로 넘어가지 마세요.</b></div>
 </div></div></div>
 
-<!-- ══════════ 5 ══════════ -->
-<div class="phase nas"><span class="where">NAS</span> 5단계 — 연락서 469장 (런북 09)</div>
+<!-- ══════════════════ 5 ══════════════════ -->
+<div class="phase nas"><span class="where">NAS</span> 5단계 — 연락서 469장</div>
 
 <div class="step"><div class="hd"><input type="checkbox"><div class="t">
   <b>① 계획만 돌린다 — <code>--apply</code> 없이는 한 글자도 안 씁니다</b>
-  <div class="cmd"><div class="lbl">NAS 터미널 (SSH)</div><pre>cd /volume1/dss/deploy
+  <div class="cmd" data-paste="whole" data-label="NAS 터미널 (SSH) — 통째로 붙여넣습니다"><pre>cd /volume1/dss/deploy
 sudo docker compose -f docker-compose.nas.yml --env-file .env.nas --profile tools \
   run --rm tools-as \
   node --conditions=react-server --import tsx scripts/import-kyosan-reports.ts \
-    --dir /kyosan-src --dir /kyosan-converted</pre><button class="cp">복사</button></div>
+    --dir /kyosan-src --dir /kyosan-converted</pre></div>
   <div class="why dang">🔴 <code>--conditions=react-server</code> 가 없으면 모듈을 읽는 순간 던집니다.</div>
 </div></div></div>
 
@@ -394,8 +521,7 @@ sudo docker compose -f docker-compose.nas.yml --env-file .env.nas --profile tool
         <td>출하가 잠긴 건에서 사용 부품이 <b>말없이 건너뛰어집니다.</b> 이 수가 크면
             <b>「부품을 넣을지 말지」가 새 결정</b>입니다 — 여기서 멈추고 정하세요.
             <span class="muted">개발에서 0장이었던 것은 표본이 3장뿐이라 그런 것이지 「안 일어난다」가 아닙니다.</span></td></tr>
-    <tr><td>「사람이 골라야 하는」 장수</td>
-        <td>러너가 안 넣습니다. 화면에서 한 장씩 고릅니다(8단계)</td></tr>
+    <tr><td>「사람이 골라야 하는」 장수</td><td>러너가 안 넣습니다. 화면에서 한 장씩 고릅니다(8단계)</td></tr>
   </table>
 </div></div></div>
 
@@ -406,25 +532,33 @@ sudo docker compose -f docker-compose.nas.yml --env-file .env.nas --profile tool
 
 <div class="step"><div class="hd"><input type="checkbox"><div class="t">
   <b>④ <code>--apply</code> 로 넣는다 — 🔴 회차 번호를 받아 적습니다</b>
-  <div class="cmd"><div class="lbl">NAS 터미널 (SSH)</div><pre>cd /volume1/dss/deploy
+  <div class="cmd" data-paste="whole" data-label="NAS 터미널 (SSH) — 통째로 · 🔴 --out 날짜를 오늘로 고치세요"><pre>cd /volume1/dss/deploy
 sudo docker compose -f docker-compose.nas.yml --env-file .env.nas --profile tools \
   run --rm tools-as \
   node --conditions=react-server --import tsx scripts/import-kyosan-reports.ts \
     --dir /kyosan-src --dir /kyosan-converted \
-    --apply --out /data/kyosan-import-2026-10-00.json</pre><button class="cp">복사</button></div>
-  <div class="why dang">🔴 <b>회차 번호를 종이에 적으세요.</b> 맨 처음과 맨 끝에 찍힙니다. 이 번호 하나로 통째로 되돌립니다.</div>
+    --apply --out /data/kyosan-import-2026-10-00.json</pre></div>
+  <details class="howto"><summary>「회차 번호를 받아 적는다」가 무슨 뜻인가</summary><div class="inner">
+    <p class="why">469장 전부에 <b>같은 번호표</b>가 붙습니다. 그것이 회차 번호입니다.</p>
+    <ul>
+      <li><b>어디에 나오나</b> — 이 명령이 <b>맨 처음과 맨 끝에</b> 찍습니다.</li>
+      <li><b>왜 적나</b> — 잘못됐을 때 그 번호 하나로 <b>469장을 통째로 되돌립니다.</b></li>
+      <li><b>안 적으면</b> — 화면 기록을 뒤져야 합니다. 터미널을 닫았으면 더 어렵습니다.</li>
+    </ul>
+    <div class="box dang">🔴 <b>종이에 적으세요.</b> 「복사해 두기」도 중간에 다른 걸 복사하면 날아갑니다.</div>
+  </div></details>
   <div class="why">🔴 <code>--out</code> 은 <code>/app</code> 밖이어야 합니다 — 안이면 스크립트가 거절합니다.</div>
 </div></div></div>
 
 <div class="step"><div class="hd"><input type="checkbox"><div class="t">
   <b>⑤ SQL 로 결과를 본다</b>
-  <div class="cmd"><div class="lbl">접속</div><pre>sudo docker exec -it dss-pg-app psql -U dss_app -d dss_as</pre><button class="cp">복사</button></div>
-  <div class="cmd"><div class="lbl">🔴 &lt;회차&gt; 를 적어 둔 번호로 바꿔서</div><pre>select count(*) as 흔적,
+  <div class="cmd" data-label="NAS 터미널 (SSH) — DB 에 접속"><pre>sudo docker exec -it dss-pg-app psql -U dss_app -d dss_as</pre></div>
+  <div class="cmd" data-paste="whole" data-label="psql 안 — 🔴 &lt;회차&gt; 를 적어 둔 번호로 바꿔서"><pre>select count(*) as 흔적,
        sum(jsonb_array_length(coalesce(metadata->'attachmentIds','[]'::jsonb))) as 첨부,
        sum(jsonb_array_length(coalesce(metadata->'usedPartIds','[]'::jsonb)))   as 사용부품
   from status_change_histories
  where metadata->>'source' = 'KYOSAN_REPORT'
-   and metadata->>'importBatchId' = '&lt;회차&gt;';</pre><button class="cp">복사</button></div>
+   and metadata->>'importBatchId' = '&lt;회차&gt;';</pre></div>
   <div class="why">🔴 흔적은 전용 표가 아니라 <code>status_change_histories</code> 에 있습니다. 전용 표를 찾으면 없습니다.</div>
 </div></div></div>
 
@@ -434,13 +568,13 @@ sudo docker compose -f docker-compose.nas.yml --env-file .env.nas --profile tool
     SQL 이 「행이 있다」고 해도 <b>사람이 못 보면 들어간 것이 아닙니다.</b></div>
 </div></div></div>
 
-<!-- ══════════ 게이트 ══════════ -->
-<div class="phase gate"><span class="where">멈춤</span> 🔴 확인 게이트 — 여기서 한 번 멈춥니다</div>
+<!-- ══════════════════ 게이트 ══════════════════ -->
+<div class="phase gate"><span class="where">멈춤</span> 🔴 확인 게이트</div>
 
 <div class="box dang">
   <b>연락서가 제대로 들어간 것을 확인하기 전에 PO 를 띄우지 않습니다.</b>
   뒤에 문제가 났을 때 어느 쪽 탓인지 가릴 수 없게 됩니다.<br><br>
-  <b>이상하면 여기서 되돌립니다</b> — 아래 「되돌리기」로 가세요. 되돌린 뒤 PO 배포는
+  <b>이상하면 여기서 되돌립니다</b> — 맨 아래 「되돌리기」로 가세요. 되돌린 뒤 PO 배포는
   <b>그대로 진행해도 됩니다.</b> 두 일은 서로를 기다리지 않습니다.
 </div>
 
@@ -448,15 +582,15 @@ sudo docker compose -f docker-compose.nas.yml --env-file .env.nas --profile tool
   <b>🔴 연락서가 탈 없이 들어갔다 — PO 로 넘어간다</b><span class="tag gate">게이트</span>
 </div></div></div>
 
-<!-- ══════════ 6 ══════════ -->
-<div class="phase nas"><span class="where">NAS</span> 6단계 — PO / 내자를 띄운다 (런북 08)</div>
+<!-- ══════════════════ 6 ══════════════════ -->
+<div class="phase nas"><span class="where">NAS</span> 6단계 — PO / 내자를 띄운다</div>
 
 <div class="step"><div class="hd"><input type="checkbox"><div class="t">
   <b>띄운다</b>
-  <div class="cmd"><div class="lbl">NAS 터미널 (SSH)</div><pre>cd /volume1/dss/deploy
+  <div class="cmd" data-label="NAS 터미널 (SSH)"><pre>cd /volume1/dss/deploy
 sudo docker compose -f docker-compose.nas.yml --env-file .env.nas up -d app-po
 sudo docker compose -f docker-compose.nas.yml --env-file .env.nas ps app-po
-sudo docker compose -f docker-compose.nas.yml --env-file .env.nas logs --tail=100 app-po</pre><button class="cp">복사</button></div>
+sudo docker compose -f docker-compose.nas.yml --env-file .env.nas logs --tail=100 app-po</pre></div>
   <div class="why">설정이 빠졌으면 로그에 <b>빠진 이름이 그대로 찍힙니다</b>.</div>
 </div></div></div>
 
@@ -465,7 +599,7 @@ sudo docker compose -f docker-compose.nas.yml --env-file .env.nas logs --tail=10
   <table>
     <tr><th class="c" style="width:6%">#</th><th style="width:38%">무엇</th><th>어긋나면</th></tr>
     <tr><td class="c">1</td><td>컨테이너가 살아 있다</td><td>로그의 빠진 설정 이름</td></tr>
-    <tr><td class="c">2</td><td>로그인이 된다</td><td><code>redirect_uri</code> 가 글자 단위로 같은지</td></tr>
+    <tr><td class="c">2</td><td>로그인이 된다</td><td><code>redirect_uri</code> 가 글자 단위로 같은지 · <b>권한을 줬는지</b></td></tr>
     <tr><td class="c">3</td><td>메뉴바에 다섯 사이트가 보인다</td><td>포털의 <code>launcher_url</code></td></tr>
     <tr><td class="c">4</td><td>🔴 <b>A/S 에서 만든 견적서가 보인다</b></td><td><b>DB 를 잘못 붙였습니다.</b> 바로 <code>down</code></td></tr>
     <tr><td class="c">5</td><td>🔴 <b>A/S 에서 붙인 파일이 열린다</b></td><td><b>첨부 폴더를 잘못 붙였습니다.</b> 바로 <code>down</code></td></tr>
@@ -480,19 +614,18 @@ sudo docker compose -f docker-compose.nas.yml --env-file .env.nas logs --tail=10
     <b>자료가 두 곳으로 갈라집니다.</b> 바로 <code>down</code> 하고 compose 를 고치세요.</div>
 </div></div></div>
 
-<!-- ══════════ 7 ══════════ -->
-<div class="phase nas"><span class="where">NAS</span> 7단계 — 포털을 다시 띄운다 (소식이 여기서 보입니다)</div>
+<!-- ══════════════════ 7 ══════════════════ -->
+<div class="phase nas"><span class="where">NAS</span> 7단계 — 포털을 다시 띄운다</div>
 
 <div class="box dang">
-  🔴 <b>빠뜨리기 쉬운 단계입니다.</b> 업데이트 소식 글이 <b>포털 저장소</b>에 있어서,
-  A/S 와 PO 만 배포해서는 <b>소식이 안 뜹니다.</b>
+  🔴 <b>빠뜨리기 쉽습니다.</b> 소식 글이 <b>포털 저장소</b>에 있어서, A/S 와 PO 만 배포해서는
+  <b>소식이 안 뜹니다.</b>
 </div>
 
 <div class="step"><div class="hd"><input type="checkbox"><div class="t">
   <b>포털 교체</b>
-  <div class="why">compose 의 <code>app-auth</code> 이미지 태그를 <code>dss-auth:1.5</code> 로 고친 뒤:</div>
-  <div class="cmd"><div class="lbl">NAS 터미널 (SSH)</div><pre>cd /volume1/dss/deploy
-sudo docker compose -f docker-compose.nas.yml --env-file .env.nas up -d app-auth</pre><button class="cp">복사</button></div>
+  <div class="cmd" data-label="NAS 터미널 (SSH)"><pre>cd /volume1/dss/deploy
+sudo docker compose -f docker-compose.nas.yml --env-file .env.nas up -d app-auth</pre></div>
 </div></div></div>
 
 <div class="step"><div class="hd"><input type="checkbox"><div class="t">
@@ -501,7 +634,7 @@ sudo docker compose -f docker-compose.nas.yml --env-file .env.nas up -d app-auth
     <span class="muted">로그인 없이 열립니다.</span></div>
 </div></div></div>
 
-<!-- ══════════ 8 ══════════ -->
+<!-- ══════════════════ 8 ══════════════════ -->
 <div class="phase nas"><span class="where">마무리</span> 8단계 — 남은 것</div>
 
 <div class="step"><div class="hd"><input type="checkbox"><div class="t">
@@ -521,7 +654,7 @@ sudo docker compose -f docker-compose.nas.yml --env-file .env.nas up -d app-auth
   <div class="why">PO 가 운영에서 도는 것을 보고 정합니다(2026-09-28 결정). 이번 배포의 범위가 아닙니다.</div>
 </div></div></div>
 
-<!-- ══════════ 되돌리기 ══════════ -->
+<!-- ══════════════════ 되돌리기 ══════════════════ -->
 <div class="phase gate"><span class="where">비상</span> 되돌리기</div>
 
 <table>
@@ -532,16 +665,16 @@ sudo docker compose -f docker-compose.nas.yml --env-file .env.nas up -d app-auth
   <tr><td><b>포털</b></td><td>태그를 <code>dss-auth:1.4</code> 로 되돌리고 <code>up -d app-auth</code></td></tr>
 </table>
 
-<div class="cmd"><div class="lbl">연락서 — 계획만 (한 글자도 안 지웁니다)</div><pre>cd /volume1/dss/deploy
+<div class="cmd" data-paste="whole" data-label="NAS 터미널 (SSH) — 연락서 되돌리기 · 계획만 (한 글자도 안 지웁니다)"><pre>cd /volume1/dss/deploy
 sudo docker compose -f docker-compose.nas.yml --env-file .env.nas --profile tools \
-  run --rm tools-as npx tsx scripts/revert-kyosan-import.ts --batch &lt;회차&gt;</pre><button class="cp">복사</button></div>
+  run --rm tools-as npx tsx scripts/revert-kyosan-import.ts --batch &lt;회차&gt;</pre></div>
 
-<div class="cmd"><div class="lbl">연락서 — 계획을 읽고 승인한 뒤에만</div><pre>cd /volume1/dss/deploy
+<div class="cmd" data-paste="whole" data-label="NAS 터미널 (SSH) — 계획을 읽고 승인한 뒤에만"><pre>cd /volume1/dss/deploy
 sudo docker compose -f docker-compose.nas.yml --env-file .env.nas --profile tools \
-  run --rm tools-as npx tsx scripts/revert-kyosan-import.ts --batch &lt;회차&gt; --apply</pre><button class="cp">복사</button></div>
+  run --rm tools-as npx tsx scripts/revert-kyosan-import.ts --batch &lt;회차&gt; --apply</pre></div>
 
-<div class="cmd"><div class="lbl">PO 내리기</div><pre>cd /volume1/dss/deploy
-sudo docker compose -f docker-compose.nas.yml --env-file .env.nas down app-po</pre><button class="cp">복사</button></div>
+<div class="cmd" data-paste="whole" data-label="NAS 터미널 (SSH) — PO 내리기"><pre>cd /volume1/dss/deploy
+sudo docker compose -f docker-compose.nas.yml --env-file .env.nas down app-po</pre></div>
 
 <div class="box ok">
   ✅ <b>되돌리기는 파일을 지우지 않고 치워 둡니다.</b> 개발에서 실제로 써서 확인했습니다 —
@@ -549,9 +682,29 @@ sudo docker compose -f docker-compose.nas.yml --env-file .env.nas down app-po</p
   🔴 <b>관계없는 보고서 1장과 다른 사람이 넣은 부품 1줄은 그대로 살아남았습니다.</b>
 </div>
 
+<!-- ══════════════════ 누가 ══════════════════ -->
+<div class="phase dev"><span class="where">참고</span> 누가 무엇을 하나</div>
+
+<table>
+  <tr><th style="width:36%">무엇</th><th class="c" style="width:16%">누가</th><th>비고</th></tr>
+  <tr><td>업데이트 소식 글 · 판 번호</td><td class="c"><span class="tag me">저에게</span></td><td>번호·날짜만 정해 주세요</td></tr>
+  <tr><td>compose 네 군데</td><td class="c"><span class="tag me">저에게</span></td><td>NAS 로 올리는 건 직접</td></tr>
+  <tr><td>포털 등록 SQL · 권한 SQL</td><td class="c"><span class="tag me">저에게</span></td><td>돌리는 건 직접</td></tr>
+  <tr><td><code>po.env</code> 틀</td><td class="c"><span class="tag me">저에게</span></td><td>비밀값 자리는 비워 둡니다</td></tr>
+  <tr><td>이미지 굽기</td><td class="c"><span class="tag man">사람</span></td><td>시켜 주시면 제가 돌려도 됩니다</td></tr>
+  <tr><td>NAS 에서 도는 모든 것</td><td class="c"><span class="tag man">사람</span></td><td>제가 NAS 에 못 들어갑니다</td></tr>
+  <tr><td>운영 배포 실행</td><td class="c"><span class="tag man">사람</span></td><td>🔴 규칙입니다 — 제가 하지 않습니다</td></tr>
+</table>
+
+<div class="prompt">
+  <div class="h">🤖 배포하는 날 첫 프롬프트</div>
+  <div class="cmd" data-paste="whole" data-label="프롬프트"><pre>오늘 배포한다. 11-배포-점검표.html 대로 갈 거야.
+0단계부터 같이 가자. 지금 상태 먼저 확인해줘.</pre></div>
+</div>
+
 <footer>
-  2026-09-28 작성 · 까닭과 배경은 <code>08-PO-배포.md</code> · <code>09-연락서-이식.md</code> ·
-  <code>10-업데이트소식-초안.html</code> 에 있습니다.
+  2026-09-28 · 까닭과 배경은 <code>08-PO-배포.md</code> · <code>09-연락서-이식.md</code>,
+  붙일 글은 <code>10-업데이트소식-초안.html</code> 에 있습니다.
 </footer>
 
 </div>
@@ -560,49 +713,102 @@ sudo docker compose -f docker-compose.nas.yml --env-file .env.nas down app-po</p
 (function () {
   var KEY = "dss-deploy-checklist-2026-09-28";
 
-  // ── 복사 단추 ──────────────────────────────────────────────
-  // file:// 에서는 navigator.clipboard 가 막히는 브라우저가 있어 두 길을 둔다.
-  function copyText(text, btn) {
+  // ── 복사 ───────────────────────────────────────────────────
+  function legacy(text, done) {
+    var ta = document.createElement("textarea");
+    ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand("copy"); done(); }
+    catch (e) { alert("복사가 막혔습니다. 직접 긁어서 복사해 주세요."); }
+    document.body.removeChild(ta);
+  }
+  function copyText(text, btn, label) {
     function done() {
       var old = btn.textContent;
       btn.textContent = "복사됨"; btn.classList.add("ok");
-      setTimeout(function () { btn.textContent = old; btn.classList.remove("ok"); }, 1200);
+      setTimeout(function () { btn.textContent = old; btn.classList.remove("ok"); }, 1100);
     }
     if (navigator.clipboard && window.isSecureContext) {
       navigator.clipboard.writeText(text).then(done, function () { legacy(text, done); });
     } else { legacy(text, done); }
   }
-  function legacy(text, done) {
-    var ta = document.createElement("textarea");
-    ta.value = text;
-    ta.style.position = "fixed"; ta.style.opacity = "0";
-    document.body.appendChild(ta); ta.select();
-    try { document.execCommand("copy"); done(); } catch (e) { alert("복사가 막혔습니다. 직접 긁어서 복사해 주세요."); }
-    document.body.removeChild(ta);
-  }
-  document.querySelectorAll(".cmd .cp").forEach(function (btn) {
-    btn.addEventListener("click", function () {
-      var pre = btn.parentElement.querySelector("pre");
-      copyText(pre.textContent, btn);
+
+  // ── 명령 상자를 줄별로 다시 그린다 ─────────────────────────
+  document.querySelectorAll(".cmd").forEach(function (box) {
+    var pre = box.querySelector("pre");
+    if (!pre) return;
+    var whole = pre.textContent.replace(/\s+$/, "");
+    var label = box.getAttribute("data-label") || "";
+    var oneShot = box.getAttribute("data-paste") === "whole";
+    var lines = whole.split("\n");
+    if (lines.length < 2) oneShot = true;   // 한 줄짜리는 나눌 것이 없다
+
+    var head = document.createElement("div");
+    head.className = "lbl";
+    var span = document.createElement("span");
+    span.innerHTML = label + (oneShot && lines.length > 1 ? " · <b>통째로</b>" : "");
+    var all = document.createElement("button");
+    all.className = "all";
+    all.textContent = lines.length > 1 ? "전체 복사" : "복사";
+    all.addEventListener("click", function () { copyText(whole, all); });
+    head.appendChild(span); head.appendChild(all);
+
+    box.textContent = "";
+    box.appendChild(head);
+
+    if (oneShot) {
+      var w = document.createElement("div");
+      w.className = "whole";
+      var p = document.createElement("pre");
+      p.textContent = whole;
+      w.appendChild(p);
+      box.appendChild(w);
+      return;
+    }
+
+    var rows = document.createElement("div");
+    rows.className = "rows";
+    lines.forEach(function (line) {
+      var row = document.createElement("div");
+      row.className = "row";
+      var isBlank = line.trim() === "";
+      var isCmt = /^\s*#/.test(line);
+      if (isCmt) row.className += " cmt";
+      var p = document.createElement("pre");
+      p.textContent = line === "" ? " " : line;
+      row.appendChild(p);
+      if (isBlank || isCmt) {
+        var sp = document.createElement("span");
+        sp.className = "spacer";
+        row.appendChild(sp);
+      } else {
+        var b = document.createElement("button");
+        b.className = "one";
+        b.textContent = "복사";
+        b.title = "이 줄만 복사";
+        b.addEventListener("click", function () { copyText(line, b); });
+        row.appendChild(b);
+      }
+      rows.appendChild(row);
     });
+    box.appendChild(rows);
   });
 
-  // ── 체크 상태 저장 ─────────────────────────────────────────
+  // ── 체크 상태 ──────────────────────────────────────────────
   var boxes = Array.prototype.slice.call(document.querySelectorAll(".step input[type=checkbox]"));
-  boxes.forEach(function (b, i) { b.dataset.idx = String(i); });
-
   function load() {
     try {
       var raw = localStorage.getItem(KEY);
       if (!raw) return;
       JSON.parse(raw).forEach(function (i) { if (boxes[i]) boxes[i].checked = true; });
-    } catch (e) { /* file:// 에서 막히면 그냥 저장 없이 쓴다 */ }
+    } catch (e) {}
   }
   function save() {
     try {
-      var on = boxes.map(function (b, i) { return b.checked ? i : -1; }).filter(function (i) { return i >= 0; });
+      var on = [];
+      boxes.forEach(function (b, i) { if (b.checked) on.push(i); });
       localStorage.setItem(KEY, JSON.stringify(on));
-    } catch (e) { /* 무시 */ }
+    } catch (e) {}
   }
   function paint() {
     var n = 0;
@@ -620,6 +826,9 @@ sudo docker compose -f docker-compose.nas.yml --env-file .env.nas down app-po</p
     if (!confirm("체크를 전부 지웁니다. 계속할까요?")) return;
     boxes.forEach(function (b) { b.checked = false; });
     save(); paint();
+  };
+  window.openAll = function (open) {
+    document.querySelectorAll("details.howto").forEach(function (d) { d.open = open; });
   };
 
   load(); paint();
