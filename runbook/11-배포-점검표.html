@@ -267,14 +267,25 @@ docker build -t dss-auth:1.5 .</pre></div>
 </div></div></div>
 
 <div class="step"><div class="hd"><input type="checkbox"><div class="t">
-  <b>넷을 파일로 내보낸다</b>
-  <div class="why">약 1.8GB 입니다. NAS 디스크 여유를 먼저 보세요.</div>
+  <b>넷을 파일로 내보내 NAS 로 옮긴다</b>
+  <div class="why">2026-09-28 실측 — 합쳐 <b>약 515MB</b>(108 + 208 + 91 + 108).
+    <code>docker save</code> 는 이미 압축된 층을 담아서 <code>docker images</code> 가 보여 주는 크기보다 훨씬 작습니다.</div>
   <div class="cmd" data-label="PowerShell"><pre>cd "C:\Users\희만\Desktop"
 docker save dss-as:1.7 -o dss-as-1.7.tar
 docker save dss-as-tools:1 -o dss-as-tools-1.tar
 docker save dss-po:0.1 -o dss-po-0.1.tar
 docker save dss-auth:1.5 -o dss-auth-1.5.tar</pre></div>
-  <div class="why">만들어진 <code>.tar</code> 넷을 NAS 로 옮깁니다<span class="muted"> (File Station 으로 끌어다 놓으면 됩니다)</span>.</div>
+  <div class="why dang">🔴 <b>옮길 곳은 <code>/volume1/dss/images/</code> 입니다</b>
+    — <code>deploy</code> 가 아닙니다. 기존 이미지 tar 들이 거기 모여 있습니다.
+    <span class="muted">File Station 으로 <code>dss</code> › <code>images</code> 에 끌어다 놓으면 됩니다.</span></div>
+  <div class="why">🔴 <b>옮기기 전에 지문을 적어 두세요.</b> NAS 에서 <code>load</code> 한 뒤 맞춰 보면
+    옮기다 깨졌는지, 엉뚱한 이미지가 올라갔는지 잡힙니다.</div>
+  <div class="cmd" data-label="PowerShell — 지문 넷을 적어 둡니다"><pre>docker image inspect dss-as:1.7 --format "{{.Id}}"
+docker image inspect dss-as-tools:1 --format "{{.Id}}"
+docker image inspect dss-po:0.1 --format "{{.Id}}"
+docker image inspect dss-auth:1.5 --format "{{.Id}}"</pre></div>
+  <div class="why muted">참고 — 이웃 런북은 <code>| gzip -1 &gt; …tar.gz</code> 로 압축해 옮깁니다.
+    <code>docker load</code> 는 둘 다 읽으므로 이미 <code>.tar</code> 로 만드셨다면 그대로 옮기셔도 됩니다.</div>
 </div></div></div>
 
 <div class="step"><div class="hd"><input type="checkbox"><div class="t">
@@ -474,11 +485,19 @@ sudo docker compose -f docker-compose.nas.yml --env-file .env.nas config --servi
 
 <div class="step"><div class="hd"><input type="checkbox"><div class="t">
   <b>이미지 넷을 <code>load</code></b>
-  <div class="cmd" data-label="NAS 터미널 (SSH)"><pre>cd /volume1/dss/deploy
+  <div class="why">tar 넷은 <code>/volume1/dss/images/</code> 에 올려 두셨어야 합니다(1단계).</div>
+  <div class="cmd" data-label="NAS 터미널 (SSH)"><pre>cd /volume1/dss/images
 sudo docker load -i dss-as-1.7.tar
 sudo docker load -i dss-as-tools-1.tar
 sudo docker load -i dss-po-0.1.tar
 sudo docker load -i dss-auth-1.5.tar</pre></div>
+  <div class="why dang">🔴 <b>지문을 개발 PC 값과 맞춰 보세요.</b> 옮기다 깨졌거나 엉뚱한 것이 올라갔으면 여기서 잡힙니다.</div>
+  <div class="cmd" data-label="NAS 터미널 (SSH) — 1단계에서 적어 둔 값과 같아야 합니다"><pre>sudo docker image inspect dss-as:1.7 --format '{{.Id}}'
+sudo docker image inspect dss-as-tools:1 --format '{{.Id}}'
+sudo docker image inspect dss-po:0.1 --format '{{.Id}}'
+sudo docker image inspect dss-auth:1.5 --format '{{.Id}}'</pre></div>
+  <div class="why dang">🔴 <b><code>dss-as-tools:1</code> 이 특히 중요합니다</b> — 태그가 예전 것과 같아서
+    눈으로는 구별이 안 됩니다. 지문이 다르면 <b>옛 이미지가 그대로 있는 것</b>입니다.</div>
 </div></div></div>
 
 <div class="step"><div class="hd"><input type="checkbox"><div class="t">
