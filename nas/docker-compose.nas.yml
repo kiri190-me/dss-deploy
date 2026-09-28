@@ -435,6 +435,80 @@ services:
           # 쓰고(한 글에 5장), A/S 의 엑셀 파싱 같은 봉우리가 없다. 포털과 같다.
           memory: 384M
 
+  # ══ PO / 내자 (3600) ═════════════════════════════════════════════════
+  #
+  # 🔴 **아직 주석 처리돼 있다**(2026-09-28, 첫 설치 전). `env/po.env` 가 NAS 에
+  #    없는데 켜 두면 `docker compose` 명령이 **통째로** 안 먹는다 — 앱을 멈춘
+  #    뒤에 그걸 알게 되면 다시 띄우지 못한다.
+  #
+  #    🔴 벗기는 때: `runbook/08-PO-배포.md` 의 **첫 설치를 할 때**. 그 문서
+  #       3-ㅁ 가 `env/po.env` 를 만들고, 3-ㅂ 이 여기를 벗긴다.
+  #       🔴 개선요청과 달리 **벗길 자리가 여기 하나뿐이다** — db-app 에 더할
+  #       비밀번호도 없고(A/S 의 AS_APP_PASSWORD 를 그대로 쓴다), 도구 서비스도
+  #       없다. 벗기는 법: 아래 줄들의 맨 앞 두 칸 뒤에 붙은 `# ` 만 지운다.
+  #
+  # ── 🔴 이 서비스는 앞의 넷과 근본이 다르다 ──────────────────────────
+  # DB 를 새로 만들지 않는다. A/S 와 **같은 dss_as** 를 **같은 롤 dss_app** 으로
+  # 보고, 첨부 폴더 · 양식 · 견적서 공유폴더도 **A/S 와 같은 것**을 붙인다.
+  # 견적서·발주·내자를 A/S 에서 떼어 낸 사이트이고, 같은 표를 본다
+  # (설계서 PO_DOMESTIC_SPLIT_DESIGN.md B-2 · D절).
+  #
+  # 🔴 **첨부 폴더를 새로 만들지 마라.** 두 사이트가 같은 `attachments` 표를
+  #    보는데 표에는 파일의 상대 경로만 있다. 폴더를 나누면 A/S 에서 붙인
+  #    파일을 PO 가 못 찾는다(반대도 같다).
+  #
+  # 🔴 **도구 서비스(tools-po)를 만들지 않는다.** 이 저장소에는 마이그레이션도
+  #    야간 작업도 없다. 야간 완전삭제는 아래 tools-as 가 계속 맡고, 같은 표라
+  #    그것이 PO 의 휴지통도 함께 비운다. A/S 에서 그것을 걷어내면 PO 휴지통이
+  #    영영 안 비워진다 — 화면은 계속 「15일 뒤 자동 삭제」라고 말하면서.
+  #
+  # app-po:
+  #   image: dss-po:0.1
+  #   container_name: dss-po
+  #   restart: unless-stopped
+  #   logging: *logging
+  #   networks: [dss-data, dss-edge]
+  #   # 3600 → 13600. 위 원칙 2 와 같은 규칙(앞에 1 을 붙인 번호).
+  #   ports: ["127.0.0.1:13600:3600"]
+  #   # ⚠️ 견적서 공유폴더의 Synology ACL 때문이다 — 까닭은 app-as 의 같은 줄
+  #   #    주석에 길게 적혀 있다(2026-09-16 실측). 빠뜨리면 발행이 Permission
+  #   #    denied 로 끝난다. ACL 을 걷지는 마라 — 직원의 탐색기 접근이 끊긴다.
+  #   group_add: ["100"]
+  #   env_file:
+  #     - ./env/po.env
+  #   environment:
+  #     TZ: Asia/Seoul
+  #     # 🔴 A/S 와 같은 DB · 같은 롤 · 같은 비밀번호다. 새 값을 만들지 않는다.
+  #     DATABASE_URL: postgresql://dss_app:${AS_APP_PASSWORD}@dss-pg-app:5432/dss_as
+  #     # 🔴 A/S 와 **같은 폴더**다(위 머리말).
+  #     UPLOADS_DIR: /data
+  #     # 양식 다섯 — A/S 는 일곱을 쓰지만 이 사이트는 견적서 다섯만 쓴다
+  #     # (검사·수리 보고서는 A/S 의 것이다). 아래 /templates 볼륨 안의 파일
+  #     # 이름과 글자 하나까지 같아야 한다 — 하나라도 못 읽으면 그 종류의
+  #     # 견적서 출력이 통째로 죽는다.
+  #     QUOTE_TEMPLATE_PATH: "/templates/내자견적서.xlsx"
+  #     OH_QUOTE_TEMPLATE_PATH: "/templates/제너레이터 OH 견적서.xlsx"
+  #     MATCHER_QUOTE_TEMPLATE_PATH: "/templates/매쳐 내자 견적서.xlsx"
+  #     MATCHER_OH_QUOTE_TEMPLATE_PATH: "/templates/매쳐 OH 견적서.xlsx"
+  #     CABLE_QUOTE_TEMPLATE_PATH: "/templates/케이블 견적서.xlsx"
+  #   volumes:
+  #     # 🔴 A/S 와 같은 폴더. 나누면 서로의 첨부를 못 찾는다.
+  #     - /volume1/dss/as-attachments:/data
+  #     - /volume1/dss/as-templates:/templates:ro
+  #     # 견적서 공유폴더 — 경로에 공백과 괄호가 있어 긴 문법으로 적는다.
+  #     # 까닭은 app-as 의 같은 자리 주석.
+  #     - type: bind
+  #       source: "/volume1/3_견적-세금계산서-국내발주/4. DSS 내자견적서 (활용)"
+  #       target: /quote-archive
+  #   depends_on:
+  #     db-app:
+  #       condition: service_healthy
+  #   deploy:
+  #     resources:
+  #       limits:
+  #         # A/S 와 같게 준다 — 엑셀 워크북을 파싱할 때 크게 튄다.
+  #         memory: 640M
+
   # ══ 도구 — A/S ═══════════════════════════════════════════════════════
   #
   # 마이그레이션(db:migrate · db:preflight)과 매일 밤 purge 셋이 여기서 돈다.
