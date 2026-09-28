@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>업데이트 소식 초안 — 배포하는 날 붙일 글 (2026-09-28 작성)</title>
+<style>
+  :root{
+    --ink:#18181b; --dim:#52525b; --faint:#a1a1aa; --line:#e4e4e7; --bg:#fafafa;
+    --warnbg:#fffbeb; --warnline:#fde68a; --warn:#92400e;
+    --dangbg:#fef2f2; --dangline:#fecaca; --dang:#991b1b;
+    --okbg:#ecfdf5; --okline:#a7f3d0; --ok:#065f46;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;padding:2.2rem 1.2rem 5rem;
+    font:15px/1.75 -apple-system,"Segoe UI","Malgun Gothic",sans-serif;
+    color:var(--ink);background:var(--bg)}
+  .wrap{max-width:52rem;margin:0 auto}
+  header.top{margin-bottom:1.6rem;padding-bottom:1.1rem;border-bottom:2px solid var(--ink)}
+  h1{margin:0 0 .4rem;font-size:1.4rem;letter-spacing:-.01em}
+  .sub{color:var(--dim);font-size:.92rem}
+  h2{margin:2.4rem 0 .8rem;font-size:1.1rem;padding-bottom:.3rem;border-bottom:1px solid var(--line)}
+  code{background:#f4f4f5;padding:.08rem .3rem;border-radius:.25rem;font:.88em ui-monospace,Consolas,monospace}
+
+  .note{margin:.8rem 0;padding:.75rem .95rem;border-radius:.45rem;font-size:.9rem;border:1px solid}
+  .note.warn{background:var(--warnbg);border-color:var(--warnline);color:var(--warn)}
+  .note.dang{background:var(--dangbg);border-color:var(--dangline);color:var(--dang)}
+  .note.ok{background:var(--okbg);border-color:var(--okline);color:var(--ok)}
+  .note b{color:inherit}
+
+  /* ── 포털 화면 흉내 ───────────────────────────────── */
+  .screen{background:#fff;border:1px solid var(--line);border-radius:.6rem;
+    padding:2rem 1.8rem;margin:1rem 0 2rem}
+  .screen .head h3{margin:0;font-size:1.15rem;font-weight:600}
+  .screen .head p{margin:.5rem 0 0;font-size:.88rem;line-height:1.7;color:var(--dim)}
+  .rel{margin-top:2rem;padding-top:1.4rem;border-top:1px solid var(--line)}
+  .rel:first-of-type{border-top:0;padding-top:.6rem}
+  .rel .chips{display:flex;gap:.4rem;align-items:center;flex-wrap:wrap;margin-bottom:.5rem}
+  .chip{border:1px solid;border-radius:.375rem;padding:.1rem .5rem;font-size:.75rem;font-weight:500}
+  .chip.sys{border-color:#d4d4d8;background:#f4f4f5;color:#3f3f46}
+  .chip.add{border-color:#bae6fd;background:#f0f9ff;color:#0369a1}
+  .chip.imp{border-color:#a7f3d0;background:#ecfdf5;color:#047857}
+  .chip.fix{border-color:#fde68a;background:#fffbeb;color:#b45309}
+  .ver{font:.8rem ui-monospace,Consolas,monospace;color:var(--faint)}
+  .rel h4{margin:.2rem 0 .7rem;font-size:1rem;font-weight:600}
+  .items{list-style:none;margin:0;padding:0}
+  .items li{display:flex;gap:.55rem;align-items:flex-start;padding:.32rem 0;font-size:.92rem;line-height:1.75}
+  .items li .chip{flex:0 0 auto;margin-top:.18rem}
+
+  table{border-collapse:collapse;width:100%;margin:.8rem 0;font-size:.9rem;background:#fff}
+  th,td{border:1px solid var(--line);padding:.42rem .6rem;text-align:left;vertical-align:top}
+  th{background:#f4f4f5;font-weight:600;font-size:.85rem}
+  td.c{text-align:center}
+  .muted{color:var(--faint)}
+  ul.plain{margin:.4rem 0 .4rem 1.1rem;padding:0}
+  ul.plain li{margin:.3rem 0}
+  footer{margin-top:3rem;padding-top:1rem;border-top:1px solid var(--line);color:var(--faint);font-size:.85rem}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="top">
+  <h1>업데이트 소식 — 배포하는 날 붙일 글</h1>
+  <p class="sub">
+    2026-09-28 작성 · <b>아직 넣지 않았습니다.</b> 아래는 초안이고,
+    직원이 실제로 보게 될 모양 그대로 그렸습니다. 말투가 어색한 곳을 짚어 주세요.
+  </p>
+</header>
+
+<div class="note dang">
+  🔴 <b>지금 넣으면 안 됩니다.</b> 그 파일이 스스로 적어 둔 규칙입니다 —
+  「<b>배포하는 그 커밋에서</b> 맨 앞에 더한다. 미리 적어 두면 화면은
+  <b>아직 돌지도 않는 판을 광고</b>하게 된다」. 그래서 자리(시스템 이름 둘)만 먼저
+  만들어 두었고, 글은 배포하는 날 이 문서에서 옮겨 붙입니다.
+</div>
+
+<div class="note warn">
+  ⚠️ <b>판 번호는 아직 임시입니다.</b> <code>version</code> 은 <b>그 시스템의 도커
+  이미지 태그</b>입니다. 굽는 날 정하는 번호로 아래를 고쳐야 합니다 —
+  지금 운영은 <code>dss-as:1.6</code> 이므로 A/S 는 <code>1.7</code> 로 잡아 두었고,
+  PO 는 첫 배포라 <code>0.1</code>, 개선요청은 이미 돌고 있는 <code>0.1</code> 입니다.
+  <b>날짜도 배포하는 날로 바꿉니다.</b>
+</div>
+
+<!-- ═══════════════ 포털 화면 흉내 ═══════════════ -->
+<h2>직원이 보게 될 화면</h2>
+
+<p class="sub" style="margin-bottom:.6rem">
+  통합 로그인의 <b>업데이트 소식</b>(<code>/release-notes</code>)입니다.
+  🔴 <b>로그인하지 않아도 열립니다</b> — 그래서 사내 주소 · IP · 무엇이 뚫려 있었는지는
+  적지 않았습니다.
+</p>
+
+<div class="screen">
+  <div class="head">
+    <h3>업데이트 소식</h3>
+    <p>사내 시스템이 바뀔 때마다 여기에 적습니다.</p>
+  </div>
+
+  <!-- ── PO / 내자 ── -->
+  <div class="rel">
+    <div class="chips">
+      <span class="chip sys">PO / 내자</span>
+      <span class="ver">v0.1 · 2026-10-○○</span>
+    </div>
+    <h4>견적서와 내자 정리가 따로 선 시스템이 되었습니다</h4>
+    <ul class="items">
+      <li><span class="chip add">추가</span><span>견적서 · 발주 · 내자 정리 · 작업 비용이 <b>PO / 내자</b>라는 시스템으로 나왔습니다. 화면 맨 위 메뉴에서 오갈 수 있고, A/S 관리에서 만든 견적서와 붙여 둔 파일이 그대로 보입니다 — 두 곳이 같은 자료를 봅니다.</span></li>
+      <li><span class="chip add">추가</span><span>견적서를 올리면 정해진 순서대로 결재가 돌아갑니다. 결재 순서는 A/S 관리에서 정해 둔 것을 그대로 따릅니다.</span></li>
+      <li><span class="chip add">추가</span><span>견적서를 받으면 사내 공유폴더에도 같은 파일이 함께 놓입니다. [폴더 열기]를 누르면 그 폴더가 탐색기로 열립니다 — 처음 쓰는 PC 에서는 한 번만 설치 명령을 붙여넣으면 됩니다.</span></li>
+      <li><span class="chip add">추가</span><span>[미리보기 · PDF]로 인쇄 전에 모양을 볼 수 있습니다. 목록에서도 줄마다 바로 열립니다.</span></li>
+      <li><span class="chip add">추가</span><span>손으로 만든 견적서 엑셀을 올리면 칸을 읽어 채워 줍니다. 결재 PDF 와 엑셀을 견적서에 붙여 둘 수 있고, 새 견적서를 만들 때 고른 파일은 저장과 함께 올라갑니다.</span></li>
+      <li><span class="chip imp">개선</span><span>내자 정리에서 인수번호를 누르면 A/S 관리의 그 수리 건으로 바로 갑니다.</span></li>
+      <li><span class="chip imp">개선</span><span>당분간 A/S 관리에도 같은 화면이 함께 남아 있습니다. 어느 쪽에서 고치셔도 같은 자료라 달라지지 않습니다.</span></li>
+    </ul>
+  </div>
+
+  <!-- ── A/S 관리 ── -->
+  <div class="rel">
+    <div class="chips">
+      <span class="chip sys">A/S 관리</span>
+      <span class="ver">v1.7 · 2026-10-○○</span>
+    </div>
+    <h4>과거 연락서가 수리 건에 붙었습니다</h4>
+    <ul class="items">
+      <li><span class="chip add">추가</span><span>2017년부터 쌓인 교산 연락서를 해당 수리 건에 붙였습니다. 수리 건을 열면 그때 주고받은 연락서와 작업 기록을 함께 볼 수 있습니다.</span></li>
+      <li><span class="chip imp">개선</span><span>접수번호로 수리 건이 하나로 정해지지 않는 연락서는 넣지 않았습니다. 그런 장은 화면에서 한 장씩 보고 고릅니다 — 잘못 붙는 것보다 낫다고 보았습니다.</span></li>
+    </ul>
+  </div>
+
+  <!-- ── 개선요청 ── -->
+  <div class="rel">
+    <div class="chips">
+      <span class="chip sys">개선요청</span>
+      <span class="ver">v0.1 · 2026-09-18</span>
+    </div>
+    <h4>개선 요청을 적고 진행 상황을 볼 수 있습니다</h4>
+    <ul class="items">
+      <li><span class="chip add">추가</span><span>사내 시스템과 일하는 방식에 대한 개선 요청을 적는 곳이 생겼습니다. 화면 맨 위 메뉴에서 갑니다.</span></li>
+      <li><span class="chip add">추가</span><span>글에 화면 사진을 붙일 수 있습니다. 말로 설명하기 어려운 것을 그대로 보여 주실 수 있습니다.</span></li>
+      <li><span class="chip add">추가</span><span>올린 요청이 접수 · 진행중 · 완료 어디까지 왔는지 보입니다.</span></li>
+      <li><span class="chip add">추가</span><span>새 요청이 올라오면 알림 종이 울립니다 — 어느 시스템에 계시든 그 종이 보입니다.</span></li>
+    </ul>
+  </div>
+</div>
+
+<!-- ═══════════════ 왜 이렇게 썼나 ═══════════════ -->
+<h2>왜 이렇게 썼나</h2>
+
+<div class="note ok">
+  그 파일의 <b>문구 규칙</b>을 따랐습니다 — 「기능 이름이 아니라 <b>그 기능이 무엇을
+  해주는지</b>로 쓴다」.
+  <br><span class="muted">✗ 견적서 결재 워크플로 구현 &nbsp;→&nbsp;
+  ✓ 견적서를 올리면 정해진 순서대로 결재가 돌아갑니다</span>
+</div>
+
+<table>
+  <tr><th style="width:30%">무엇</th><th>까닭</th></tr>
+  <tr>
+    <td>주소를 한 줄도 안 적었다</td>
+    <td>규칙입니다 — 「IP 가 바뀌어도 이 글이 틀린 말이 되지 않게」. 이 화면은 <b>로그인 없이 열립니다.</b></td>
+  </tr>
+  <tr>
+    <td>🔴 「A/S 에도 같은 화면이 남는다」를 <b>일부러 적었다</b></td>
+    <td>안 적으면 직원이 헷갈립니다 — 같은 견적서가 두 곳에 보이는데 어느 쪽이 진짜인지 모릅니다.
+        「같은 자료라 달라지지 않는다」까지 한 줄로 안심시키는 편이 낫다고 보았습니다.</td>
+  </tr>
+  <tr>
+    <td>연락서 장수(469)를 안 적었다</td>
+    <td>직원에게 필요한 것은 「내 수리 건에 연락서가 보인다」이지 장수가 아닙니다.
+        <span class="muted">숫자를 넣고 싶으시면 넣어도 됩니다 — 말씀해 주세요.</span></td>
+  </tr>
+  <tr>
+    <td>「짝이 안 맞는 연락서는 안 넣었다」를 적었다</td>
+    <td>자기 수리 건에 연락서가 <b>없는</b> 사람이 생깁니다. 왜 없는지 모르면 고장으로 읽습니다.</td>
+  </tr>
+  <tr>
+    <td>보안 관련은 한 줄도 없다</td>
+    <td>규칙입니다 — 「보안 수정은 <b>고침</b>으로만 적고 내용은 쓰지 않는다」.
+        이번 배포의 보안 헤더는 <b>겉으로 보이는 변화가 없어</b> 아예 적지 않았습니다.</td>
+  </tr>
+</table>
+
+<div class="note warn">
+  ⚠️ <b>개선요청은 날짜가 과거(2026-09-18)입니다.</b> 그날 배포했는데 소식을
+  <b>빠뜨린</b> 것이라 뒤늦게 적는 것입니다. 목록에서 9월 18일 자리에 끼어 들어갑니다.
+  <br>「늦게 적었습니다」를 글에 적지는 않았습니다 — 직원에게는 의미 없는 사정이고,
+  <b>없는 것보다 있는 편이 낫다</b>고 보았습니다. 원하시면 뺄 수도 있습니다.
+</div>
+
+<!-- ═══════════════ 붙이는 법 ═══════════════ -->
+<h2>배포하는 날 할 일</h2>
+
+<table>
+  <tr><th class="c" style="width:8%">#</th><th>무엇</th></tr>
+  <tr><td class="c">1</td>
+      <td>위 글 셋을 <code>dss-auth/src/lib/release-notes.ts</code> 의
+          <code>RELEASES</code> <b>맨 앞</b>에 더합니다. 🔴 <b>최신이 맨 앞</b>입니다.</td></tr>
+  <tr><td class="c">2</td>
+      <td><code>version</code> 을 <b>실제로 구운 이미지 태그</b>로, <code>date</code> 를
+          <b>배포한 날</b>로 고칩니다.</td></tr>
+  <tr><td class="c">3</td>
+      <td>🔴 <b>통합 로그인 항목은 이번에 없습니다.</b> 그래서
+          <code>package.json</code> 의 <code>version</code> 은 <b>그대로 둡니다</b>
+          — 올리면 시험이 잡습니다(<code>APP_VERSION</code> 은 통합 로그인 항목에서만 뽑습니다).</td></tr>
+  <tr><td class="c">4</td>
+      <td><code>npm test</code> 로 확인합니다 — 날짜 내림차순 · 시스템별 번호 순서 ·
+          번호와 날짜 꼴 · 빈 항목을 시험이 잽니다.</td></tr>
+  <tr><td class="c">5</td>
+      <td>🔴 <b>포털 이미지를 다시 굽고 배포합니다.</b> 글이 포털 저장소에 있어서,
+          A/S 와 PO 만 배포해서는 <b>소식이 안 뜹니다.</b></td></tr>
+</table>
+
+<div class="note dang">
+  🔴 <b>5번을 빠뜨리기 쉽습니다.</b> 그 파일이 「A/S 만 배포해도 그 소식을 실으려면
+  포털도 배포해야 한다 — <b>그 값을 치르기로 했다</b>」고 적어 두었습니다.
+  배포 순서에서 <b>포털이 맨 마지막</b>인 까닭입니다.
+</div>
+
+<footer>
+  2026-09-28 작성 · 자리(시스템 이름 둘)는 <code>dss-auth</code> 에 이미 넣었습니다.
+  글은 배포하는 날 이 문서에서 옮겨 붙입니다.
+</footer>
+
+</div>
+</body>
+</html>
