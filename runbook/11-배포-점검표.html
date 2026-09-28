@@ -79,6 +79,9 @@
     background:#27272a;color:#d4d4d8;border-radius:.28rem;cursor:pointer;white-space:nowrap}
   .cmd .lbl .all:hover{background:#3f3f46;color:#fff}
   .cmd .lbl .all.ok{background:#065f46;border-color:#065f46;color:#fff}
+  /* 한 번이라도 복사한 자국 — 새로고침해도 남는다 */
+  .cmd .lbl .all.copied{border-color:#15803d;background:#14532d;color:#bbf7d0}
+  .cmd .lbl .all.copied::before{content:"✔ "}
   .cmd .rows{padding:0 0 .4rem}
   .cmd .row{display:flex;align-items:flex-start;gap:.5rem;padding:.06rem .7rem}
   .cmd .row pre{margin:0;flex:1;min-width:0;color:#e4e4e7;background:none;padding:.1rem 0;
@@ -89,6 +92,10 @@
   .cmd .row:hover .one{opacity:1}
   .cmd .row .one:hover{background:#3f3f46;color:#fff}
   .cmd .row .one.ok{background:#065f46;border-color:#065f46;color:#fff;opacity:1}
+  .cmd .row .one.copied{border-color:#15803d;background:#14532d;color:#bbf7d0;opacity:1}
+  .cmd .row .one.copied::before{content:"✔ "}
+  /* 복사한 줄은 왼쪽에 초록 띠가 남는다 — 눈으로 훑기 좋게 */
+  .cmd .row.copied{box-shadow:inset 3px 0 0 #15803d;background:rgba(21,128,61,.09)}
   .cmd .row .spacer{flex:0 0 auto;width:2.1rem}
   .cmd .whole{padding:.1rem .7rem .3rem}
   .cmd .whole pre{margin:0;color:#e4e4e7;background:none;padding:0;
@@ -143,7 +150,7 @@
     <span>
       <button onclick="openAll(true)">풀이 모두 펴기</button>
       <button onclick="openAll(false)">모두 접기</button>
-      <button onclick="resetAll()">체크 지우기</button>
+      <button onclick="resetAll()">체크 · ✔ 지우기</button>
     </span>
   </div>
 </div>
@@ -166,7 +173,10 @@
   ⚠️ <b>명령 상자 읽는 법</b> — 딱지가 <b>PowerShell</b> 이면 이 PC 의 파워셸 창,
   <b>NAS 터미널 (SSH)</b> 이면 NAS 에 접속해서, <b>psql 안</b> 이면 DB 에 붙은 그 안에서 칩니다.
   줄마다 <b>작은 복사 단추</b>가 있고, 오른쪽 위 <b>[전체 복사]</b> 는 덩어리째입니다.
-  <b>통째로</b> 라고 적힌 상자는 한 줄씩 나누면 안 됩니다.
+  <b>통째로</b> 라고 적힌 상자는 한 줄씩 나누면 안 됩니다.<br>
+  ✅ <b>한 번 복사한 곳은 단추에 ✔ 가 붙고 그 줄에 초록 띠가 남습니다</b> —
+  새로고침해도 남으니 「어디까지 했더라」를 눈으로 훑을 수 있습니다.
+  다시 눌러도 됩니다. 지우려면 맨 위 <b>[체크 · ✔ 지우기]</b>.
 </div>
 
 <!-- ══════════════════ 0 ══════════════════ -->
@@ -712,6 +722,32 @@ sudo docker compose -f docker-compose.nas.yml --env-file .env.nas down app-po</p
 <script>
 (function () {
   var KEY = "dss-deploy-checklist-2026-09-28";
+  var KEY_COPIED = "dss-deploy-copied-2026-09-28";
+
+  // ── 복사한 자국 — 새로고침해도 남는다 ──────────────────────
+  //
+  // 표는 **글자 + 자리 번호**로 만든다.
+  // 🔴 글자만 쓰면 안 된다 — `cd /volume1/dss/deploy` 처럼 똑같은 줄이 네 곳에
+  //    나오는데, 한 번 누르면 네 곳에 다 ✔ 가 붙어 안 한 단계를 한 것으로 보인다.
+  // 🔴 자리 번호만 쓰는 것도 안 된다 — 문서를 고쳐 단추가 늘면 자국이 통째로 밀린다.
+  //    둘을 합치면 문서가 그대로인 동안 정확하고, 바뀌어도 엉뚱한 자국이 남지 않는다.
+  var copied = {};
+  try { copied = JSON.parse(localStorage.getItem(KEY_COPIED) || "{}") || {}; } catch (e) { copied = {}; }
+  var seq = 0;
+  function keyOf(text, idx) {
+    var h = 5381, s = String(text);
+    for (var i = 0; i < s.length; i++) { h = ((h * 33) ^ s.charCodeAt(i)) >>> 0; }
+    return h.toString(36) + "-" + s.length + "@" + idx;
+  }
+  function saveCopied() {
+    try { localStorage.setItem(KEY_COPIED, JSON.stringify(copied)); } catch (e) {}
+  }
+  function markCopied(btn, row) {
+    copied[btn.dataset.ck] = 1;
+    saveCopied();
+    btn.classList.add("copied");
+    if (row) row.classList.add("copied");
+  }
 
   // ── 복사 ───────────────────────────────────────────────────
   function legacy(text, done) {
@@ -722,11 +758,14 @@ sudo docker compose -f docker-compose.nas.yml --env-file .env.nas down app-po</p
     catch (e) { alert("복사가 막혔습니다. 직접 긁어서 복사해 주세요."); }
     document.body.removeChild(ta);
   }
-  function copyText(text, btn, label) {
+  function copyText(text, btn, row) {
     function done() {
       var old = btn.textContent;
       btn.textContent = "복사됨"; btn.classList.add("ok");
-      setTimeout(function () { btn.textContent = old; btn.classList.remove("ok"); }, 1100);
+      setTimeout(function () {
+        btn.textContent = old; btn.classList.remove("ok");
+        markCopied(btn, row);   // 잠깐 뜨는 「복사됨」이 사라진 뒤 자국을 남긴다
+      }, 1100);
     }
     if (navigator.clipboard && window.isSecureContext) {
       navigator.clipboard.writeText(text).then(done, function () { legacy(text, done); });
@@ -750,7 +789,9 @@ sudo docker compose -f docker-compose.nas.yml --env-file .env.nas down app-po</p
     var all = document.createElement("button");
     all.className = "all";
     all.textContent = lines.length > 1 ? "전체 복사" : "복사";
-    all.addEventListener("click", function () { copyText(whole, all); });
+    all.dataset.ck = keyOf(whole, seq++);
+    if (copied[all.dataset.ck]) all.classList.add("copied");
+    all.addEventListener("click", function () { copyText(whole, all, null); });
     head.appendChild(span); head.appendChild(all);
 
     box.textContent = "";
@@ -786,7 +827,11 @@ sudo docker compose -f docker-compose.nas.yml --env-file .env.nas down app-po</p
         b.className = "one";
         b.textContent = "복사";
         b.title = "이 줄만 복사";
-        b.addEventListener("click", function () { copyText(line, b); });
+        b.dataset.ck = keyOf(line, seq++);
+        if (copied[b.dataset.ck]) { b.classList.add("copied"); row.classList.add("copied"); }
+        (function (lineText, btn, rowEl) {
+          btn.addEventListener("click", function () { copyText(lineText, btn, rowEl); });
+        })(line, b, row);
         row.appendChild(b);
       }
       rows.appendChild(row);
@@ -823,8 +868,10 @@ sudo docker compose -f docker-compose.nas.yml --env-file .env.nas down app-po</p
   boxes.forEach(function (b) { b.addEventListener("change", function () { save(); paint(); }); });
 
   window.resetAll = function () {
-    if (!confirm("체크를 전부 지웁니다. 계속할까요?")) return;
+    if (!confirm("체크와 복사 자국(✔)을 전부 지웁니다. 계속할까요?")) return;
     boxes.forEach(function (b) { b.checked = false; });
+    copied = {}; saveCopied();
+    document.querySelectorAll(".copied").forEach(function (el) { el.classList.remove("copied"); });
     save(); paint();
   };
   window.openAll = function (open) {
