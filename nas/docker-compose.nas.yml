@@ -338,7 +338,7 @@ services:
           memory: 640M
 
   app-meters:
-    image: dss-meters:1.2
+    image: dss-meters:1.3
     container_name: dss-meters
     restart: unless-stopped
     logging: *logging
@@ -387,7 +387,7 @@ services:
   #       벗기는 법: 아래 줄들의 맨 앞 두 칸 뒤에 붙은 `# ` 만 지운다.
   #
   app-improvements:
-    image: dss-improvements:0.1
+    image: dss-improvements:0.2
     container_name: dss-improvements
     restart: unless-stopped
     logging: *logging
@@ -463,7 +463,7 @@ services:
   #    영영 안 비워진다 — 화면은 계속 「15일 뒤 자동 삭제」라고 말하면서.
   #
   app-po:
-    image: dss-po:0.1
+    image: dss-po:0.2
     container_name: dss-po
     restart: unless-stopped
     logging: *logging
@@ -620,7 +620,7 @@ services:
   #       벗기는 법: 아래 줄들의 맨 앞 두 칸 뒤에 붙은 `# ` 만 지운다.
   #
   tools-improvements:
-    image: dss-improvements-tools:1
+    image: dss-improvements-tools:2
     profiles: [tools]
     networks: [dss-data, dss-edge]
     env_file:
