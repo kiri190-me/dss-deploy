@@ -1,0 +1,543 @@
+<!doctype html>
+<html lang="ko">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>휴가 시스템 첫 설치 점검표 — 2026-09-29</title>
+<style>
+  :root{
+    --ink:#111827; --dim:#6b7280; --line:#e5e7eb; --bg:#f9fafb;
+    --ok:#059669; --okbg:#ecfdf5; --okline:#6ee7b7;
+    --warn:#b45309; --warnbg:#fffbeb; --warnline:#fcd34d;
+    --dang:#b91c1c; --dangbg:#fef2f2; --dangline:#fca5a5;
+    --me:#1d4ed8; --mebg:#eff6ff; --meline:#93c5fd;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:15px/1.7 "Malgun Gothic","맑은 고딕",system-ui,sans-serif}
+  main{max-width:960px;margin:0 auto;padding:1.5rem 1.2rem 6rem}
+  header{margin:0 0 1.2rem}
+  h1{font-size:1.5rem;margin:0 0 .3rem}
+  .stamp{color:var(--dim);font-size:.9rem;margin:0}
+  h2{font-size:1.15rem;margin:2.2rem 0 .8rem;padding-bottom:.4rem;
+    border-bottom:2px solid var(--line)}
+  code{background:#f3f4f6;padding:.1rem .35rem;border-radius:4px;
+    font-family:Consolas,"D2Coding",monospace;font-size:.92em}
+  .box{border:1px solid var(--line);border-radius:10px;background:#fff;
+    padding:.9rem 1.1rem;margin:.8rem 0}
+  .box.ok{background:var(--okbg);border-color:var(--okline)}
+  .box.warn{background:var(--warnbg);border-color:var(--warnline)}
+  .box.dang{background:var(--dangbg);border-color:var(--dangline)}
+  .box.me{background:var(--mebg);border-color:var(--meline)}
+
+  /* 단계 */
+  .step{background:#fff;border:1px solid var(--line);border-radius:10px;
+    padding:.9rem 1.1rem;margin:.7rem 0}
+  .step.done{background:#fafffc;border-color:var(--okline)}
+  .step.done .t>b:first-child{color:var(--dim);text-decoration:line-through}
+  .hd{display:flex;gap:.7rem;align-items:flex-start}
+  .hd input[type=checkbox]{margin-top:.32rem;width:1.1rem;height:1.1rem;flex:none}
+  .t{flex:1;min-width:0}
+  .t b{font-size:1rem}
+  .who{display:inline-block;font-size:.78rem;padding:.1rem .5rem;border-radius:99px;
+    margin-left:.4rem;vertical-align:.1em;font-weight:600}
+  .who.user{background:#fef3c7;color:#92400e}
+  .who.me{background:#dbeafe;color:#1e40af}
+  .why{margin-top:.35rem;color:var(--dim);font-size:.9rem}
+  .why.dang{color:var(--dang);font-weight:600}
+  .why.warn{color:var(--warn)}
+
+  /* 명령 */
+  .cmd{position:relative;margin:.55rem 0}
+  .cmd pre{margin:0;background:#1f2937;color:#f9fafb;padding:.6rem 4.2rem .6rem .8rem;
+    border-radius:7px;overflow-x:auto;font-family:Consolas,"D2Coding",monospace;
+    font-size:.88rem;line-height:1.55;white-space:pre}
+  .cmd button{position:absolute;top:.4rem;right:.4rem;border:0;border-radius:5px;
+    background:#374151;color:#e5e7eb;font-size:.78rem;padding:.25rem .55rem;cursor:pointer}
+  .cmd button:hover{background:#4b5563}
+  .cmd.copied button{background:var(--ok);color:#fff}
+  .cmd.copied::after{content:"복사함 ✔";position:absolute;top:.45rem;right:4.2rem;
+    font-size:.75rem;color:var(--ok);font-weight:700}
+
+  table{border-collapse:collapse;width:100%;margin:.6rem 0;font-size:.92rem}
+  th,td{border:1px solid var(--line);padding:.4rem .6rem;text-align:left;vertical-align:top}
+  th{background:#f3f4f6;font-weight:600}
+  ul{margin:.4rem 0 .4rem 1.2rem;padding:0}
+  li{margin:.25rem 0}
+  .prog{position:sticky;top:0;background:var(--bg);padding:.7rem 0;z-index:5;
+    border-bottom:1px solid var(--line);margin-bottom:.5rem}
+  .bar{height:8px;background:#e5e7eb;border-radius:99px;overflow:hidden}
+  .bar>i{display:block;height:100%;background:var(--ok);width:0;transition:width .25s}
+  .pct{font-size:.85rem;color:var(--dim);margin-top:.3rem}
+</style>
+<main>
+
+<header>
+  <h1>휴가 시스템(dss-leave) 첫 설치 — 점검표</h1>
+  <p class="stamp">2026-09-29 · 여섯째 사이트 · 포트 3700 → <code>127.0.0.1:13700</code> · <code>https://leave.dss21.co.kr</code></p>
+</header>
+
+<div class="prog">
+  <div class="bar"><i id="bar"></i></div>
+  <div class="pct" id="pct">0 / 0</div>
+</div>
+
+<div class="box me">
+  <b>이 표를 보는 법</b><br>
+  <span class="who user">사람</span> 은 사용자께서 하시는 것, <span class="who me">Claude</span> 는 제가 하는 것입니다.
+  체크는 브라우저에 저장되니 새로고침해도 남습니다.<br>
+  <b>🔴 명령은 전부 스크립트 파일로 드립니다.</b> DSM 터미널에 긴 명령을 붙여넣으면
+  줄이 잘립니다 — 오늘만 네 번 깨졌습니다.
+</div>
+
+<h2>0. 이미 끝난 것</h2>
+
+<div class="step done">
+  <div class="hd"><input type="checkbox" checked disabled><div class="t">
+    <b>도구 이미지를 만들 수 있게 했다</b> <span class="who me">Claude</span>
+    <div class="why">
+      <code>Dockerfile</code> 에 <code>tools</code> 스테이지가 없어 <b>운영에서 마이그레이션을 돌릴 방법이 없었다.</b>
+      더하면서 <code>build</code> 스테이지가 원래 깨져 있던 것도 찾아 고쳤다(가짜
+      <code>DATABASE_URL</code> 한 줄 — 다섯 사이트가 쓰는 방식). 커밋 <code>f705304</code>
+    </div>
+  </div></div>
+</div>
+
+<div class="step done">
+  <div class="hd"><input type="checkbox" checked disabled><div class="t">
+    <b><code>seed:ranks</code> 를 컨테이너에서 부를 수 있게 했다</b> <span class="who me">Claude</span>
+    <div class="why">
+      직급이 없으면 <b>직원을 한 명도 등록할 수 없다.</b> 그 스크립트가
+      <code>.env.local</code> 을 <code>try</code> 없이 읽어 컨테이너에서 죽었다. 커밋 <code>ea29602</code>
+    </div>
+  </div></div>
+</div>
+
+<div class="step done">
+  <div class="hd"><input type="checkbox" checked disabled><div class="t">
+    <b>이미지 둘을 굽고 NAS 에 올렸다</b> <span class="who me">Claude</span>
+    <div class="why">
+      <code>dss-leave:0.1</code>(74MB · <code>caaf8f42…</code>) ·
+      <code>dss-leave-tools:1</code>(189MB · <code>3a44e32b…</code>).
+      <code>/volume1/dss/images/</code> 에 있고 지문을 맞췄다.
+    </div>
+  </div></div>
+</div>
+
+<div class="step done">
+  <div class="hd"><input type="checkbox" checked disabled><div class="t">
+    <b>NAS 에 DB <code>dss_leave</code> 와 롤 <code>dss_leave_app</code> 을 만들었다</b> <span class="who user">사람</span>
+    <div class="why">
+      주인·정렬이 다른 셋과 같은 것을 확인했다(<code>C.UTF-8</code>).
+      🔴 <b>비밀번호는 아직 없다</b> — 아래 2단계에서 넣는다.
+    </div>
+  </div></div>
+</div>
+
+<div class="step done">
+  <div class="hd"><input type="checkbox" checked disabled><div class="t">
+    <b>포털 시크릿을 발급했다</b> <span class="who me">Claude</span>
+    <div class="why">
+      평문은 개발 PC 의 <code>nas/env/leave.env</code> 에만 있고 화면에 안 찍혔다(git 이 무시하는 파일).
+      해시 <code>18783c276efd…</code>
+    </div>
+  </div></div>
+</div>
+
+<h2>1. 포털에 등록한다</h2>
+
+<div class="step">
+  <div class="hd"><input type="checkbox" data-k="s1"><div class="t">
+    <b>운영 포털에 <code>dss-leave</code> 를 넣는다</b> <span class="who user">사람</span>
+    <div class="why">
+      NAS 에서 <code>ssh dss-nas</code> → <code>sudo -i</code> 한 뒤:
+    </div>
+    <div class="cmd"><pre>sh /volume1/dss/setup/13-leave-client.sh</pre><button>복사</button></div>
+    <div class="why">
+      이미 있으면 최신으로 맞춥니다(두 번 돌려도 안전). <b>봐 주실 것:</b>
+      <code>해시앞</code>이 <code>18783c276efd</code> · <code>해시길이</code>가 <code>64</code> ·
+      주소 셋이 전부 <code>https://leave.dss21.co.kr</code>
+    </div>
+    <div class="why warn">
+      ⚠️ <code>requires_grant</code> 가 <code>f</code> 입니다 — <b>전 직원이 바로 봅니다.</b>
+      PO 때처럼 명단(<code>--grant</code>)을 따로 넣을 일이 없습니다.
+    </div>
+  </div></div>
+</div>
+
+<h2>2. 비밀번호를 한자리에서 정한다</h2>
+
+<div class="box dang">
+  <b>🔴 같은 값이 세 곳에 들어갑니다. 한 번에 하는 이유입니다.</b><br>
+  ① NAS 의 DB 롤 <code>dss_leave_app</code> ② <code>.env.nas</code> 의 <code>LEAVE_APP_PASSWORD</code>
+  ③ compose 가 그 값으로 <code>DATABASE_URL</code> 을 조립<br>
+  <b>한 글자라도 다르면</b> 앱 로그에 <code>password authentication failed</code> 가 찍힙니다.
+</div>
+
+<div class="step">
+  <div class="hd"><input type="checkbox" data-k="s2a"><div class="t">
+    <b>DB 롤에 비밀번호를 넣는다</b> <span class="who user">사람</span>
+    <div class="why">입력한 글자는 화면에 보이지 않습니다.</div>
+    <div class="cmd"><pre>sh /volume1/dss/setup/13-leave-pw.sh</pre><button>복사</button></div>
+    <div class="why">🔴 <b>정한 값을 손에 들고 계세요.</b> 바로 다음에 <code>.env.nas</code> 에 같은 값을 적습니다.</div>
+  </div></div>
+</div>
+
+<div class="step">
+  <div class="hd"><input type="checkbox" data-k="s2b"><div class="t">
+    <b><code>.env.nas</code> 에 <code>LEAVE_APP_PASSWORD</code> 한 줄을 더한다</b> <span class="who user">사람</span>
+    <div class="why">
+      <code>/volume1/dss/deploy/.env.nas</code> 는 root 600 입니다. 그 파일에 한 줄을 더합니다 —
+      스크립트가 안내합니다(값은 스크립트에 안 적습니다).
+    </div>
+    <div class="cmd"><pre>sh /volume1/dss/setup/13-leave-env.sh</pre><button>복사</button></div>
+  </div></div>
+</div>
+
+<h2>3. 설정 파일을 만든다</h2>
+
+<div class="step">
+  <div class="hd"><input type="checkbox" data-k="s3a"><div class="t">
+    <b><code>leave.env</code> 를 완성한다</b> <span class="who me">Claude</span>
+    <div class="why">
+      지금 <code>SSO_CLIENT_SECRET</code> 한 줄뿐입니다. 나머지를 채웁니다 —
+      <code>SSO_ISSUER</code> · <code>SSO_REDIRECT_URI</code> · <code>SSO_TX_SECRET</code>(새로 만듦) ·
+      <code>SESSION_*</code> 등.
+    </div>
+    <div class="why dang">
+      🔴 <code>DEV_FAKE_LOGIN_ENABLED</code> 를 <b>반드시 끕니다.</b> 켜진 채 나가면
+      아무나 남의 계정으로 들어갈 수 있습니다.<br>
+      🔴 <code>DATABASE_URL</code> · <code>PORT</code> 는 <b>넣지 않습니다</b> — compose 와 이미지가 넘깁니다.
+    </div>
+  </div></div>
+</div>
+
+<div class="step">
+  <div class="hd"><input type="checkbox" data-k="s3b"><div class="t">
+    <b>compose 에 서비스 둘을 더한다</b> <span class="who me">Claude</span>
+    <div class="why">
+      <code>app-leave</code>(포트 <code>127.0.0.1:13700</code>)와
+      <code>tools-leave</code>(<code>profiles: [tools]</code>).
+      개선요청(<code>app-improvements</code>)이 본보기입니다 — 자기 DB · 전 직원 공개 · 업로드 폴더 없음.
+    </div>
+    <div class="why warn">
+      ⚠️ <code>tools-leave</code> 에 <b><code>DATABASE_URL</code> 을 반드시</b> 넣어야 합니다.
+      없으면 「<code>.env.local</code> 파일을 확인하세요」라는 <b>개발 PC 용 문구</b>로 죽어서
+      NAS 에서 보면 오해하기 쉽습니다.
+    </div>
+  </div></div>
+</div>
+
+<div class="step">
+  <div class="hd"><input type="checkbox" data-k="s3c"><div class="t">
+    <b>야간 백업에 <code>dss_leave</code> 를 더한다</b> <span class="who me">Claude</span>
+    <div class="why dang">
+      🔴 <b>오늘 개선요청이 이것 때문에 11일간 백업되지 않았습니다.</b>
+      저장소에는 더해 놓고 <b>NAS 에 그 파일을 안 올렸습니다.</b>
+      고치는 것과 올리는 것은 다른 일입니다 — 아래 4단계에서 올린 것까지 확인합니다.
+    </div>
+  </div></div>
+</div>
+
+<h2>4. 파일을 NAS 로 올린다</h2>
+
+<div class="step">
+  <div class="hd"><input type="checkbox" data-k="s4a"><div class="t">
+    <b>파일 넷을 <code>setup/incoming/</code> 에 올린다</b> <span class="who me">Claude</span>
+    <div class="why">
+      <code>leave.env</code> · <code>docker-compose.nas.yml</code> ·
+      <code>backup-nightly.sh</code> · <code>13-deploy.sh</code>.
+      올린 뒤 md5 를 맞춰 보고드립니다.
+    </div>
+  </div></div>
+</div>
+
+<div class="step">
+  <div class="hd"><input type="checkbox" data-k="s4b"><div class="t">
+    <b>제자리로 옮긴다</b> <span class="who user">사람</span>
+    <div class="why">🔴 <b>순서가 있습니다</b> — <code>leave.env</code> 가 먼저입니다.
+      그것 없이 compose 의 <code>app-leave</code> 를 켜면 <code>docker compose</code> 명령이
+      <b>통째로</b> 안 먹습니다.</div>
+    <div class="cmd"><pre>sh /volume1/dss/setup/13-leave-place.sh</pre><button>복사</button></div>
+    <div class="why">각 파일의 md5 를 제가 드린 값과 맞춰 봅니다. <b>하나라도 다르면 멈춥니다.</b></div>
+  </div></div>
+</div>
+
+<div class="step">
+  <div class="hd"><input type="checkbox" data-k="s4c"><div class="t">
+    <b>야간 백업이 휴가를 포함하는지 확인한다</b> <span class="who user">사람</span>
+    <div class="cmd"><pre>bash /volume1/dss/jobs/backup-nightly.sh</pre><button>복사</button></div>
+    <div class="why">
+      <code>dss_leave</code> 줄이 <b>✓ 로 더 나와야</b> 합니다 (DB 다섯).
+      🔴 이 백업이 아래 첫 기동의 되돌릴 자리입니다.
+    </div>
+  </div></div>
+</div>
+
+<h2>5. 주소를 만든다 (앞 단계와 상관없이 언제든)</h2>
+
+<div class="step">
+  <div class="hd"><input type="checkbox" data-k="s5a"><div class="t">
+    <b>Cloudflare 에 A 레코드</b> <span class="who user">사람</span>
+    <table>
+      <tr><th>종류</th><td>A</td></tr>
+      <tr><th>이름</th><td><code>leave</code></td></tr>
+      <tr><th>값</th><td><code>192.168.0.222</code></td></tr>
+      <tr><th>프록시</th><td><b>끔</b> (사설 IP 라 자동으로 <code>DNS only</code>)</td></tr>
+    </table>
+  </div></div>
+</div>
+
+<div class="step">
+  <div class="hd"><input type="checkbox" data-k="s5b"><div class="t">
+    <b>DSM 리버스 프록시</b> <span class="who user">사람</span>
+    <div class="why">제어판 → 로그인 포털 → 고급 → 역방향 프록시 → 만들기</div>
+    <table>
+      <tr><th>설명</th><td><code>DSS 휴가 (https)</code></td></tr>
+      <tr><th>소스</th><td><code>HTTPS</code> · <code>leave.dss21.co.kr</code> · <code>443</code></td></tr>
+      <tr><th>대상</th><td><code>HTTP</code> · <code>localhost</code> · <b><code>13700</code></b></td></tr>
+    </table>
+    <div class="why">HSTS 끔 · WebSocket 없음. <b>http 규칙은 만들지 않습니다</b> — 만들면 로그인이 조용히 실패합니다.</div>
+  </div></div>
+</div>
+
+<div class="step">
+  <div class="hd"><input type="checkbox" data-k="s5c"><div class="t">
+    <b>인증서를 <code>dss21.co.kr</code> 로 바꾼다</b> <span class="who user">사람</span>
+    <div class="why dang">🔴 <b>오늘 PO 때 막히셨던 그 화면입니다.</b> 리버스 프록시와 <b>다른 화면</b>에 있습니다.</div>
+    <div class="why">
+      제어판 → <b>보안</b> → <b>인증서</b> 탭 → 위쪽 <b>[설정]</b> 단추 →
+      서비스 표에서 <code>leave.dss21.co.kr</code> 줄을 찾아 <b><code>dss21.co.kr</code></b> 로.
+      기본값이 <code>synology.com</code> 입니다.<br>
+      🔴 <b>리버스 프록시를 먼저 만들어야</b> 그 표에 줄이 생깁니다.
+    </div>
+  </div></div>
+</div>
+
+<div class="step">
+  <div class="hd"><input type="checkbox" data-k="s5d"><div class="t">
+    <b>밖에서 502 가 나오는지 본다</b> <span class="who me">Claude</span>
+    <div class="why">
+      <b><code>502</code> 가 정상입니다</b> — 앱이 아직 없으니 갈 곳이 없다는 뜻이고,
+      프록시와 인증서는 제대로 걸렸다는 증거입니다. 제가 확인해 드립니다.
+    </div>
+  </div></div>
+</div>
+
+<h2>6. 띄운다</h2>
+
+<div class="box dang">
+  <b>🔴 여기부터가 진짜 설치입니다.</b> 앞의 것이 하나라도 안 끝났으면 넘어오지 마세요.<br>
+  <b>다른 사이트는 멈추지 않습니다</b> — 새 서비스를 하나 더 띄우는 것뿐입니다.
+</div>
+
+<div class="step">
+  <div class="hd"><input type="checkbox" data-k="s6a"><div class="t">
+    <b>읽기만 — 어긋난 곳이 없는지</b> <span class="who user">사람</span>
+    <div class="cmd"><pre>bash /volume1/dss/setup/13-deploy.sh</pre><button>복사</button></div>
+    <div class="why">
+      인자 없이 돌리면 <b>아무것도 안 바꿉니다.</b> 이미지 지문 · 설정 파일 · compose ·
+      DB 와 롤 · 백업 · 주소를 봅니다. <b>실패 0</b> 이어야 다음으로 갑니다.
+    </div>
+  </div></div>
+</div>
+
+<div class="step">
+  <div class="hd"><input type="checkbox" data-k="s6b"><div class="t">
+    <b>이미지를 싣는다 (앱 안 멈춤)</b> <span class="who user">사람</span>
+    <div class="cmd"><pre>bash /volume1/dss/setup/13-deploy.sh --preload</pre><button>복사</button></div>
+    <div class="why">md5 를 먼저 맞추고(어긋나면 안 싣습니다), 실은 뒤 지문을 대조하고,
+      도구 이미지 안의 마이그레이션이 <b>2개</b>인지 셉니다.</div>
+  </div></div>
+</div>
+
+<div class="step">
+  <div class="hd"><input type="checkbox" data-k="s6c"><div class="t">
+    <b>표를 만들고 직급을 넣는다</b> <span class="who user">사람</span>
+    <div class="why dang">
+      🔴 <b>순서가 있습니다</b> — 표가 있어야 직급이 들어갑니다.
+      스크립트가 <code>db:migrate</code> → <code>seed:ranks</code> 로 부릅니다.
+    </div>
+    <div class="cmd"><pre>bash /volume1/dss/setup/13-deploy.sh --init</pre><button>복사</button></div>
+    <div class="why">
+      마이그레이션 <b>2개</b>가 들어가고 직급이 채워집니다.
+      <code>seed:ranks</code> 는 여러 번 돌려도 중복이 안 생깁니다.
+    </div>
+  </div></div>
+</div>
+
+<div class="step">
+  <div class="hd"><input type="checkbox" data-k="s6d"><div class="t">
+    <b>앱을 띄운다</b> <span class="who user">사람</span>
+    <div class="cmd"><pre>bash /volume1/dss/setup/13-deploy.sh --go</pre><button>복사</button></div>
+    <div class="why">
+      <code>app-leave</code> 하나를 띄우고 응답을 기다립니다.
+      다른 다섯은 그대로 돕니다.
+    </div>
+  </div></div>
+</div>
+
+<h2>7. 눈으로 확인한다</h2>
+
+<div class="box warn">
+  <b>🔴 검사가 통과해도 화면에서 잡히는 것이 있습니다.</b>
+  오늘 오전 배포는 통과 103 · 실패 0 이었는데, 알림 링크가 닿을 수 없는 주소로 나가는 것을
+  <b>사람이 화면에서</b> 찾았습니다.
+</div>
+
+<div class="step">
+  <div class="hd"><input type="checkbox" data-k="s7a"><div class="t">
+    <b>로그인이 되는가</b> <span class="who user">사람</span>
+    <div class="why"><code>https://leave.dss21.co.kr</code> 에 들어가 포털을 거쳐 로그인.
+      <b>인증서 경고가 없어야</b> 합니다(있으면 5단계 ③ 을 다시).</div>
+  </div></div>
+</div>
+
+<div class="step">
+  <div class="hd"><input type="checkbox" data-k="s7b"><div class="t">
+    <b>포털 타일에 🌴 휴가가 보이는가</b> <span class="who user">사람</span>
+    <div class="why"><code>https://login.dss21.co.kr</code>. <code>requires_grant</code> 가 꺼져 있어
+      <b>전 직원에게 바로 보여야</b> 합니다.</div>
+  </div></div>
+</div>
+
+<div class="step">
+  <div class="hd"><input type="checkbox" data-k="s7c"><div class="t">
+    <b>직급이 들어갔는가 — 직원을 한 명 넣어 본다</b> <span class="who user">사람</span>
+    <div class="why dang">
+      🔴 <b>직급이 비어 있으면 직원을 한 명도 등록할 수 없습니다.</b>
+      6-③ 이 제대로 됐는지는 이걸로만 확인됩니다.
+    </div>
+  </div></div>
+</div>
+
+<div class="step">
+  <div class="hd"><input type="checkbox" data-k="s7d"><div class="t">
+    <b>🔴 알림 링크가 밖에서 닿는가</b> <span class="who user">사람</span>
+    <div class="why dang">
+      <b>오늘 개선요청이 여기서 걸렸습니다.</b> 휴가에서 결재 알림이 생기게 한 뒤,
+      <b>A/S 나 개선요청의 종</b>에서 그 줄에 마우스를 올려 주소를 보세요.<br>
+      <code>https://leave.dss21.co.kr/…</code> 여야 합니다.
+      <code>172.</code> 로 시작하면 컨테이너 주소라 안 열립니다.
+    </div>
+    <div class="why">
+      (휴가는 <code>SSO_REDIRECT_URI</code> 에서 자기 주소를 뽑는 올바른 방식이라
+      괜찮을 것으로 봅니다. 그래도 눈으로 봅니다.)
+    </div>
+  </div></div>
+</div>
+
+<div class="step">
+  <div class="hd"><input type="checkbox" data-k="s7e"><div class="t">
+    <b>메뉴바와 알림 종이 보이는가</b> <span class="who user">사람</span>
+    <div class="why">
+      안 보이면 <b>고장이 아니라 재로그인 문제</b>일 수 있습니다. 한 번 로그아웃하고 다시.<br>
+      🔴 <b>알림이 하나도 없으면 종은 원래 안 보입니다</b>(빈 종을 안 그리는 설계).
+      오늘 그걸 결함으로 오해할 뻔했습니다.
+    </div>
+  </div></div>
+</div>
+
+<h2>8. 마무리</h2>
+
+<div class="step">
+  <div class="hd"><input type="checkbox" data-k="s8a"><div class="t">
+    <b>야간 백업에 휴가가 들어갔는지 다시 본다</b> <span class="who user">사람</span>
+    <div class="cmd"><pre>ls -lt /volume1/dss/backups/db/ | head -6</pre><button>복사</button></div>
+    <div class="why dang">
+      🔴 <b>다음 날 아침에 한 번 더 보세요.</b> 스케줄러가 실제로 돌려서
+      <code>dss_leave</code> 덤프가 생기는지가 진짜 확인입니다.
+      오늘 「만든 것과 도는 것은 다르다」를 세 번 봤습니다.
+    </div>
+  </div></div>
+</div>
+
+<div class="step">
+  <div class="hd"><input type="checkbox" data-k="s8b"><div class="t">
+    <b>문서를 갱신한다</b> <span class="who me">Claude</span>
+    <div class="why">배포 지도(<code>dss-deploy/README.md</code>) · <code>HANDOFF</code> · 현황판.
+      커밋하고 올립니다.</div>
+  </div></div>
+</div>
+
+<h2>되돌리기</h2>
+
+<div class="box">
+  <table>
+    <tr><th>무엇이 잘못됐나</th><th>어떻게</th></tr>
+    <tr><td>앱이 안 뜬다</td>
+      <td><code>bash /volume1/dss/setup/13-deploy.sh --rollback</code> —
+        <code>app-leave</code> 를 내리고 compose 를 옛것으로 되돌립니다.
+        <b>DB 와 포털 등록은 남겨 둡니다</b>(해가 없고, 다시 띄울 때 그대로 씁니다).</td></tr>
+    <tr><td>마이그레이션이 잘못 들어갔다</td>
+      <td>오늘 백업으로 <code>dss_leave</code> 만 복원합니다.
+        <b>다른 DB 는 안 건드립니다</b> — 휴가는 자기 DB 를 씁니다.</td></tr>
+    <tr><td>포털 타일을 숨기고 싶다</td>
+      <td><code>update clients set is_active = false where client_id = 'dss-leave';</code><br>
+        지우지 말고 끄세요. 시크릿과 등록값이 남아 다시 켜기 쉽습니다.</td></tr>
+    <tr><td>주소가 안 열린다</td>
+      <td>Cloudflare 레코드 · DSM 프록시 · 인증서 셋 중 하나입니다.
+        <code>502</code> 면 앱 문제, <b>인증서 경고</b>면 5단계 ③, <b>아예 안 잡히면</b> DNS 입니다.</td></tr>
+  </table>
+  <b>🔴 되돌릴 수 없는 것 하나</b> — <code>seed:ranks</code> 로 들어간 직급은 되돌리는 명령이 없습니다.
+  다만 <b>직급만</b> 넣고 사람 자료는 안 건드리므로 실질적 위험이 없습니다.
+</div>
+
+<h2>오늘 배운 것 — 이 설치에 그대로 쓰입니다</h2>
+
+<div class="box warn">
+  <b>「있는가」가 아니라 「제 일을 하는가」를 봅니다.</b> 오늘 같은 함정에 네 번 걸렸습니다.
+  <ul>
+    <li>폴더는 주인이 맞는데 <b>ACL 이 막아</b> 컨테이너가 못 읽었다</li>
+    <li>이미지는 이름표가 맞는데 <b>속이 8일 전 판</b>이었다</li>
+    <li>통로는 응답이 오는데 <b>내주는 주소가 컨테이너 것</b>이었다</li>
+    <li>백업은 문서에 「더했다」고 적혀 있는데 <b>NAS 에 안 올렸다</b>(11일간)</li>
+  </ul>
+  넷 다 <b>오류가 안 났습니다.</b> 그래서 이 점검표는 <b>결과를 봅니다</b> —
+  폴더는 컨테이너 안에서 열고, 이미지는 안의 파일을 세고, 주소는 받아 보고,
+  백업은 다음 날 아침에 다시 봅니다.
+</div>
+
+</main>
+<script>
+(function(){
+  var K='dss-leave-install-2026-09-29';
+  var saved={};
+  try{saved=JSON.parse(localStorage.getItem(K)||'{}')}catch(e){}
+
+  var boxes=[].slice.call(document.querySelectorAll('input[data-k]'));
+  boxes.forEach(function(b){
+    if(saved[b.dataset.k]){b.checked=true;b.closest('.step').classList.add('done');}
+    b.addEventListener('change',function(){
+      b.closest('.step').classList.toggle('done',b.checked);
+      saved[b.dataset.k]=b.checked;
+      try{localStorage.setItem(K,JSON.stringify(saved))}catch(e){}
+      draw();
+    });
+  });
+
+  function draw(){
+    var n=boxes.filter(function(b){return b.checked}).length;
+    document.getElementById('bar').style.width=(boxes.length?n/boxes.length*100:0)+'%';
+    document.getElementById('pct').textContent=n+' / '+boxes.length+' 끝남';
+  }
+  draw();
+
+  [].slice.call(document.querySelectorAll('.cmd button')).forEach(function(btn){
+    btn.addEventListener('click',function(){
+      var box=btn.closest('.cmd');
+      var text=box.querySelector('pre').textContent;
+      function mark(){box.classList.add('copied');btn.textContent='✔';}
+      if(navigator.clipboard&&navigator.clipboard.writeText){
+        navigator.clipboard.writeText(text).then(mark,fallback);
+      }else{fallback();}
+      function fallback(){
+        var ta=document.createElement('textarea');
+        ta.value=text;document.body.appendChild(ta);ta.select();
+        try{document.execCommand('copy');mark()}catch(e){}
+        document.body.removeChild(ta);
+      }
+    });
+  });
+})();
+</script>
+</html>

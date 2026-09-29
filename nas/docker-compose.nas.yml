@@ -509,6 +509,58 @@ services:
           # A/S 와 같게 준다 — 엑셀 워크북을 파싱할 때 크게 튄다.
           memory: 640M
 
+  # ══ 휴가 관리 (3700) ═════════════════════════════════════════════════
+  #
+  # 여섯째 사이트다 (2026-09-29 더함). 틀은 개선요청(app-improvements)과 같다 —
+  # 자기 DB(dss_leave) · 자기 롤(dss_leave_app) · 전 직원 공개(포털 등록의
+  # requires_grant 가 false 라 PO 처럼 명단을 넣을 일이 없다).
+  #
+  # 🔴 개선요청과 **다른 것 하나: 업로드 볼륨이 없다.** 이 앱은 파일을 올리지
+  #    않는다 — 저장소에 UPLOADS_DIR 류의 환경변수도, 그것을 읽는 코드도 없다
+  #    (2026-09-29 확인). 없는 것이 맞으므로 나중에 「빠뜨린 것 같다」며 더하지
+  #    마라. 더하면 쓰이지 않는 폴더가 하나 늘고 야간 백업의 rsync 목록도
+  #    따라 늘어난다.
+  #
+  # 주소는 https 뿐이다 — https://leave.dss21.co.kr (DSM 프록시 443 →
+  # 127.0.0.1:13700). 인증서는 이미 있는 와일드카드(*.dss21.co.kr)가 덮는다.
+  # ⚠️ Cloudflare 에 A 레코드 `leave` 가 하나 늘어야 한다 (사람이 한다).
+  #
+  # 🔴 db-app 에 LEAVE_APP_PASSWORD 를 더하지 **않는다.** 그런 줄(개선요청의
+  #    IMPROVEMENTS_APP_PASSWORD)은 볼륨이 빌 때 한 번만 도는
+  #    init/app/01-roles.sh 를 위한 것인데, 휴가의 롤과 DB 는
+  #    setup/13-leave-db.sh 로 **이미 손으로 만들었다.** 더해 봐야 db-app 의
+  #    설정 지문만 바뀌어, 인자 없는 `up -d` 가 DB 컨테이너를 다시 만든다.
+  #
+  app-leave:
+    image: dss-leave:0.1
+    container_name: dss-leave
+    restart: unless-stopped
+    logging: *logging
+    # dss-edge 가 필요한 이유: 로그인 토큰 교환이 https://login.dss21.co.kr 로
+    # 나갔다 들어온다(NAS 자신의 443 이지만 컨테이너에서는 바깥이다).
+    networks: [dss-data, dss-edge]
+    # 3700 → 13700. 위 원칙 2 와 같은 규칙(앞에 1 을 붙인 번호).
+    ports: ["127.0.0.1:13700:3700"]
+    env_file:
+      - ./env/leave.env
+    environment:
+      TZ: Asia/Seoul
+      DATABASE_URL: postgres://dss_leave_app:${LEAVE_APP_PASSWORD}@dss-pg-app:5432/dss_leave
+      # PORT 는 적지 않는다 — 이미지가 ENV PORT=3700 으로 들고 있다
+      # (그 저장소 Dockerfile 의 runner 스테이지). 여기서 또 적으면 같은 값이
+      # 두 곳에 생기고 언젠가 한쪽만 바뀐다.
+    depends_on:
+      db-app:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          # 개선요청과 같은 384M 을 준다. 근거: 첨부 업로드도, A/S · PO 의
+          # 엑셀 워크북 파싱 같은 메모리 봉우리도 없다 — 휴가 신청과 결재를
+          # DB 로만 다루는 Next.js standalone 이라 첨부를 스트림으로 흘려 쓰는
+          # 개선요청보다 오히려 가볍다. 포털(app-auth)과도 같은 값이다.
+          memory: 384M
+
   # ══ 도구 — A/S ═══════════════════════════════════════════════════════
   #
   # 마이그레이션(db:migrate · db:preflight)과 매일 밤 purge 셋이 여기서 돈다.
@@ -633,6 +685,49 @@ services:
         limits:
           memory: 512M
 
+  # ══ 도구 — 휴가. 평소에는 뜨지 않는다 (2026-09-29 더함) ═══════════════
+  #
+  # 운영 이미지에는 drizzle-kit 도 tsx 도 없다(둘 다 devDependency). 그 안에서는
+  # db:migrate 도 seed:ranks 도 부를 수 없다 — tools-improvements 와 같은 자리다.
+  #
+  #   docker compose -f docker-compose.nas.yml --env-file .env.nas --profile tools \
+  #     run --rm tools-leave npm run db:migrate
+  #   docker compose -f docker-compose.nas.yml --env-file .env.nas --profile tools \
+  #     run --rm tools-leave npm run seed:ranks
+  #
+  # 🔴 첫 설치에는 **둘 다** 부르고, **순서가 있다** — db:migrate 로 표를 만든
+  #    뒤에야 seed:ranks 가 들어간다. 직급(web_ranks)이 비어 있으면 직원을 한
+  #    명도 등록할 수 없다(직원 추가 화면의 직급 칸이 필수인데 고를 것이 없어
+  #    거기서 막힌다). 그러니 마이그레이션만으로는 운영을 시작할 수 없다.
+  #    seed:ranks 는 직급만 넣고 여러 번 돌려도 중복이 생기지 않는다.
+  #    🔴 seed:dev 는 부르지 않는다 — 가짜 사람까지 넣는 개발 전용이다.
+  #
+  # 🔴 DATABASE_URL 을 반드시 준다. 없으면 그 저장소의 src/lib/env.ts 가
+  #    「환경변수 DATABASE_URL 이(가) 설정되지 않았습니다. **.env.local 파일을
+  #    확인하세요**」로 죽는다. 뒷문장이 개발 PC 용이라, NAS 에서 그 줄만 보면
+  #    없는 파일을 찾아 헤매게 된다. 원인은 이 줄이 빠진 것이다.
+  #
+  # ⚠️ tools-as 와 달리 drizzle/ 볼륨이 없다. 그 저장소의 Dockerfile tools
+  #    스테이지가 drizzle/ 를 함께 굽기 때문이다(tools-improvements 와 같은 모양).
+  #    대신 **마이그레이션이 늘면 도구 이미지를 다시 구워 옮겨야 한다.**
+  #
+  # 파일 볼륨도 붙이지 않는다 — 이 앱에는 업로드 폴더 자체가 없다(app-leave 주석).
+  tools-leave:
+    image: dss-leave-tools:1
+    profiles: [tools]
+    networks: [dss-data, dss-edge]
+    env_file:
+      - ./env/leave.env
+    environment:
+      TZ: Asia/Seoul
+      DATABASE_URL: postgres://dss_leave_app:${LEAVE_APP_PASSWORD}@dss-pg-app:5432/dss_leave
+    deploy:
+      resources:
+        limits:
+          # 다른 도구 셋과 같은 512M. profiles 가 붙어 `up -d` 로 뜨지 않으므로
+          # 아래 상시 예산에 들어가지 않는다 — 불릴 때만 잠깐 떴다 사라진다.
+          memory: 512M
+
 # ══ 메모리 예산 ═════════════════════════════════════════════════════════
 #
 #   db-app            768M
@@ -652,6 +747,21 @@ services:
 # 여유가 개선요청을 켠 뒤에도 1.8GB 남는다. 파일 캐시로 쓰이므로 남는 것이 낭비가 아니다 —
 # HDD 인 이 장비에서는 오히려 그쪽이 체감을 좌우한다.
 # 2026-09-14 실측: 커널이 보는 전체 5,786MB · 컨테이너 없이 사용 중 648MB.
+#
+# ── 그 뒤에 늘어난 것 (위 표는 개선요청까지만 적혀 있다) ────────────────
+#
+#   app-po            640M   ← 2026-09-28 첫 설치. A/S 와 같은 엑셀 파싱을 한다.
+#   app-leave         384M   ← 2026-09-29 첫 설치. 개선요청과 같은 값이다 —
+#                              업로드도 엑셀 파싱도 없어 그보다 가볍다.
+#   ─────────────────────
+#   여섯 사이트를 다 켠 지금   4,096MB (= 4.0GB)
+#     + DSM 자체 (2026-09-14 실측 648MB)     = 4.7GB / 5.8GB · 여유 약 1.0GB
+#     + DSM 자체 (넉넉히 잡아 1.2GB)          = 5.3GB / 5.8GB · 여유 약 0.5GB
+#
+# 🔴 이것은 **상한이지 예약이 아니다.** 실제 사용은 훨씬 적다 — Next.js
+#    standalone 한 채가 평시 100~150MB 다. 그래도 여유 칸이 처음으로 1GB 언저리로
+#    내려왔다. 일곱째 사이트를 더할 때는 이 표를 믿지 말고 **그때 실측**해서
+#    (`docker stats --no-stream`) 다시 적는다.
 #
 # ══ 아직 여기 없는 것 ═══════════════════════════════════════════════════
 #

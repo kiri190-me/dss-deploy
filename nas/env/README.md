@@ -8,8 +8,10 @@
 | `as.env` | A/S 관리 | `RF_Service_System/.env.example` |
 | `meters.env` | 계측기 관리 | `njlee/.env.example` |
 | `improvements.env` | 개선요청 (2026-09-18) | `dss-improvements/.env.example` |
+| `po.env` | PO / 내자 (2026-09-29) | `dss-po/.env.example` |
+| `leave.env` | 휴가 (2026-09-29) | `dss-leave/.env.example` |
 
-**네 파일 모두 git에 올라가지 않는다** (`.gitignore`의 `nas/env/*.env`).
+**여섯 파일 모두 git에 올라가지 않는다** (`.gitignore`의 `nas/env/*.env`).
 예시 파일을 여기 두지 않는 이유는 각 저장소의 `.env.example`이 이미 원본이기
 때문이다. 여기 사본을 두면 언젠가 한쪽만 고쳐져 갈라진다.
 
@@ -22,7 +24,16 @@ cp ../../dss-auth/.env.example          ./auth.env
 cp ../../RF_Service_System/.env.example ./as.env
 cp ../../njlee/.env.example             ./meters.env
 cp ../../dss-improvements/.env.example  ./improvements.env
+cp ../../dss-po/.env.example            ./po.env
+cp ../../dss-leave/.env.example         ./leave.env
 ```
+
+🔴 **복사한 뒤 반드시 지울 줄이 있다.** `DATABASE_URL` · `PORT` 는 compose 와
+이미지가 주므로 여기 남으면 그쪽을 덮어쓴다. 개발 전용 값(`DEV_*` ·
+`DSS_*_DB_PASSWORD` 등)도 지우거나 확실히 끈다 —
+🔴 **`DEV_FAKE_LOGIN_ENABLED` 가 켜진 채 나가면 아무나 남의 계정으로 들어간다.**
+(휴가는 `false` 로 **적어 두었다.** 줄을 지워도 꺼지지만, 없는 줄은 「끈 것」인지
+「빠뜨린 것」인지 나중에 구별되지 않는다.)
 
 ## 채울 때 주의할 것
 
