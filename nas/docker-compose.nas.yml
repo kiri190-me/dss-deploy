@@ -263,7 +263,7 @@ services:
           memory: 384M
 
   app-as:
-    image: dss-as:1.9
+    image: dss-as:2.0
     container_name: dss-as
     restart: unless-stopped
     logging: *logging
