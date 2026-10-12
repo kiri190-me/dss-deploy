@@ -839,7 +839,12 @@ probe_new_volume() { # 1 호스트경로 2 컨테이너안경로 3 사람이읽�
             echo "PROBE_NEW READ_FAIL"
           fi
           t="$M/.dss-ro-test"
-          if : > "$t" 2>/dev/null; then
+          # 🔴 **`: > "$t"` 를 쓰지 마라.** 읽기 전용 자리에서 리다이렉션이 실패하면
+          #    Alpine 의 ash 는 **셸을 그 자리에서 끝낸다** — 아래 echo 가 아예 안
+          #    돌아 판정이 빈 채로 나온다(2026-10-12 --check 에서 실제로 났다:
+          #    「쓰기 막힘 여부를 못 봤다(출력이 비었다)」). touch 는 외부 명령이라
+          #    실패해도 셸이 살아 있다.
+          if touch "$t" 2>/dev/null; then
             echo "PROBE_RO WRITE_OK"
             rm -f "$t" 2>/dev/null
           else
@@ -1489,9 +1494,13 @@ run_checks() {
     say "     ⚠️ $PO_ALT_KEY — as.env 에 **줄이 아예 없다.** po.env 에도 **적지 않는다**"
     say "        (지어내지 않는다. 양쪽 다 그 루트가 없는 것이라 설치본은 여전히 같다)."
   fi
+  # 🔴 아래 줄에 **백틱을 쓰지 마라.** 큰따옴표 안의 백틱은 bash 가 명령 치환으로
+  #    읽어 `syntax error near unexpected token` 을 뱉는다(2026-10-12 --check 에서
+  #    실제로 났다). `bash -n` 은 치환 **안쪽**을 보지 않아 못 잡는다 — 코드를
+  #    인용할 때는 작은따옴표나 「」를 쓴다.
   say "     🔵 **빈 값으로 넣는 것과 안 넣는 것은 도우미에서 결과가 같다** — 실측:"
   say "        quote-folder-helper.ts 의 resolveQuoteFolderHelperInstallRoots() 가"
-  say "        `if (!configured || configured.trim().length === 0) continue;` 로"
+  say "        'if (!configured || configured.trim().length === 0) continue;' 로"
   say "        **빈 값을 건너뛴다.** A/S 와 PO 두 저장소가 그 줄까지 같다(2026-10-12)."
   # 🔴 다섯을 **각각** 찍는다(SKIP 도 한 줄로 찍는다).
   report_env_keys "$AS_ENV" "as.env" "$AS_NEW_KEYS"
