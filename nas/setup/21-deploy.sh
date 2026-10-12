@@ -381,14 +381,15 @@ KEEP_LEAVETOOLS=dss-leave-tools:1
 # ── tar 둘 ─────────────────────────────────────────────────────────────
 TAR_AS=$IMAGES/dss-as-2.4.tar
 TAR_PO=$IMAGES/dss-po-0.4.tar
-# 🔴 **아직 안 쟀다.** 개발 PC 에서 굽고 머리말의 차례대로 채운다.
-#    비어 있는 동안 --go 는 시작조차 하지 않는다.
-SZ_AS=""
-MD5_AS=""
-WANT_CFG_AS=""
-SZ_PO=""
-MD5_PO=""
-WANT_CFG_PO=""
+# 🔴 **2026-10-12 20:16 에 구워 잰 값이다.** 개발 PC 의
+#    Development\dss-as-2.4.tar · dss-po-0.4.tar 에서 바로 쟀다.
+#    tar 가 다시 구워지면 **지문이 달라진다** — 그때는 여섯을 다시 잰다.
+SZ_AS=131237888
+MD5_AS=2673bdecfc47cddc9d2a76ddfa47042b
+WANT_CFG_AS=sha256:4256829e89aa5ac2fdd594b97a65da3b96ac59b9a1ed2b0d057880be7a7699ee
+SZ_PO=95424000
+MD5_PO=d0d6ce877db88976e9af31d48d791621
+WANT_CFG_PO=sha256:c74e49a684e7ef8c52aa6685252464f61d1b43de590a52231e32441bcc07eeb3
 # ⚠️ manifest.json 은 그 값을 `blobs/sha256/973ce1c0…` 로 적는다 — 앞의 `blobs/` 를
 #    떼고 `sha256:` 를 붙인 모양으로 적는다(17 ~ 20번도 같은 모양이었다).
 
