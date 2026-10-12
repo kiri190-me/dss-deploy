@@ -9,6 +9,37 @@
 
 ## 지금 어디까지 됐나
 
+### 🟢 2026-10-12 23:07 — 열아홉째 배포. 휴가 **0.2** · 도구 **2**. 정지 **약 10초** · 🔴 **운영 DB 에 표가 하나 섰다**
+
+스크립트는 [`nas/setup/23-deploy.sh`](./nas/setup/23-deploy.sh)
+(22번의 뼈대 + 19번의 마이그레이션 절차). **같은 날 세 번째 배포**였다.
+
+| | 무엇 | 상태 |
+|---|---|---|
+| 열아홉째 | 휴가 `0.1→0.2` · 도구 `dss-leave-tools:1→2` | ✅ **정지 약 10초** · `--go` 통과 **153** · 실패 **0** |
+| 마이그레이션 | 🔴 **1건** | `0002_summer_leave_settings` — `web_leave_settings` 표 하나를 **더하기만** 했다 (2 → 3) |
+| 적용 직전 덤프 | ✅ 떴다 | `/volume1/dss/backups/predeploy-20261012-230600/dss_leave.dump` |
+| 멈춘 것 | **`dss-leave` 하나** | `tools-leave` 는 `profiles: [tools]` 라 뜨지도 멈추지도 않는다 |
+
+올라간 것은 커밋 **셋**(`0454a6f` · `80a87ad` · `87ff906`) — **여름휴가**다.
+연차·월차와 **별개인 셋째 주머니**(회사 전체 연 3일, 설정 화면에서 바꾼다) ·
+달력 범례와 인쇄물에 여름휴가가 안 보이던 것 · 🔴 인쇄물이 여름휴가에
+「차감 없음」이라고 **거짓**을 찍던 것(이제 「여름휴가에서 뺌」이다).
+
+여섯 사이트 — 포털 `1.5` · A/S `2.5` · 계측기 `1.3` · 개선요청 `0.3` · PO `0.5` · **휴가 `0.2`**.
+
+#### 🔴 다음 판이 베낄 때
+
+23번이 새로 넣은 것 하나 — 🔴 **DB 에 보낸 문장을 파일에 한 줄씩 적어 센다**
+(`sql_note` · `sql_report` · `setup/logs/23-sql-*.txt`). 「`--check` 는 `select` 만
+보낸다」를 **말로 하지 않고 세어서 찍는다.** `$( )` 안에서 불리는 함수라 변수로
+세면 그 수가 밖으로 안 나온다 — 그래서 파일에 적는다. 24번이 그대로 가져갔다.
+
+🔴 **백업을 찾는 DB 이름이 판마다 다르다** — 21·22 는 `dss_as`, 23 은 `dss_leave`,
+24 는 `dss_auth` 다. **베낄 때 놓치기 가장 쉬운 자리다.**
+
+---
+
 ### 🟢 2026-10-12 22:22 — 열여덟째 배포. A/S **2.5** · PO **0.5**. 정지 **약 16초** · 마이그레이션 **0건**
 
 스크립트는 [`nas/setup/22-deploy.sh`](./nas/setup/22-deploy.sh)
@@ -1118,7 +1149,134 @@ DS218+의 Celeron J3355는 AES-NI를 가지고 있어 이 일에 훨씬 적합�
 
 ## 다음 세션 첫 작업
 
-### 🔴 2026-10-12 밤 — **열아홉째 배포가 기다린다.** 오늘 **세 번째**다. 🔴 **운영 DB 에 표가 하나 선다**
+### 🔴 2026-10-12 밤 — **스무째 배포가 기다린다.** 오늘 **네 번째**다. 🔴 **이번엔 포털 — 로그인 문이다**
+
+열아홉째(23:07 · 휴가 `0.2` + 표 하나)는 **끝났다** — 결과는 위 「지금 어디까지 됐나」
+맨 위 절에. 이번은 **포털 하나뿐**이고, 🔴 **앞의 넷과 결이 다르다** — 21·22·23 은
+전부 **업무 사이트**였는데 이 판은 **여섯 사이트 전부가 지나는 로그인 문**이다.
+
+| | 무엇 | → |
+|---|---|---|
+| 포털 | `dss-auth:1.5` | **`1.6`** (커밋 1개 — `c51ff52`) |
+| 마이그레이션 | 0 | 🔵 **0건** (`drizzle/` 를 한 글자도 안 건드렸다) |
+| 새 볼륨 · `.env` · 양식 | — | 🔵 **전부 없다** |
+| 도구 이미지 | — | 🔵 **포털엔 아예 없다** (`tools-auth` 서비스가 compose 에 없다 — 실측) |
+| 공유폴더 볼륨 | — | 🔵 **포털엔 하나도 없다.** 붙은 볼륨은 `auth-keys:/keys:ro` **하나뿐** |
+| `compose` 변경 | — | 🔴 **태그 한 줄** (`app-auth`) |
+| 올릴 파일 | — | **둘** (tar 하나 + compose) |
+| 멈추는 것 | — | **`dss-auth` 하나뿐** |
+| 🔴 백업으로 볼 DB | — | 🔴 **`dss_auth`** (21·22 는 `dss_as`, 23 은 `dss_leave` 였다) |
+
+**배포본은 [`nas/setup/24-deploy.sh`](./nas/setup/24-deploy.sh) 다 — 이미 썼다**
+(2026-10-12 · 1899줄 · `bash -n` 통과 · 백틱 0 · `: >` 0).
+🔵 **22번의 뼈대에서 더 덜어낸 판**이다(이미지 하나 · compose 한 줄). compose 도
+이미 고쳐 뒀다(`app-auth` 의 `image` 한 줄만 — `git diff` 가 1 insertion · 1 deletion).
+
+#### 담긴 것 — 업데이트 소식 맨 위의 「폴더 열기 도우미」 칸
+
+🔴 `/release-notes` **맨 위**에 **접힌 채로 상시** 서는 칸 하나(`<details>` ·
+자바스크립트 **0줄**). 소식 글(`RELEASES`)로 넣지 **않았다** — 소식은 쌓이면서
+밀려 내려가는데 이 칸은 늘 거기 있어야 한다. 설치 명령을 포털이 만들지 않고
+**A/S 로 가는 길만** 알려 준다(단추는 포털 제 화면 `/apps` 로 간다).
+🔴 **로그인 없이 열리는 공개 화면**이라 사내 주소·IP 가 한 글자도 없다.
+
+#### 🔴 ① 화면의 「v1.5」는 **안 바뀐다** — 결함이 아니다
+
+🔴 **지시서가 「1.5 → 1.6」이라고 적지만, 그것은 배포본 번호다.** 화면 머리말의
+`v{APP_VERSION}` 은 `RELEASES` 에서 「통합 로그인」 가장 최근 **소식 글**의 번호를
+집는데, 이번 커밋은 **소식 글을 하나도 더하지 않았다**(일부러 그렇게 했다).
+`package.json` 의 `version` 도 `1.5` 그대로이고 시험이 둘을 묶어 두고 있다.
+🔴 **화면에서 v1.6 을 찾지 마세요.** 「새 판인가」는 **도우미 칸이 있는가**로 본다.
+
+#### 🔵 ② 세션은 **안 끊긴다** — 코드를 보고 내린 판단
+
+🔵 **쓰는 분들이 다시 로그인하지 않아도 된다.** 근거 셋:
+
+1. **세션이 DB 에 있다.** `dss-auth/src/lib/db/schema/sso-sessions.ts` 머리말 —
+   「A/S 의 `dss_session` 쿠키(stateless 토큰)와 달리 **서버 저장형**이다」.
+   표는 `sso_sessions`, DB 는 `dss_auth`, 그 DB 는 **`dss-pg-auth`** 컨테이너 안이다.
+   🔴 이 배포는 `--no-deps` 로 `app-auth` 하나만 부르므로 **그 DB 를 안 멈춘다.**
+2. **서명 키가 이미지 안이 아니다.** 호스트 폴더 `/volume1/dss/auth-keys` 를
+   `/keys` 에 `:ro` 로 붙인다 — 이미 나간 ID 토큰도 계속 검증된다.
+3. **로그인 왕복 쿠키의 서명 키(`AUTH_TX_SECRET`)도 `auth.env` 에서 온다**
+   (`src/lib/config/env.ts` 의 `required`). 프로세스가 만드는 값이 아니다.
+
+🔴 다만 바꿔 끼우는 **그 몇 초** 동안은 아무도 **새로** 못 들어온다.
+스크립트가 **살아 있는 세션 수를 전후로 세어**(3-ㄷ · 5-ㄹ) 숫자로 보여 준다.
+
+#### 🔴 ③ 22번에서 **더 걷어낸 것**
+
+| | 22번 | **24번** |
+|---|---|---|
+| 공유폴더 검사 | 다섯 자리 + ACL 경고 + 대소문자 함정 | 🔴 **통째로 없다** (포털엔 볼륨이 없다) |
+| `probe_svc` · `perm_fix_hint` · `mnt_count_check` | 있다 | **없다** |
+| OCR 검사 | 있다 | **없다** (`public/ocr` 은 A/S 것이다) |
+| 권한(`role_permissions`) 읽기 | 있다 | **없다** (그 표는 A/S DB 다) |
+| 첨부 하드링크 스냅숏 | 있다 | **없다** (포털엔 `/data` 가 없다) |
+
+🔴 **대신 포털이라서 더 넣은 것 넷** — 되돌리기(맨 위에 다섯 줄) · 로그인 길
+넷(`/signin` · `/` · discovery · **jwks 에 키가 실렸나**) · `/keys` 를 컨테이너
+안에서 실제로 열기 · 세션 수 전후 대조.
+
+#### 🔴 ④ 되돌리는 길 — 포털은 **빠른 것이 먼저다**
+
+```bash
+cd /volume1/dss/deploy
+sed -i 's/dss-auth:1.6/dss-auth:1.5/' docker-compose.nas.yml
+D1=/usr/local/bin/docker
+F=docker-compose.nas.yml
+$D1 compose -f $F --env-file .env.nas up -d --no-deps app-auth
+```
+
+🔴 **먼저 `dss-auth:1.5` 가 NAS 에 있는지 본다** — 없으면 저 다섯 줄은
+「이미지를 못 찾는다」로 끝난다. `bash 24-deploy.sh --rollback` 이 그것부터 본다.
+🔵 바뀐 자리가 **그 한 줄뿐**이라 `sed` 로 내려도 안전하다(사본으로 되돌리는
+정석 길도 `--rollback` 이 함께 찍는다).
+🔵 되돌리면 **도우미 칸만 사라진다** — 로그인도 `/apps` 도 알림도 그대로고
+**세션도 안 끊긴다.**
+
+**🔴 아직 안 한 것 — 사람이 해야 넘어간다**
+
+1. **이미지를 굽는다**(`dss-auth:1.6`)고 `docker save` 로 tar 를 뽑아
+   **`SZ_AUTH`·`MD5_AUTH`·`WANT_CFG_AUTH` 셋을 채운다.**
+   🔴 비어 있는 동안 `--go` 는 **시작조차 하지 않는다.**
+   🔵 이번 판은 **화면 한 칸**만 늘었다 — tar 크기가 `1.5` 와 거의 같은 것이 정상이다.
+2. 🔵 **마이그레이션 묶음도 도구 이미지도 올릴 것이 없다.** 올릴 파일은 **둘**뿐이다.
+3. 🔵 **도우미 재설치 안내는 새로 없다** — 이번 판은 도우미를 한 글자도 안 바꿨다.
+
+**🔴 사람이 칠 명령 — 차례대로**
+
+```powershell
+cd C:\Users\희만\Desktop\Development\dss-auth
+git status --short
+docker build -t dss-auth:1.6 .
+cd ..
+docker save dss-auth:1.6 -o dss-auth-1.6.tar
+scp -O dss-auth-1.6.tar dss-nas:/volume1/dss/images/
+scp -O dss-deploy\nas\docker-compose.nas.yml dss-nas:/volume1/dss/setup/incoming/
+scp -O dss-deploy\nas\setup\24-deploy.sh dss-nas:/volume1/dss/setup/
+Get-FileHash -Algorithm MD5 dss-deploy\nas\setup\24-deploy.sh
+```
+
+```bash
+ssh dss-nas
+sudo -i
+md5sum /volume1/dss/setup/24-deploy.sh      # ← 위 Get-FileHash 와 같아야 한다
+bash /volume1/dss/setup/24-deploy.sh                # 읽기만
+bash /volume1/dss/setup/24-deploy.sh --preload      # 새 이미지를 싣는다
+bash /volume1/dss/setup/24-deploy.sh                # 다시 읽기만 — 안까지
+bash /volume1/dss/setup/24-deploy.sh --go           # 포털 교체
+```
+
+🔴 **`--go` 는 오늘 뜬 `dss_auth` 백업이 없으면 시작조차 않는다**(21·22 는 `dss_as`,
+23 은 `dss_leave` 였다 — **또 바뀌었다**). 야간 백업은 **02:30** 이라 자정 넘어
+배포하면 걸린다 — 먼저 손으로 뜬다: `bash /volume1/dss/jobs/backup-nightly.sh`
+
+되돌리기 안내: `bash /volume1/dss/setup/24-deploy.sh --rollback`
+
+---
+
+### 🟢 2026-10-12 밤 — ~~열아홉째 배포가 기다린다~~ (**끝났다** — 결과는 「지금 어디까지 됐나」 맨 위)
 
 열여덟째(22:22 · A/S `2.5` · PO `0.5`)는 **끝났다** — 결과는 위 「지금 어디까지 됐나」
 맨 위 절에. 이번은 **휴가 하나뿐**이고, 🔴 **앞의 두 판과 결이 다르다** — 21 · 22번은
