@@ -263,7 +263,7 @@ services:
           memory: 384M
 
   app-as:
-    image: dss-as:2.4
+    image: dss-as:2.5
     container_name: dss-as
     restart: unless-stopped
     logging: *logging
@@ -616,7 +616,7 @@ services:
   #    영영 안 비워진다 — 화면은 계속 「15일 뒤 자동 삭제」라고 말하면서.
   #
   app-po:
-    image: dss-po:0.4
+    image: dss-po:0.5
     container_name: dss-po
     restart: unless-stopped
     logging: *logging
