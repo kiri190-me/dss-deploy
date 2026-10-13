@@ -114,7 +114,12 @@ fi
 echo
 echo "══ 4. 포털 등록(1단계)도 됐나 ══"
 ROW=$("$DOCKER" exec -i dss-pg-auth sh -c 'psql -U "$POSTGRES_USER" -d dss_auth -X -tAq' <<SQL 2>/dev/null
-select is_active || '|' || requires_grant || '|' || launcher_url
+-- 🔴 boolean 을 || 로 이으면 PostgreSQL 이 'true'/'false' 로 바꾼다. psql 이
+--    칸으로 찍을 때의 't'/'f' 와 다르다 — 2026-10-13 첫 설치에서 멀쩡한 등록이
+--    ✗ 둘로 보였다. case when 으로 't'/'f' 를 **직접 만들어** 아래 셸 판정과 맞춘다.
+select case when is_active      then 't' else 'f' end
+       || '|' || case when requires_grant then 't' else 'f' end
+       || '|' || launcher_url
        || '|' || length(client_secret_hash)
        || '|' || length(launcher_icon)
        || '|' || upper(to_hex(ascii(launcher_icon)))
