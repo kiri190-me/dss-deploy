@@ -8,9 +8,15 @@
 #   DB 다섯    dss_auth · dss_meters · dss_as · dss_improvements · dss_leave
 #   🔴 + 여섯째 dss_board (2026-10-13 더함). 위 줄은 그때의 기록으로 남겨 둔다 —
 #      고치지 않고 더하기만 한 것이 아래 dump 줄에서도 그대로 보인다.
+#   🔴 + 일곱째 dss_inventory (2026-10-13 더함, 재고 관리)
 #                                     →  /volume1/dss/backups/db/     (DB마다 최근 30개)
 #   파일       계측기 사진·성적서 · A/S 첨부 · 서명키 · 개선요청 첨부
 #   🔴 + 게시판 첨부 board-uploads (2026-10-13 더함)
+#   🔴 + 재고 관리 데이터 폴더 inventory-data (2026-10-13 더함)
+#      그 안에 **엑셀 양식 두 벌**이 있다 — 프로그램이 다시 만들 수 없는
+#      **입력물**이다. 잃으면 현황판 엑셀을 아예 못 만든다. 그 저장소의
+#      전환일 절차서가 전제 1번으로 「야간 백업에 운영 DB 와 데이터 폴더가
+#      들어 있다. 없으면 실자료를 넣지 않는다」를 못 박은 까닭이 이것이다.
 #                                     →  /volume1/dss/backups/files/ (쌓아 올림)
 #   기록       /volume1/dss/setup/logs/backup-*.log  (관리자가 읽을 수 있는 곳 — 검수용)
 #
@@ -70,6 +76,11 @@ dump dss-pg-app  dss_leave_app  dss_leave
 #    그 일이 11일간 실제로 일어난 기록이다. 이번에는 올린 것까지 확인한다
 #    (setup/25-board-place.sh 3번 · setup/25-deploy.sh 검사 9 가 오늘 덤프를 센다).
 dump dss-pg-app  dss_board_app  dss_board
+# 재고 관리 (2026-10-13 더함). 자기 DB · 자기 롤이라 한 줄이 그대로 는다 —
+# 휴가 · 게시판과 같다. 🔴 이 DB 는 **파일 쪽과 짝**이다: 아래 inventory-data
+# 줄이 엑셀 양식 두 벌을 받고, 이 줄이 그 양식으로 만들어 낼 자료를 받는다.
+# 둘 중 하나만 있으면 되살릴 수 없다.
+dump dss-pg-app  dss_inventory_app  dss_inventory
 
 # 🔴 ── 고치는 것과 올리는 것은 다른 일이다 ─────────────────────────────
 #
@@ -116,6 +127,34 @@ done
 for p in board-uploads; do
   if rsync -a "$D/$p/" "$B/files/$p/"; then
     echo "  ✓ $p · 파일 $(find "$B/files/$p" -type f | wc -l)개 · $(du -sh "$B/files/$p" | cut -f1)"
+  else echo "  ✗ $p 복사 실패"; FAIL=1; fi
+done
+
+# 🔴 재고 관리 데이터 폴더 (2026-10-13 더함) — 앞의 다섯과 **성격이 다르다.**
+#    저쪽은 「사람이 올린 첨부」지만 이쪽에는 프로그램의 **입력물**이 들어 있다:
+#      templates/  엑셀 양식 두 벌  🔴 프로그램이 다시 만들 수 없다.
+#                  잃으면 현황판 엑셀을 아예 못 만든다
+#      import/     전환일 입력(현황판 최신 사본 · 묶음 판정표)
+#      workbook/ · baseline/ · backup/ · workbook/OLD/
+#                  프로그램이 1분마다 다시 쓰는 결과물. DB 에서 다시 만들 수
+#                  있지만, 수기입을 치워 둔 파일(현황판_사람수정_*.xlsx)은
+#                  **사람이 적은 것이라 다시 못 만든다**
+#    컨테이너 안에서는 /data 다 (docker-compose.nas.yml 의 app-inventory).
+#
+# 🔴 **위 for 줄들에 이름을 끼워 넣지 않고 따로 돈다.** 이미 돌고 있는 줄을
+#    고치면 검증된 것들의 차례까지 함께 흔들린다 — 더하는 변경은 더하기만
+#    한다(게시판을 더할 때 적은 그 까닭 그대로다). 하는 일은 위와 글자 그대로
+#    같다(쌓아 올림 · --delete 없음).
+#
+# 🔴 쌓아 올리기라 **지운 파일도 백업에는 남는다.** 재고 관리의 한 벌 엑셀은
+#    이름이 날마다 같아 덮어써지지만(일일 백업은 날짜가 붙는다), 그 덮어쓰기는
+#    원본 쪽 일이고 여기서는 받은 그대로를 둔다.
+for p in inventory-data; do
+  if rsync -a "$D/$p/" "$B/files/$p/"; then
+    echo "  ✓ $p · 파일 $(find "$B/files/$p" -type f | wc -l)개 · $(du -sh "$B/files/$p" | cut -f1)"
+    # 🔴 「복사했다」가 아니라 「양식이 들어왔나」를 본다. 폴더만 있고 양식이
+    #    없으면 현황판을 못 만든다 — 전환일 전에는 0 이 정상이다.
+    echo "    · 그중 templates/ 의 xlsx: $(find "$B/files/$p/templates" -maxdepth 1 -name '*.xlsx' 2>/dev/null | wc -l)개 (전환일 뒤에는 둘 이상)"
   else echo "  ✗ $p 복사 실패"; FAIL=1; fi
 done
 

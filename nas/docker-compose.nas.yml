@@ -794,6 +794,113 @@ services:
           #    `docker stats --no-stream` 으로 **실측**해서 그 표를 다시 적는다.
           memory: 384M
 
+  # ══ 재고 관리 (3800) ═════════════════════════════════════════════════
+  #
+  # 여덟째 사이트다 (2026-10-13 더함). 틀은 게시판(app-board)과 같다 —
+  # 자기 DB(dss_inventory) · 자기 롤(dss_inventory_app) · 데이터 볼륨 하나.
+  #
+  # 🔴 앞의 일곱과 **근본이 다른 것 하나: 앱이 1분마다 볼륨에 쓴다.**
+  #    재고 현황판 엑셀 한 벌을 통째로 다시 만들어 네 곳에 둔다
+  #    (그 저장소 src/lib/excel/workbook-sync.ts · instrumentation-node.ts):
+  #      /data/workbook/재고 및 견적 현황판.xlsx   사람이 **보는** 파일
+  #      /data/baseline/…                          비교 기준본(수기입 판정용)
+  #      /data/backup/…                            일일 백업 30일
+  #      /data/workbook/OLD/…                      월별 영구 백업
+  #    그래서 이 볼륨은 「첨부가 가끔 쌓이는 곳」이 아니라 **앱이 늘 쓰는 곳**이다.
+  #    🔴 못 쓰면 오류 화면이 뜨지 않는다 — 로그에만 남고 엑셀만 조용히 멈춘다.
+  #    그래서 27-inventory-check.sh 와 27-deploy.sh 가 「있는가」가 아니라
+  #    **「실제로 쓰는가」**를 임시 컨테이너와 도는 컨테이너 양쪽에서 잰다.
+  #
+  # 🔴 uid 가 앞의 일곱과 **다르다 — 1001 이다.**
+  #    그 저장소 Dockerfile 의 runner 가
+  #      groupadd --system --gid 1001 nodejs
+  #      useradd  --system --uid 1001 --gid nodejs nextjs   →   USER nextjs
+  #    로 굽는다. 게시판 · 개선요청 · A/S 는 node(uid 1000)였다. 섞어 쓰지 마라.
+  #    /volume1/dss/inventory-data 는 **이 설치가 새로 만드는 폴더**라
+  #    chown 1001 로 풀 수 있다(27-inventory-place.sh). 직원이 탐색기로 쓰는
+  #    남의 서류함이 아니므로 ACL 을 걷어도 끊기는 사람이 없다.
+  #
+  # 🔴 **STOCK_* 세 경로는 컨테이너 안 경로다.** 파일 이름이 한글이고 공백이
+  #    들어 있어 **큰따옴표로 묶는다.** 아래 이름은 그 저장소
+  #    docs/전환일_절차서_2026-10-12.md 2-2절의 값 그대로다 — 글자 하나라도
+  #    다르면 양식을 못 읽어 현황판 엑셀이 만들어지지 않는다.
+  #    🔵 양식 두 벌은 **전환일에 사람이 넣는다.** 설치하는 날에는 아직 없는
+  #       것이 정상이고, 없어도 앱은 뜬다(빈 DB 라 쓸 것이 없어 건너뛴다).
+  #
+  # 주소는 https 뿐이다 — https://inventory.dss21.co.kr (DSM 프록시 443 →
+  # 127.0.0.1:13800). 인증서는 이미 있는 와일드카드(*.dss21.co.kr)가 덮는다.
+  # ⚠️ Cloudflare 에 A 레코드 `inventory` 가 하나 늘어야 한다 (사람이 한다).
+  #
+  # 🔴 db-app 에 INVENTORY_APP_PASSWORD 를 더하지 **않는다.** 휴가 · 게시판과
+  #    같은 까닭이다 — 롤과 DB 는 27-inventory-db.sh 가 손으로 만든다. 더해
+  #    봐야 db-app 의 설정 지문만 바뀌어, 인자 없는 up -d 가 DB 를 다시 만든다.
+  #
+  # 🔴 PORT 는 적지 않는다 — 이미지가 ENV PORT=3800 을 들고 있다(그 저장소
+  #    Dockerfile 의 runner). 여기서 또 적으면 같은 값이 두 곳에 생긴다.
+  #
+  # ── 🔴 아직 주석으로 누워 있다 (첫 설치 전) ════════════════════════════
+  #    이 서비스와 아래 tools-inventory 가 `./env/inventory.env` 를 요구하는데
+  #    **그 파일이 아직 NAS 에 없다.** 켜 두면 없는 env_file 하나 때문에
+  #    `docker compose` 명령이 **통째로** 안 먹는다 — 앱을 멈춘 뒤에 그걸 알면
+  #    다시 띄우지도 못한다(개선요청 첫 설치의 교훈).
+  #
+  #    🔴 벗기는 때: 27-inventory-place.sh 가 `env/inventory.env` 를 제자리에
+  #       **놓은 뒤.** 두 자리(여기 · tools-inventory)를 **함께** 벗긴다 —
+  #       하나만 벗기면 또 깨진다.
+  #    🔴 손으로 벗기지 마라. 게시판 때 바로 뒤 블록의 주석까지 함께 벗겨진
+  #       일이 있다. 아래 BEGIN · END 표시 사이만 벗기고 **줄 수를 세어**
+  #       확인하는 일을 27-inventory-place.sh 가 한다.
+  #
+  # ══ 벗길 자리 ①/둘 ═════════════ DSS-INVENTORY-UNCOMMENT-BEGIN-APP ════
+  # app-inventory:
+  #   image: dss-inventory:0.1
+  #   container_name: dss-inventory
+  #   restart: unless-stopped
+  #   logging: *logging
+  #   # 🔴 dss-edge 가 필요한 까닭: 로그인 토큰 교환이 https://login.dss21.co.kr
+  #   #    로 **나갔다 들어온다**(NAS 자신의 443 이지만 컨테이너에서는 바깥이다).
+  #   #    dss-data 는 internal: true 라 바깥으로 못 나간다 — 빠뜨리면 화면은
+  #   #    뜨는데 **로그인만** 안 된다.
+  #   networks: [dss-data, dss-edge]
+  #   # 3800 → 13800. 위 원칙 2 와 같은 규칙(앞에 1 을 붙인 번호).
+  #   ports: ["127.0.0.1:13800:3800"]
+  #   env_file:
+  #     - ./env/inventory.env
+  #   environment:
+  #     TZ: Asia/Seoul
+  #     DATABASE_URL: postgres://dss_inventory_app:${INVENTORY_APP_PASSWORD}@dss-pg-app:5432/dss_inventory
+  #     INVENTORY_DATA_DIR: /data
+  #     STOCK_WORKBOOK_TEMPLATE_PATH: "/data/templates/재고 및 견적 현황판 틀_과거줄포함.xlsx"
+  #     STOCK_DOWNLOAD_TEMPLATE_PATH: "/data/templates/재고 현황 내려받기 틀.xlsx"
+  #     STOCK_WORKBOOK_PATH: "/data/workbook/재고 및 견적 현황판.xlsx"
+  #   volumes:
+  #     # 🔴 이 한 줄이 이 서비스에서 가장 중요하다. 빠지면 1분마다 만들어지는
+  #     #    현황판 엑셀이 컨테이너 안 임시 디스크에 쌓이고, **다음 배포에서
+  #     #    컨테이너를 새로 만드는 순간 전부 사라진다.** 사람이 공유 폴더에서
+  #     #    보는 파일도 영영 안 생긴다 — 그런데 화면은 멀쩡하다.
+  #     - /volume1/dss/inventory-data:/data
+  #   depends_on:
+  #     db-app:
+  #       condition: service_healthy
+  #   deploy:
+  #     resources:
+  #       limits:
+  #         # 🔴 512M 으로 잡았다. 근거(2026-10-13):
+  #         #  · 양식 파일이 164KB 다(개발 PC 실측). A/S · PO 의 640M 은 21MB
+  #         #    엑셀 업로드를 파싱할 때의 봉우리 때문에 준 값이라 두 자릿수가
+  #         #    다르다 — 그 값을 그대로 베낄 근거가 없다.
+  #         #  · 그렇다고 384M(포털 · 개선요청 · 휴가 · 게시판)도 아니다. 저쪽은
+  #         #    요청이 올 때만 일하지만 이쪽은 **1분마다** 전 자료(부품 · 원장 ·
+  #         #    과거 기록 2,288건)를 메모리에서 한 벌로 조립해 네 곳에 쓴다.
+  #         #    봉우리가 가끔이 아니라 늘 반복돼, 모자라면 1분마다 OOM 이 나고
+  #         #    재시작 루프가 된다.
+  #         #  · 성격이 가장 가까운 것은 계측기(app-meters, 512M)다 — 파일을
+  #         #    다루지만 거대 엑셀 파싱은 없다.
+  #         #  🔴 상한이지 예약이 아니다. 첫 설치 뒤 docker stats --no-stream 으로
+  #         #     **실측**해서 파일 맨 아래 예산표를 다시 적는다.
+  #         memory: 512M
+  # ══ 벗길 자리 ① 끝 ═══════════════ DSS-INVENTORY-UNCOMMENT-END-APP ════
+
   # ══ 도구 — A/S ═══════════════════════════════════════════════════════
   #
   # 마이그레이션(db:migrate · db:preflight)과 매일 밤 purge 셋이 여기서 돈다.
@@ -1021,6 +1128,74 @@ services:
           # 아래 상시 예산에 들어가지 않는다 — 불릴 때만 잠깐 떴다 사라진다.
           memory: 512M
 
+  # ══ 도구 — 재고 관리. 평소에는 뜨지 않는다 (2026-10-13 더함) ═══════════
+  #
+  # 운영 이미지에는 tsx 가 없다(devDependency). 그 안에서는 scripts/*.ts 를
+  # 하나도 부를 수 없다 — tools-improvements · tools-leave · tools-board 와
+  # 같은 자리다. 그 저장소 Dockerfile 의 `tools` 스테이지가 이것이다.
+  #
+  #   docker compose -f docker-compose.nas.yml --env-file .env.nas --profile tools \
+  #     run --rm tools-inventory npx tsx scripts/migrate.ts
+  #
+  # 🔴 첫 설치에는 migrate 를 **앱보다 먼저** 부른다. 표 열셋이 서야 첫 화면이
+  #    뜬다 — 없으면 42P01(relation does not exist)로 죽는다. DB 가 먼저다.
+  #    27-deploy.sh 의 --init 이 그 일만 한다.
+  #
+  # 🔴 **오늘(그릇 세우는 날) 돌리는 것은 migrate 하나뿐이다.**
+  #    seed-items.ts(항목 19종)와 import-workbook.ts --real(실자료 수천 줄)은
+  #    **전환일 작업**이고 전용 절차서가 따로 있다
+  #    (그 저장소 docs/전환일_절차서_2026-10-12.md). --real 은 한 번만 돌릴 수
+  #    있고 되돌리려면 DB 를 비워야 한다. 설치 스크립트에 넣지 않았다.
+  #
+  # 🔴 이 컨테이너는 **root 로 돈다.** 그 저장소 Dockerfile 의 tools 스테이지에
+  #    USER 줄이 없다(runner 에만 있다). migrate 는 DB 만 보므로 상관없지만,
+  #    **/data 에 파일을 만드는 전환일 명령**(build-workbook-template ·
+  #    import-workbook --unmatched · workbook-selftest)을 그냥 돌리면 root 가
+  #    주인인 파일이 생겨 **앱(uid 1001)이 그 뒤로 못 덮어쓴다.** 그 명령들은
+  #    반드시 아래 둘 중 하나로:
+  #      ① docker compose … run --rm --user 1001:1001 tools-inventory …
+  #      ② 돌린 뒤  chown -R 1001:1001 /volume1/dss/inventory-data
+  #    (27-inventory-check.sh 가 폴더 전체의 주인을 되읽어 어긋나면 알린다.)
+  #
+  # ⚠️ tools-as 와 달리 drizzle/ 볼륨이 없다. 그 저장소 Dockerfile 의 tools
+  #    스테이지가 drizzle/ 와 scripts/ 와 src/ 를 함께 굽기 때문이다
+  #    (tools-improvements · tools-leave · tools-board 와 같은 모양). 대신
+  #    **마이그레이션이 늘면 도구 이미지를 다시 구워 옮겨야 한다.**
+  #
+  # 🔴 데이터 볼륨은 app-inventory 와 **같은 자리**여야 한다. 전환일 명령이
+  #    앱이 보는 바로 그 파일을 만들기 때문이다.
+  #
+  # ── 🔴 아직 주석으로 누워 있다 (위 app-inventory 와 함께) ══════════════
+  #    이 서비스도 `./env/inventory.env` 를 요구한다. `profiles: [tools]` 라
+  #    평소에 뜨지 않지만, compose 는 파일을 읽을 때 **모든 서비스의 env_file
+  #    을** 확인하므로 그 파일이 없으면 똑같이 `docker compose` 가 통째로
+  #    막힌다. 두 자리를 **함께** 벗긴다 — 27-inventory-place.sh 가 한다.
+  #
+  # ══ 벗길 자리 ②/둘 ═══════════ DSS-INVENTORY-UNCOMMENT-BEGIN-TOOLS ════
+  # tools-inventory:
+  #   image: dss-inventory-tools:1
+  #   profiles: [tools]
+  #   networks: [dss-data, dss-edge]
+  #   env_file:
+  #     - ./env/inventory.env
+  #   environment:
+  #     TZ: Asia/Seoul
+  #     DATABASE_URL: postgres://dss_inventory_app:${INVENTORY_APP_PASSWORD}@dss-pg-app:5432/dss_inventory
+  #     INVENTORY_DATA_DIR: /data
+  #     STOCK_WORKBOOK_TEMPLATE_PATH: "/data/templates/재고 및 견적 현황판 틀_과거줄포함.xlsx"
+  #     STOCK_DOWNLOAD_TEMPLATE_PATH: "/data/templates/재고 현황 내려받기 틀.xlsx"
+  #     STOCK_WORKBOOK_PATH: "/data/workbook/재고 및 견적 현황판.xlsx"
+  #   volumes:
+  #     # app-inventory 와 **같은 자리**. 위 머리말 참조.
+  #     - /volume1/dss/inventory-data:/data
+  #   deploy:
+  #     resources:
+  #       limits:
+  #         # 다른 도구 다섯과 같은 512M. profiles 가 붙어 `up -d` 로 뜨지
+  #         # 않으므로 아래 상시 예산에 들어가지 않는다.
+  #         memory: 512M
+  # ══ 벗길 자리 ② 끝 ═════════════ DSS-INVENTORY-UNCOMMENT-END-TOOLS ════
+
 # ══ 메모리 예산 ═════════════════════════════════════════════════════════
 #
 #   db-app            768M
@@ -1055,6 +1230,27 @@ services:
 #    standalone 한 채가 평시 100~150MB 다. 그래도 여유 칸이 처음으로 1GB 언저리로
 #    내려왔다. 일곱째 사이트를 더할 때는 이 표를 믿지 말고 **그때 실측**해서
 #    (`docker stats --no-stream`) 다시 적는다.
+#
+#   app-board         384M   ← 2026-10-13 첫 설치(일곱째). 개선요청 · 휴가와 같다.
+#   app-inventory     512M   ← 2026-10-13 더함(여덟째). 근거는 그 서비스의 주석:
+#                              A/S 의 640M(21MB 엑셀 업로드)과는 두 자릿수가
+#                              다르고(양식 164KB), 384M 보다는 올린다 —
+#                              1분마다 전 자료를 한 벌로 조립해 네 곳에 쓴다.
+#   ─────────────────────
+#   여덟 사이트를 다 켠 상한 합계   4,992MB (= 4.9GB)
+#
+# 🔴 **상한의 합이 물리 메모리(5,786MB)에 거의 닿았다.** 그러나 이것은 「모자란다」는
+#    뜻이 아니다 — 상한은 예약이 아니고, 커널은 실제로 쓰는 만큼만 준다.
+#    🔵 2026-10-13 실측: 전체 5,786MB · **사용 중 1,187MB** · available 4,157MB.
+#       (앞 표의 「4.0GB」는 상한의 합이지 실사용이 아니다 — 둘을 섞어 읽지 말 것.)
+#    달라지는 것은 하나다: 이제 상한의 합은 **전체가 안전하다는 보증이 아니라**
+#    「한 컨테이너가 날뛰어도 그만큼에서 멈춘다」는 뜻만 가진다. 여덟이 동시에
+#    상한까지 치솟는 일은 일어나지 않지만, 일어난다면 OOM 이 난다.
+#
+# 🔴 그래서 여덟째를 세운 **직후에 반드시 실측**해서 이 표를 다시 적는다:
+#      docker stats --no-stream
+#    (27-deploy.sh 의 --go 가 마지막에 그 값을 찍는다. 그 숫자를 여기에 옮긴다.)
+#    아홉째를 더할 사람에게: 상한을 더 늘리기 전에 **실사용부터 보라.**
 #
 # ══ 아직 여기 없는 것 ═══════════════════════════════════════════════════
 #
