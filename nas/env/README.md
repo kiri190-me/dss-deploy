@@ -10,8 +10,9 @@
 | `improvements.env` | 개선요청 (2026-09-18) | `dss-improvements/.env.example` |
 | `po.env` | PO / 내자 (2026-09-29) | `dss-po/.env.example` |
 | `leave.env` | 휴가 (2026-09-29) | `dss-leave/.env.example` |
+| `board.env` | 사내 게시판 (2026-10-13) | `dss-board/.env.example` |
 
-**여섯 파일 모두 git에 올라가지 않는다** (`.gitignore`의 `nas/env/*.env`).
+**일곱 파일 모두 git에 올라가지 않는다** (`.gitignore`의 `nas/env/*.env`).
 예시 파일을 여기 두지 않는 이유는 각 저장소의 `.env.example`이 이미 원본이기
 때문이다. 여기 사본을 두면 언젠가 한쪽만 고쳐져 갈라진다.
 
@@ -26,7 +27,15 @@ cp ../../njlee/.env.example             ./meters.env
 cp ../../dss-improvements/.env.example  ./improvements.env
 cp ../../dss-po/.env.example            ./po.env
 cp ../../dss-leave/.env.example         ./leave.env
+cp ../../dss-board/.env.example         ./board.env
 ```
+
+> 🔴 **2026-10-13 — 여기에 `board.env.example` 을 둔 적이 있었다.** 앞 조각이
+> 위 규칙을 모르고 만들었고, 같은 날 지웠다. 그 파일이 들고 있던 것(채울 일곱 줄과
+> 빼야 할 다섯 줄)은 [`runbook/14-게시판-설치-점검표.html`](../../runbook/14-게시판-설치-점검표.html)
+> **3단계**로 옮겨 적었다 — 지우기 전에 옮긴 것이지, 사라진 것이 아니다.
+> `.gitignore` 의 `!nas/env/*.example` 줄은 그때 쓰려고 있던 예외인데, 이제
+> 받을 파일이 하나도 없다(지우지는 않았다).
 
 🔴 **복사한 뒤 반드시 지울 줄이 있다.** `DATABASE_URL` · `PORT` 는 compose 와
 이미지가 주므로 여기 남으면 그쪽을 덮어쓴다. 개발 전용 값(`DEV_*` ·
@@ -60,6 +69,7 @@ compose가 `.env.nas`의 비밀번호로 직접 조립해서 넘긴다.
 |---|---|---|---|
 | `OIDC_ISSUER` · `SSO_ISSUER` | `auto` | `https://login.dss21.co.kr` — 컨테이너 안에서 `auto`는 172.x를 잡는다 | env 파일 |
 | `SSO_REDIRECT_URI` | `auto` | `https://as.dss21.co.kr`(계측기 `https://meters.dss21.co.kr`, 개선요청 `https://improvements.dss21.co.kr`)`/api/auth/sso/callback` | env 파일 |
+| `OIDC_ISSUER` · `OIDC_REDIRECT_URI` (게시판) | `auto` | `https://login.dss21.co.kr` · `https://board.dss21.co.kr/api/auth/callback` — 🔴 **게시판은 이름이 `SSO_*` 가 아니라 `OIDC_*` 다.** 콜백 경로도 `/api/auth/callback` 로 다른 넷(`/api/auth/sso/callback`)과 다르다 | env 파일 |
 | `KAKAO_REDIRECT_URI` | `auto` | `https://login.dss21.co.kr/api/kakao/callback` — **카카오 콘솔에도 등록**(옛 http 값도 남아 있다) | env 파일 |
 | `SITE_URL` (계측기) | `http://localhost:3300` | `https://meters.dss21.co.kr` — 알림 메일 속 링크 | env 파일 |
 | `TRUSTED_PROXY_HOPS` | `0` | **`1`** (DSM 프록시 뒤. 앱 포트는 `127.0.0.1`에만 열려 우회로가 없다) | env 파일 |
@@ -73,6 +83,7 @@ compose가 `.env.nas`의 비밀번호로 직접 조립해서 넘긴다.
 | `TZ` | Windows 시각 | `Asia/Seoul` — 세 이미지 모두 tzdata가 있다(실측) | compose |
 | `UPLOADS_DIR` (A/S) · `FILE_STORAGE_ROOT` (계측기) | `C:\…` | `/data` (볼륨) | compose |
 | `UPLOADS_DIR` (개선요청) | `C:/DSS-IMPROVEMENTS-DATA/uploads` | `/data/uploads` (볼륨 — NAS 쪽은 `/volume1/dss/improvements-uploads`) | compose |
+| `STORAGE_ROOT` (게시판) | `C:\WEB-DATA\dss-board` | `/data/uploads` (볼륨 — NAS 쪽은 `/volume1/dss/board-uploads`) | compose |
 | 양식 경로 여섯 (A/S `*_TEMPLATE_PATH`) | `C:\DSS-AS-DATA\templates\…` | `/templates/…` (읽기 전용 볼륨) | compose |
 | `AUTH_KEYS_DIR` · `BACKUP_MODE` (로그인) | `./keys` · `docker` | `/keys` · `direct` | compose |
 

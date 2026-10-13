@@ -6,8 +6,11 @@
 #
 # ── 무엇을 ─────────────────────────────────────────────────────────────
 #   DB 다섯    dss_auth · dss_meters · dss_as · dss_improvements · dss_leave
+#   🔴 + 여섯째 dss_board (2026-10-13 더함). 위 줄은 그때의 기록으로 남겨 둔다 —
+#      고치지 않고 더하기만 한 것이 아래 dump 줄에서도 그대로 보인다.
 #                                     →  /volume1/dss/backups/db/     (DB마다 최근 30개)
 #   파일       계측기 사진·성적서 · A/S 첨부 · 서명키 · 개선요청 첨부
+#   🔴 + 게시판 첨부 board-uploads (2026-10-13 더함)
 #                                     →  /volume1/dss/backups/files/ (쌓아 올림)
 #   기록       /volume1/dss/setup/logs/backup-*.log  (관리자가 읽을 수 있는 곳 — 검수용)
 #
@@ -62,6 +65,11 @@ dump dss-pg-app  dss_improvements_app dss_improvements
 # 휴가 (2026-09-29 더함). 자기 DB · 자기 롤이라 한 줄이 그대로 는다.
 # PO/내자는 여기 없다 — A/S 와 **같은 dss_as** 를 보므로 위 dss_as 줄이 함께 받는다.
 dump dss-pg-app  dss_leave_app  dss_leave
+# 게시판 (2026-10-13 더함). 자기 DB · 자기 롤이라 한 줄이 그대로 는다 — 휴가와 같다.
+# 🔴 이 줄이 없으면 아무 오류도 없이 **한 번도 백업되지 않는다.** 바로 아래 상자가
+#    그 일이 11일간 실제로 일어난 기록이다. 이번에는 올린 것까지 확인한다
+#    (setup/25-board-place.sh 3번 · setup/25-deploy.sh 검사 9 가 오늘 덤프를 센다).
+dump dss-pg-app  dss_board_app  dss_board
 
 # 🔴 ── 고치는 것과 올리는 것은 다른 일이다 ─────────────────────────────
 #
@@ -93,6 +101,19 @@ dump dss-pg-app  dss_leave_app  dss_leave
 #    휴가는 위 DB 덤프 한 줄로 전부 백업된다.
 echo "── 파일"
 for p in meters-files as-attachments auth-keys improvements-uploads; do
+  if rsync -a "$D/$p/" "$B/files/$p/"; then
+    echo "  ✓ $p · 파일 $(find "$B/files/$p" -type f | wc -l)개 · $(du -sh "$B/files/$p" | cut -f1)"
+  else echo "  ✗ $p 복사 실패"; FAIL=1; fi
+done
+
+# 🔴 게시판 첨부 (2026-10-13 더함) — 글에 붙는 사진과 첨부파일이 여기 쌓인다.
+#    NAS 쪽은 /volume1/dss/board-uploads, 컨테이너 안에서는 /data/uploads 다
+#    (docker-compose.nas.yml 의 app-board · tools-board 볼륨).
+#
+# 🔴 **위 for 줄에 이름을 끼워 넣지 않고 따로 돈다.** 이미 여섯 달 돌고 있는 그
+#    줄을 고치면 검증된 넷의 차례까지 함께 흔들린다 — 더하는 변경은 더하기만
+#    한다. 하는 일은 위와 글자 그대로 같다(쌓아 올림 · --delete 없음).
+for p in board-uploads; do
   if rsync -a "$D/$p/" "$B/files/$p/"; then
     echo "  ✓ $p · 파일 $(find "$B/files/$p" -type f | wc -l)개 · $(du -sh "$B/files/$p" | cut -f1)"
   else echo "  ✗ $p 복사 실패"; FAIL=1; fi
