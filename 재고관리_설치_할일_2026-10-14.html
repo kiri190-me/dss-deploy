@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>재고 관리 설치 — 사람이 할 일 (2026-10-14)</title>
+<style>
+  :root {
+    --ink: #1a1d21;
+    --muted: #5b6570;
+    --line: #dde2e8;
+    --bg: #f7f9fb;
+    --card: #ffffff;
+    --red: #c0392b;
+    --redbg: #fdf2f0;
+    --blue: #1f6feb;
+    --bluebg: #eef4fd;
+    --green: #1a7f52;
+    --greenbg: #edf7f2;
+    --amber: #8a6400;
+    --amberbg: #fdf6e3;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 32px 20px 80px;
+    background: var(--bg); color: var(--ink);
+    font-family: "Malgun Gothic", "맑은 고딕", -apple-system, system-ui, sans-serif;
+    font-size: 15px; line-height: 1.75;
+    -webkit-text-size-adjust: 100%;
+  }
+  .wrap { max-width: 880px; margin: 0 auto; }
+
+  header { margin-bottom: 28px; }
+  h1 { font-size: 26px; margin: 0 0 6px; letter-spacing: -0.3px; }
+  .sub { color: var(--muted); font-size: 14px; }
+
+  .card {
+    background: var(--card); border: 1px solid var(--line);
+    border-radius: 10px; padding: 20px 22px; margin: 0 0 18px;
+  }
+  .card h2 {
+    font-size: 17px; margin: 0 0 14px; padding-bottom: 10px;
+    border-bottom: 1px solid var(--line);
+  }
+  .card h3 { font-size: 15px; margin: 20px 0 8px; }
+  .card h3:first-of-type { margin-top: 4px; }
+
+  .note { border-radius: 8px; padding: 12px 14px; margin: 12px 0; font-size: 14px; }
+  .note.red   { background: var(--redbg);   border-left: 4px solid var(--red); }
+  .note.blue  { background: var(--bluebg);  border-left: 4px solid var(--blue); }
+  .note.green { background: var(--greenbg); border-left: 4px solid var(--green); }
+  .note.amber { background: var(--amberbg); border-left: 4px solid var(--amber); }
+  .note b { color: var(--red); }
+  .note.blue b { color: var(--blue); }
+  .note.green b { color: var(--green); }
+
+  code, pre {
+    font-family: Consolas, "D2Coding", "Courier New", monospace;
+    font-size: 13.5px;
+  }
+  code { background: #eef1f4; padding: 1px 5px; border-radius: 4px; }
+  pre {
+    background: #1e2227; color: #e6edf3; padding: 13px 15px;
+    border-radius: 8px; overflow-x: auto; margin: 10px 0; line-height: 1.6;
+  }
+  pre code { background: none; padding: 0; color: inherit; }
+  pre .cmt { color: #8b98a5; }
+
+  table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 14px; }
+  th, td { border: 1px solid var(--line); padding: 8px 11px; text-align: left; vertical-align: top; }
+  th { background: #f0f3f6; font-weight: 600; }
+
+  ol.steps { list-style: none; counter-reset: s; padding: 0; margin: 0; }
+  ol.steps > li {
+    counter-increment: s; position: relative;
+    padding: 0 0 0 46px; margin: 0 0 26px;
+  }
+  ol.steps > li::before {
+    content: counter(s); position: absolute; left: 0; top: 1px;
+    width: 30px; height: 30px; border-radius: 50%;
+    background: var(--ink); color: #fff;
+    font-size: 15px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+  }
+  ol.steps > li.me::before { background: var(--blue); }
+  ol.steps > li > h3 { margin: 2px 0 8px; font-size: 16px; }
+
+  .who {
+    display: inline-block; font-size: 12px; font-weight: 700;
+    padding: 2px 9px; border-radius: 20px; margin-left: 8px;
+    vertical-align: 2px;
+  }
+  .who.you { background: #fde8e6; color: var(--red); }
+  .who.me  { background: var(--bluebg); color: var(--blue); }
+
+  label.chk { display: block; padding: 5px 0; cursor: pointer; }
+  label.chk input { margin-right: 8px; transform: scale(1.15); }
+
+  .flow { font-size: 14px; }
+  .flow li { margin-bottom: 4px; }
+  .done { color: var(--muted); text-decoration: line-through; }
+
+  footer { color: var(--muted); font-size: 13px; text-align: center; margin-top: 30px; }
+
+  @media print {
+    body { background: #fff; padding: 0; font-size: 12px; }
+    .card { break-inside: avoid; border-color: #bbb; }
+    pre { background: #f4f4f4; color: #000; border: 1px solid #ccc; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>재고 관리(DSS Inventory) 설치 — 사람이 할 일</h1>
+  <div class="sub">2026-10-14 · 여덟째 사내 사이트 · <code>https://inventory.dss21.co.kr</code></div>
+</header>
+
+<div class="card" style="border-color:#1a7f52; background:var(--greenbg)">
+  <h2 style="border-color:#bfe3d0">✅ 2026-10-14 — 여기 적힌 일이 <b>그날 다 끝났습니다</b></h2>
+  <p>이 문서는 그날 아침에 「앞으로 하실 일」로 쓴 것입니다. <b>기록으로 남깁니다.</b>
+  아래 할 일 1~6 은 전부 끝났고, 같은 날 <b>전환일 작업(실자료 투입)까지</b> 이어서 마쳤습니다.</p>
+  <table>
+    <tr><th style="width:150px">설치</th><td>여덟째 사이트가 섰습니다. 멈춘 사이트는 없습니다</td></tr>
+    <tr><th>전환</th><td>부품 <b>319개</b> · 과거 기록 <b>2,288건</b> · 전환일 2026-10-14</td></tr>
+    <tr><th>현황판 엑셀</th><td>공유폴더에 생겼습니다 (13:41 · 193KB · <code>OLD/</code> 포함)</td></tr>
+  </table>
+  <div class="note red">
+    <b>그날 걸렸던 것 둘</b> — 둘 다 화면에는 아무 오류도 안 뜨는 종류였습니다.
+    ① 컨테이너가 NAS 에 없는 그룹 번호로 돌아 공유폴더 ACL 에 안 걸렸습니다(<code>1001:100</code> 으로 고침).
+    ② 파일 모드가 <code>000</code> 으로 복사돼 앱이 못 읽었습니다(<code>chmod 640</code>).
+  </div>
+  <div class="note amber">
+    <b>그 뒤로 남은 일</b> — 10-01 사본으로 넣었으므로 <b>10-02 ~ 10-12 의 11일치</b>
+    (사용 53 · 입고 55 · 부품 29줄)는 프로그램에서 사람이 넣어야 합니다.
+    날짜를 어떻게 적을지 정영빈 님과 맞춰 두세요.
+  </div>
+</div>
+
+<div class="card">
+  <h2>지금 어디까지 됐나</h2>
+
+  <div class="note green">
+    <b>코드와 배포본은 다 준비됐습니다.</b> NAS 에서는 아직 <b>아무것도 실행하지 않았습니다</b> —
+    운영 일곱 사이트는 그대로 돌고 있습니다.
+  </div>
+
+  <ul class="flow">
+    <li class="done">배포 스크립트 여섯 작성 (<code>27-*.sh</code>)</li>
+    <li class="done">직원이 현황판 엑셀을 읽을 공유폴더 자리 결정 · 코드 반영</li>
+    <li class="done">이미지 둘 굽기 → tar → NAS 로 올림 (md5 대조 완료)</li>
+    <li class="done">tar 지문 넷을 스크립트에 채움</li>
+    <li class="done">26번 배포 뒤 바뀐 운영 태그 맞춤 (포털 1.7 · 게시판 0.2)</li>
+    <li><b>↓ 여기서부터가 아래 할 일입니다</b></li>
+  </ul>
+
+  <div class="note blue">
+    <b>인계 자료는 이미 있습니다.</b>
+    <code>바탕화면\Development\재고관리 인계 (2026-10-12)</code> 에
+    엑셀 양식 두 벌·전환일 입력 둘·절차서가 들어 있습니다.
+    <br>그중 <code>재고 및 견적 현황판 틀_과거줄포함.xlsx</code> 는 단순 양식이 아니라
+    <b>과거 기록이 값으로 든 자료 그 자체</b>입니다(사용처 1,652줄 · 입고 662줄).
+    잃으면 다시 못 만듭니다.
+  </div>
+</div>
+
+<div class="card">
+  <h2>할 일 — 이 순서대로</h2>
+
+  <div class="note red">
+    <b>순서를 지켜 주세요.</b> 특히 4번(포털에 사람 등록)이 빠지면
+    사이트가 서도 <b>아무도 못 들어갑니다</b>. 이 시스템은 처음 로그인인데 역할이 없으면 거절하고,
+    다른 시스템에 있는 비상구(<code>make:admin</code>)가 <b>없습니다</b>.
+  </div>
+
+  <ol class="steps">
+
+    <li>
+      <h3>Cloudflare 에 주소 하나 추가 <span class="who you">사용자</span></h3>
+      <p><code>dss21.co.kr</code> 의 DNS 에 A 레코드를 하나 더합니다.
+      다른 일곱(<code>login</code>·<code>as</code>·<code>po</code> 등)과 같은 모양입니다.</p>
+      <table>
+        <tr><th>이름</th><td><code>inventory</code></td></tr>
+        <tr><th>값</th><td>NAS 사설 IP (<code>192.168.0.222</code>) — 기존 일곱과 같은 값</td></tr>
+        <tr><th>프록시</th><td>끔 (DNS only) — 기존 일곱과 같게</td></tr>
+      </table>
+      <label class="chk"><input type="checkbox"> 끝</label>
+    </li>
+
+    <li>
+      <h3>DSM 리버스 프록시 추가 <span class="who you">사용자</span></h3>
+      <p>DSM → 제어판 → 로그인 포털 → 고급 → 역방향 프록시.</p>
+      <table>
+        <tr><th>원본</th><td>HTTPS · <code>inventory.dss21.co.kr</code> · 포트 <code>443</code></td></tr>
+        <tr><th>대상</th><td>HTTP · <code>localhost</code> · 포트 <code>13800</code></td></tr>
+        <tr><th>인증서</th><td><code>dss21.co.kr</code> (기존 것 그대로)</td></tr>
+      </table>
+      <div class="note amber">
+        앱을 띄우기 전에 열면 <b>502 가 뜨는 것이 정상</b>입니다. 고장이 아닙니다.
+      </div>
+      <label class="chk"><input type="checkbox"> 끝</label>
+    </li>
+
+    <li class="me">
+      <h3>설정 파일과 비밀값 준비 <span class="who me">제가</span></h3>
+      <p>제가 만들어 NAS 로 올립니다. 사용자께서 하실 일은 없습니다.</p>
+      <ul>
+        <li><code>inventory.env</code> — 비밀값 셋을 새로 만들어 넣습니다</li>
+        <li>포털 등록용 해시 (평문은 어디에도 안 적습니다)</li>
+        <li>compose · 야간 백업 스크립트를 NAS 로</li>
+      </ul>
+      <div class="note blue">
+        <b>1·2번이 끝나면 알려 주세요.</b> 그때 제가 이것을 합니다.
+      </div>
+    </li>
+
+    <li>
+      <h3>NAS 에서 스크립트 돌리기 <span class="who you">사용자</span></h3>
+      <p>NAS 의 docker 는 <b>root</b> 가 필요해서 제가 못 합니다. PowerShell 에서:</p>
+<pre><code>ssh dss-nas
+sudo -i                      <span class="cmt"># DSM 비밀번호 · 한/영이 영문인지 보세요</span></code></pre>
+      <p>그다음 NAS 안에서 <b>이 차례로</b>:</p>
+<pre><code><span class="cmt"># ① DB 와 롤 만들기</span>
+sh /volume1/dss/setup/27-inventory-db.sh
+sh /volume1/dss/setup/27-inventory-pw.sh
+
+<span class="cmt"># ② 포털에 재고 관리 등록</span>
+sh /volume1/dss/setup/27-inventory-client.sh
+
+<span class="cmt"># ③ 파일을 제자리에 놓고 폴더 만들기</span>
+sh /volume1/dss/setup/27-inventory-place.sh
+
+<span class="cmt"># ④ 설치 — 읽기 → 싣기 → 읽기 → 표 만들기 → 띄우기</span>
+bash /volume1/dss/setup/27-deploy.sh
+bash /volume1/dss/setup/27-deploy.sh --preload
+bash /volume1/dss/setup/27-deploy.sh
+bash /volume1/dss/setup/27-deploy.sh --init
+bash /volume1/dss/setup/27-deploy.sh --go</code></pre>
+      <div class="note red">
+        <b>④의 다섯 줄은 한 줄씩</b> 돌리고 <b>결과를 저에게 붙여 주세요.</b>
+        제가 읽고 다음으로 가도 되는지 판단하겠습니다.
+        <br><code>--init</code> 은 <b>DB 가 바뀌는</b> 단계입니다(표 열셋을 만듭니다).
+        그 전까지는 아무것도 안 바뀝니다.
+      </div>
+      <div class="note blue">
+        돌리는 중 <b>다른 일곱 사이트는 안 멈춥니다.</b> 새로 하나가 서는 것뿐입니다.
+      </div>
+      <label class="chk"><input type="checkbox"> ① DB·롤</label>
+      <label class="chk"><input type="checkbox"> ② 포털 등록</label>
+      <label class="chk"><input type="checkbox"> ③ 파일 제자리</label>
+      <label class="chk"><input type="checkbox"> ④ 설치 다섯 줄</label>
+    </li>
+
+    <li>
+      <h3>포털에 쓸 사람 등록 <span class="who you">사용자</span></h3>
+      <div class="note red">
+        <b>이것이 없으면 사이트가 서도 아무도 못 들어갑니다.</b>
+        4번 ②가 등록하는 것은 <b>시스템</b>이고, 여기서 넣는 것은 <b>사람</b>입니다. 둘 다 필요합니다.
+      </div>
+      <p>포털(<code>https://login.dss21.co.kr</code>) 관리 화면에서
+      <b>정영빈 님을 재고 관리의 ADMIN</b> 으로 넣습니다.</p>
+      <table>
+        <tr><th>시스템</th><td>DSS 재고 관리 (<code>dss-inventory</code>)</td></tr>
+        <tr><th>사람</th><td>정영빈</td></tr>
+        <tr><th>역할</th><td><code>ADMIN</code></td></tr>
+      </table>
+      <div class="note amber">
+        나머지 분들은 급하지 않습니다 — 정영빈 님이 「전환일에는 저 하나로 시작할 수 있다」고 하셨습니다.
+        역할은 <code>VIEWER</code> / <code>STAFF</code> / <code>ADMIN</code> 셋입니다.
+      </div>
+      <label class="chk"><input type="checkbox"> 끝</label>
+    </li>
+
+    <li>
+      <h3>화면을 열어 확인 <span class="who you">사용자</span></h3>
+      <p><code>https://inventory.dss21.co.kr</code> 에 정영빈 님 계정으로 들어가 봅니다.</p>
+      <ul>
+        <li>로그인이 되는가 (포털을 거쳐 들어옵니다)</li>
+        <li>첫 화면이 뜨는가 — 자료는 아직 비어 있는 것이 정상입니다</li>
+        <li>포털 첫 화면에 <b>📦 DSS 재고 관리</b> 타일이 보이는가</li>
+      </ul>
+      <label class="chk"><input type="checkbox"> 끝</label>
+    </li>
+
+  </ol>
+</div>
+
+<div class="card">
+  <h2>설치가 끝난 뒤 — 전환일까지</h2>
+
+  <div class="note red">
+    정영빈 님이 <b>「야간 백업에 들어갔다는 확인이 되기 전에는 실자료를 넣지 않는다」</b>고
+    못 박으셨습니다. 그래서 순서가 정해져 있습니다.
+  </div>
+
+  <table>
+    <tr><th style="width:52px">순서</th><th>무엇</th><th style="width:70px">누가</th></tr>
+    <tr><td>①</td><td>야간 백업을 한 번 돌려 재고 관리 몫이 찍히는지 본다</td><td>제가</td></tr>
+    <tr><td>②</td><td>정영빈 님께 「백업 들어갔습니다」 답을 드린다 <span style="color:#5b6570">(요청문 1번)</span></td><td>제가</td></tr>
+    <tr><td>③</td><td>엑셀 양식 두 벌과 전환일 입력 둘을 NAS 에 넣는다</td><td>제가</td></tr>
+    <tr><td>④</td><td><b>전환일</b> — 실자료 수천 줄을 넣는다. 별도의 날, 전용 절차서가 있다</td><td>함께</td></tr>
+  </table>
+
+  <div class="note amber">
+    ④는 <b>한 번만 돌릴 수 있고</b>, 되돌리려면 DB 를 비워야 합니다.
+    사람이 숫자를 대조하며 하는 작업이라 설치와 같은 날 하지 않습니다.
+  </div>
+</div>
+
+<div class="card">
+  <h2>알아 두실 것</h2>
+
+  <h3>현황판 엑셀은 공유폴더에 생깁니다</h3>
+  <p>프로그램이 1분마다 현황판 엑셀을 다시 씁니다. 직원분들이 탐색기로 여는 자리는 여기입니다:</p>
+  <pre><code>2_AS센터 \ 2. 부품 관리 \ 1. 재고 및 부품 입출고 관리 \ 4. 재고관리 시스템</code></pre>
+  <div class="note blue">
+    그 폴더는 <b>설치 때 새로 만들어집니다.</b> 옆의 기존 폴더 셋
+    (<code>1. AS 관련 부품</code> · <code>2. CS 재고 관리</code> · <code>3. 이전 관리 자료</code>)은
+    건드리지 않습니다.
+  </div>
+
+  <h3>잘못되면 되돌릴 수 있습니다</h3>
+  <p>설치는 <b>새 사이트를 하나 더 세우는 것</b>이라 기존 일곱에 영향이 없습니다.
+  문제가 생기면 이 줄로 되돌리는 방법이 나옵니다:</p>
+  <pre><code>bash /volume1/dss/setup/27-deploy.sh --rollback</code></pre>
+
+  <h3>제가 못 하는 일</h3>
+  <p>NAS 의 docker 와 권한 작업은 <b>root</b> 가 필요합니다. 제 계정(<code>swhur</code>)에는
+  그 권한이 없고, 비밀번호 없는 sudo 를 주면 이 PC 의 열쇠 파일 하나가 NAS 전체 열쇠가 되기 때문에
+  <b>그렇게 하지 않기로</b> 2026-09-14 에 정했습니다. 그래서 4번은 사용자께서 치셔야 합니다.
+  파일을 올리고 로그를 읽는 것은 제가 합니다.</p>
+</div>
+
+<footer>
+  작성 2026-10-14 · <code>dss-deploy/재고관리_설치_할일_2026-10-14.html</code><br>
+  자세한 내용은 <code>dss-deploy/README.md</code> 맨 위 절에 있습니다.
+</footer>
+
+</div>
+</body>
+</html>
