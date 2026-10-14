@@ -333,6 +333,15 @@ if [ -r "$JOBS/backup-nightly.sh" ]; then
     || { echo "  ✗ 🔴 backup-nightly.sh 에 inventory-data 가 없다 — **양식 두 벌이 백업되지 않는다**"
          echo "       그것은 프로그램이 다시 만들 수 없는 입력물이다. 잃으면 현황판을 못 만든다."
          FAIL=1; }
+  # 🔴 현황판 공유폴더는 위 inventory-data 의 **밖**이라 따로 세야 한다
+  #    (2026-10-14 에 compose 가 /data/workbook 을 사내 공유폴더로 덧씌웠다).
+  #    그쪽이 받는 것은 프로그램이 다시 못 만드는 둘이다 —
+  #    현황판_사람수정_*.xlsx (사람이 적은 것) 와 OLD/ (월별 영구 백업).
+  N=$(grep -c 'inventory-workbook' "$JOBS/backup-nightly.sh")
+  [ "${N:-0}" -ge 1 ] && echo "  ✓ backup-nightly.sh 에 inventory-workbook 줄이 ${N}개 있다" \
+    || { echo "  ✗ 🔴 backup-nightly.sh 에 inventory-workbook 이 없다 — **현황판 공유폴더가 백업되지 않는다**"
+         echo "       수기입을 치워 둔 파일과 OLD/ 는 프로그램이 다시 만들지 못한다."
+         FAIL=1; }
 else
   echo "  ✗ $JOBS/backup-nightly.sh 를 읽을 수 없다 (sudo -i 로 돌리고 있습니까)"
   FAIL=1
@@ -345,6 +354,8 @@ else
   echo "  ✗ 오늘($TODAY) 뜬 $DB 덤프가 없다 — 고친 백업을 **한 번도 안 돌린 것**이다"
   echo "     bash /volume1/dss/jobs/backup-nightly.sh"
   echo "     ✓ dss_inventory 줄과 ✓ inventory-data 줄이 찍혀야 합니다."
+  echo "     🔴 현황판 공유폴더 줄(inventory-workbook)도 **함께** 찍힙니다 — 다만"
+  echo "     첫 설치 전에는 ✓ 가 아니라 「공유폴더가 아직 없다」로 찍히는 것이 정상입니다."
   FAIL=1
 fi
 if [ -d "$BKD/files/inventory-data" ]; then
@@ -352,6 +363,13 @@ if [ -d "$BKD/files/inventory-data" ]; then
 else
   echo "  ⚠️ 백업에 files/inventory-data 가 아직 없다 — 데이터 폴더가 비어 있으면"
   echo "     rsync 가 빈 폴더만 만든다. 야간 백업을 한 번 돌리면 생긴다."
+fi
+if [ -d "$BKD/files/inventory-workbook" ]; then
+  echo "  ✓ 백업에 files/inventory-workbook 이 있다 ($(find "$BKD/files/inventory-workbook" -type f | wc -l)개)"
+else
+  echo "  ⚠️ 백업에 files/inventory-workbook 이 아직 없다 — 첫 설치 전이면 공유폴더"
+  echo "     자체가 없어 **정상이다**(흠으로 세지 않는다). 공유폴더가 선 뒤 야간"
+  echo "     백업을 한 번 돌리면 생긴다."
 fi
 
 echo

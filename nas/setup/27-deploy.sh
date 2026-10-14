@@ -9,6 +9,11 @@
 #               DB dss_inventory · 롤 dss_inventory_app
 #               컨테이너 안 3800 → 127.0.0.1:13800 → https://inventory.dss21.co.kr
 #               데이터 /volume1/dss/inventory-data → 컨테이너 /data
+#               🔴 다만 그중 workbook 만은 **사내 공유폴더가 덧씌운다** (2026-10-14):
+#                  /volume1/2_AS센터/2. 부품 관리/1. 재고 및 부품 입출고 관리/4. 재고관리 시스템
+#                  → 컨테이너 /data/workbook. /volume1/dss 에는 시놀로지 ACL 이 걸려
+#                  직원이 탐색기로 못 열기 때문이다. 그래서 야간 백업도 그 자리를
+#                  **따로** 받는다 — 백업 이름 files/inventory-workbook (검사 9 가 센다).
 #
 # ══ 🔴 오늘 하는 것은 **그릇까지**다 ═══════════════════════════════════
 #
@@ -1191,6 +1196,13 @@ EOF
     v=$(grep -c 'inventory-data' "$JOBS/backup-nightly.sh")
     [ "${v:-0}" -ge 1 ] && ok "backup-nightly.sh 에 inventory-data 줄이 ${v}개 있다" \
       || bad "🔴 backup-nightly.sh 에 inventory-data 가 없다 — **양식 두 벌이 백업되지 않는다**"
+    # 🔴 현황판 공유폴더는 위 inventory-data 의 **밖**이라 따로 세야 한다
+    #    (2026-10-14 에 compose 가 /data/workbook 을 공유폴더로 덧씌웠다).
+    #    그쪽이 받는 것은 프로그램이 다시 못 만드는 둘이다 —
+    #    현황판_사람수정_*.xlsx (사람이 적은 것) 와 OLD/ (월별 영구 백업).
+    v=$(grep -c 'inventory-workbook' "$JOBS/backup-nightly.sh")
+    [ "${v:-0}" -ge 1 ] && ok "backup-nightly.sh 에 inventory-workbook 줄이 ${v}개 있다" \
+      || bad "🔴 backup-nightly.sh 에 inventory-workbook 이 없다 — **현황판 공유폴더가 백업되지 않는다**"
   else
     bad "$JOBS/backup-nightly.sh 를 읽을 수 없다"
   fi
@@ -1199,6 +1211,13 @@ EOF
   else
     say "    ⚠️ 백업에 files/inventory-data 가 아직 없다 — 폴더가 비어 있으면"
     say "       rsync 가 빈 폴더만 만든다. 야간 백업을 한 번 돌리면 생긴다."
+  fi
+  if [ -d "$BKD/files/inventory-workbook" ]; then
+    ok "백업에 files/inventory-workbook 이 있다 ($(find "$BKD/files/inventory-workbook" -type f | wc -l)개)"
+  else
+    say "    ⚠️ 백업에 files/inventory-workbook 이 아직 없다 — 첫 설치 전이면"
+    say "       공유폴더 자체가 없어 **정상**이다(흠으로 세지 않는다). 공유폴더가"
+    say "       선 뒤 야간 백업을 한 번 돌리면 생긴다."
   fi
   FREE_KB=$(df -P "$D" | awk 'NR==2{print $4}')
   FREE_H=$(df -Ph "$D" | awk 'NR==2{print $4}')
@@ -1891,6 +1910,15 @@ cat <<ANNOUNCE
   · 데이터 폴더에 **엑셀 양식 두 벌**을 먼저 넣어야 합니다
     (/volume1/dss/inventory-data/templates/). 넣은 뒤 주인을 되돌리세요:
       chown -R 1001:1001 /volume1/dss/inventory-data
+  · 🔴 현황판은 그 폴더가 아니라 **사내 공유폴더**에 쌓입니다 (2026-10-14 부터
+    compose 가 /data/workbook 을 이리로 덧씌웁니다):
+      /volume1/2_AS센터/2. 부품 관리/1. 재고 및 부품 입출고 관리/4. 재고관리 시스템
+    주인이 어긋났을 때만 **그 폴더 하나**를 되돌리세요:
+      chown 1001:1001 '/volume1/2_AS센터/2. 부품 관리/1. 재고 및 부품 입출고 관리/4. 재고관리 시스템'
+    🔴 여기에는 **-R 을 쓰지 마세요.** 그 아래에는 직원이 탐색기로 넣은 파일이
+    섞일 수 있고, 경로가 한 글자만 어긋나도 -R 은 피해가 폴더 하나로 끝나지
+    않습니다. 아래 파일의 주인까지 바꿔야 한다면 무엇을 바꾸는지 먼저 세어
+    보세요: find '…/4. 재고관리 시스템' ! -uid 1001
   · 🔴 도구 컨테이너는 root 로 돕니다. /data 에 쓰는 전환일 명령은
     --user 1001:1001 로 돌리거나, 돌린 뒤 위 chown 을 하세요.
 
