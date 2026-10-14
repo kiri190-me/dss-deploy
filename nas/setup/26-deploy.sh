@@ -326,12 +326,12 @@ TAR_BOARD=$IMAGES/dss-board-0.2.tar
 # ║    채우는 차례는 이 파일 머리말 「값 여섯을 채워야 한다」 절.         ║
 # ║    🔴 비어 있는 동안 --go 는 **시작조차 하지 않는다.**                ║
 # ╚════════════════════════════════════════════════════════════════════╝
-SZ_AUTH=
-MD5_AUTH=
-WANT_CFG_AUTH=
-SZ_BOARD=
-MD5_BOARD=
-WANT_CFG_BOARD=
+SZ_AUTH=113596928
+MD5_AUTH=94dcac8e6a6c247c04ecea276cbcb8c1
+WANT_CFG_AUTH=sha256:2ab68c0bab24ffdfbaea7dd200d713412324dced6f45f1f6839b631426037d4d
+SZ_BOARD=96282624
+MD5_BOARD=68dbec1abab0bb98153e3605bc4e7a32
+WANT_CFG_BOARD=sha256:e95ac9b1621fba4039a79b6dfda73429a3a2bfbf168fe8b9e58fb5659e71ab92
 # ⚠️ manifest.json 은 Config 를 'blobs/sha256/4256829e…' 로 적는다 — 앞의
 #    'blobs/' 를 떼고 'sha256:' 를 붙인 모양으로 적는다(17 ~ 25번과 같다).
 #    보기:  WANT_CFG_AUTH=sha256:f229e9cc…
