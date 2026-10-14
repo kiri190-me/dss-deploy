@@ -51,6 +51,12 @@ IN=$D/setup/incoming
 DOCKER=/usr/local/bin/docker
 ACLT=/usr/syno/bin/synoacltool
 DATA=$D/inventory-data
+# 🔴 직원이 윈도우 탐색기로 여는 자리. compose 가 이 폴더를 /data/workbook 에
+#    붙인다. $DATA 아래에 두지 않는 까닭: /volume1/dss 에는 시놀로지 ACL 이
+#    걸려 있어 직원이 탐색기로 못 연다. 거꾸로 /data 통째를 여기로 돌리지도
+#    않는다 — templates/ 의 양식 두 벌은 프로그램이 다시 못 만드는 입력물이라
+#    사람이 드나드는 자리에 두지 않는다 (야간 백업이 받는 것도 그 양식이다).
+SHARE_WB="/volume1/2_AS센터/2. 부품 관리/1. 재고 및 부품 입출고 관리/4. 재고관리 시스템"
 UID_APP=1001
 GID_APP=1001
 STAMP=$(date +%Y%m%d-%H%M%S)
@@ -60,7 +66,8 @@ FAIL=0
 # 게시판 때 바로 뒤 블록의 주석까지 함께 벗겨진 일이 있다. 그래서 표시 사이만
 # 벗기고, **바뀐 줄 수가 기대값과 다르면 아무것도 놓지 않는다.**
 # 기대값은 개발 PC 에서 실측했다 (2026-10-13, js-yaml 로 앞뒤 둘 다 파싱 확인).
-N_UNCOMMENT_WANT=69
+# 2026-10-14: app-inventory 에 공유폴더 볼륨 한 줄이 늘어 69 → 70.
+N_UNCOMMENT_WANT=70
 
 # ── 개발 PC 에서 잰 값 — 이것과 다르면 옮기지 않는다 ───────────────────
 # 🔴 셋 다 비어 있다. 까닭을 그대로 적어 둔다:
@@ -273,6 +280,49 @@ say "  · 지금 들어 있는 것:"
 ls -la "$DATA" 2>/dev/null | sed 's/^/      /'
 say "  · templates/ 의 양식 (전환일 전에는 비어 있는 것이 정상입니다):"
 ls -la "$DATA/templates" 2>/dev/null | sed 's/^/      /'
+
+say
+say "══ 5-2. 🔴 직원이 탐색기로 여는 현황판 자리를 만든다 ══"
+say "  $SHARE_WB"
+say "  compose 가 이 폴더를 /data/workbook 에 붙인다. 1분마다 다시 쓰이는"
+say "  현황판 엑셀이 여기 생겨야 직원이 윈도우 탐색기로 엽니다."
+say "  🔴 폴더가 **미리 없으면** 도커가 마운트할 때 root 것으로 만들어 버립니다."
+say "     그러면 앱(uid $UID_APP)이 못 써서 엑셀이 영영 안 생기는데 화면은 멀쩡합니다."
+say "  🔴 **맨 끝 폴더 하나만** 만지고 그 위 셋(2_AS센터 · 2. 부품 관리 ·"
+say "     1. 재고 및 부품 입출고 관리)은 건드리지 않습니다 — 직원들이 쓰는"
+say "     사내 공유폴더라 chown 을 위로 돌리면 권한이 망가집니다."
+# 🔴 chown 에 -R 을 쓰지 않는다. 새로 만드는 빈 폴더라 아래에 아무것도 없고,
+#    -R 은 경로가 어긋났을 때 피해가 폴더 하나로 끝나지 않는다.
+# 🔴 ACL 은 걷지 않는다 — $DATA 와 **반대다.** 직원이 탐색기로 들어오는 길이
+#    그 ACL 이다. 걷으면 엑셀은 생기는데 아무도 못 보게 된다.
+SHARE_PARENT=$(dirname "$SHARE_WB")
+if [ ! -d "$SHARE_PARENT" ]; then
+  # 🔴 위 폴더가 없으면 경로가 틀린 것이다. mkdir -p 는 틀린 이름으로도 조용히
+  #    만들어, 사내 공유폴더 안에 엉뚱한 폴더를 남긴다. 그래서 멈춘다.
+  bad "위 폴더가 없다: $SHARE_PARENT"
+  say "     경로의 대소문자 · 공백이 맞는지 보세요. **아무것도 만들지 않았습니다.**"
+elif [ -d "$SHARE_WB" ]; then
+  say "  · 이미 있다 — 새로 만들지 않는다"
+elif mkdir -p "$SHARE_WB"; then
+  say "  · 새로 만들었다"
+else
+  bad "폴더를 만들지 못했다: $SHARE_WB"
+fi
+if [ -d "$SHARE_WB" ]; then
+  chown "$UID_APP:$GID_APP" "$SHARE_WB" || bad "주인을 바꾸지 못했다 — sudo 로 돌리고 있나요?"
+  # 🔴 「만들었다」가 아니라 **다시 읽은 값**으로 판정한다. 판정은 숫자(%u:%g)로 —
+  #    DSM 에 그 번호짜리 계정이 있으면 %U 가 그 이름으로 보인다.
+  SMODE=$(stat -c '%u:%g %a' "$SHARE_WB" 2>/dev/null)
+  say "  · $SMODE (숫자) · $(stat -c '%U:%G' "$SHARE_WB" 2>/dev/null) (이름)"
+  case "$SMODE" in
+    "$UID_APP:$GID_APP "*) ok "주인이 uid $UID_APP (nextjs)이다 — 앱이 여기에 쓴다" ;;
+    *) bad "주인이 uid $UID_APP 이 아니다 ($SMODE) — 현황판 엑셀이 안 만들어진다" ;;
+  esac
+  # 모드는 바꾸지 않고 **본 값을 적어 둔다.** 직원이 탐색기로 보는 길은 리눅스
+  #    모드가 아니라 이 공유폴더의 ACL 이 정한다 — 전환일에 눈으로 확인한다.
+  say "  · 모드는 손대지 않았습니다 (위 값 그대로). 직원이 탐색기로 보이는지는"
+  say "    전환일에 실제로 열어서 확인합니다 — 그 길은 공유폴더 ACL 이 정합니다."
+fi
 
 say
 say "══ 6. 🔴 진짜 확인 — uid $UID_APP 이 **실제로 쓸 수 있나** ══"

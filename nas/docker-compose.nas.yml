@@ -879,6 +879,7 @@ services:
   #     #    컨테이너를 새로 만드는 순간 전부 사라진다.** 사람이 공유 폴더에서
   #     #    보는 파일도 영영 안 생긴다 — 그런데 화면은 멀쩡하다.
   #     - /volume1/dss/inventory-data:/data
+  #     - "/volume1/2_AS센터/2. 부품 관리/1. 재고 및 부품 입출고 관리/4. 재고관리 시스템:/data/workbook"
   #   depends_on:
   #     db-app:
   #       condition: service_healthy
