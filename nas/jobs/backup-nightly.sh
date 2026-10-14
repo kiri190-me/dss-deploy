@@ -17,6 +17,13 @@
 #      **입력물**이다. 잃으면 현황판 엑셀을 아예 못 만든다. 그 저장소의
 #      전환일 절차서가 전제 1번으로 「야간 백업에 운영 DB 와 데이터 폴더가
 #      들어 있다. 없으면 실자료를 넣지 않는다」를 못 박은 까닭이 이것이다.
+#   🔴 + 재고 관리 현황판 공유폴더 (2026-10-14 더함) — inventory-data 의 **밖**이다.
+#      그날 compose 가 /data/workbook 을 사내 공유폴더로 돌렸다. /volume1/dss 에는
+#      시놀로지 ACL 이 걸려 직원이 탐색기로 못 열기 때문이다. 그래서 위
+#      inventory-data 줄이 **더는 현황판을 받지 않는다** — 따로 받아야 한다.
+#      거기 쌓이는 것 중 프로그램이 다시 만들지 못하는 둘:
+#        현황판_사람수정_*.xlsx   사람이 적은 것이다
+#        OLD/                     월별 영구 백업
 #                                     →  /volume1/dss/backups/files/ (쌓아 올림)
 #   기록       /volume1/dss/setup/logs/backup-*.log  (관리자가 읽을 수 있는 곳 — 검수용)
 #
@@ -135,10 +142,14 @@ done
 #      templates/  엑셀 양식 두 벌  🔴 프로그램이 다시 만들 수 없다.
 #                  잃으면 현황판 엑셀을 아예 못 만든다
 #      import/     전환일 입력(현황판 최신 사본 · 묶음 판정표)
-#      workbook/ · baseline/ · backup/ · workbook/OLD/
-#                  프로그램이 1분마다 다시 쓰는 결과물. DB 에서 다시 만들 수
-#                  있지만, 수기입을 치워 둔 파일(현황판_사람수정_*.xlsx)은
-#                  **사람이 적은 것이라 다시 못 만든다**
+#      baseline/ · backup/
+#                  프로그램이 1분마다 다시 쓰는 결과물. DB 에서 다시 만들 수 있다
+#      workbook/   🔴 **이 줄이 받는 것은 이제 여기까지다.** 2026-10-14 에 compose
+#                  가 이 자리(/data/workbook)에 사내 공유폴더를 덧씌웠다. 호스트의
+#                  /volume1/dss/inventory-data/workbook 에는 마운트 지점만 남아
+#                  **비어 있다** — 알맹이는 아래 inventory-workbook 절이 받는다.
+#                  수기입을 치워 둔 파일(현황판_사람수정_*.xlsx)과 월별 영구 백업
+#                  OLD/ 도 그쪽이다
 #    컨테이너 안에서는 /data 다 (docker-compose.nas.yml 의 app-inventory).
 #
 # 🔴 **위 for 줄들에 이름을 끼워 넣지 않고 따로 돈다.** 이미 돌고 있는 줄을
@@ -155,6 +166,33 @@ for p in inventory-data; do
     # 🔴 「복사했다」가 아니라 「양식이 들어왔나」를 본다. 폴더만 있고 양식이
     #    없으면 현황판을 못 만든다 — 전환일 전에는 0 이 정상이다.
     echo "    · 그중 templates/ 의 xlsx: $(find "$B/files/$p/templates" -maxdepth 1 -name '*.xlsx' 2>/dev/null | wc -l)개 (전환일 뒤에는 둘 이상)"
+  else echo "  ✗ $p 복사 실패"; FAIL=1; fi
+done
+
+# 🔴 재고 관리 현황판 공유폴더 (2026-10-14 더함) — 바로 위 inventory-data 의
+#    **밖**이다. 그날 compose 의 app-inventory 가 /data/workbook 을 이 사내
+#    공유폴더로 돌렸다(/volume1/dss 에는 시놀로지 ACL 이 걸려 직원이 탐색기로
+#    못 열기 때문). 그래서 위 줄이 더는 현황판을 받지 못한다.
+#    여기 쌓이는 것 중 프로그램이 다시 만들지 못하는 둘 — 이것이 이 절을 더하는
+#    까닭이다:
+#      현황판_사람수정_*.xlsx   사람이 적은 것이라 다시 못 만든다
+#      OLD/                     월별 영구 백업
+#    컨테이너 안에서는 /data/workbook 이다.
+#
+# 🔴 **위 for 줄들에 이름을 끼워 넣지 않고 따로 돈다.** 이미 돌고 있는 줄을
+#    고치면 검증된 것들의 차례까지 함께 흔들린다 — 더하는 변경은 더하기만
+#    한다(게시판 · inventory-data 를 더할 때 적은 그 까닭 그대로다). 하는 일은
+#    위와 글자 그대로 같다(rsync -a · 쌓아 올림 · --delete 없음).
+#
+# 🔴 **첫 설치 전에는 이 폴더가 아직 없다.** 그때는 실패로 세지 않는다 —
+#    27-inventory-place.sh 가 폴더를 만들기 전에 이 백업이 돌면 ✗ 가 떠서
+#    진짜 실패와 구별이 안 되고 사람을 헷갈리게 한다. 알리기만 한다.
+INV_WB="/volume1/2_AS센터/2. 부품 관리/1. 재고 및 부품 입출고 관리/4. 재고관리 시스템"
+for p in inventory-workbook; do
+  if [ ! -d "$INV_WB" ]; then
+    echo "  · $p — 공유폴더가 아직 없다 (첫 설치 전이면 정상입니다)"
+  elif rsync -a "$INV_WB/" "$B/files/$p/"; then
+    echo "  ✓ $p · 파일 $(find "$B/files/$p" -type f | wc -l)개 · $(du -sh "$B/files/$p" | cut -f1)"
   else echo "  ✗ $p 복사 실패"; FAIL=1; fi
 done
 

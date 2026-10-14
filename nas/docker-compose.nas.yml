@@ -1189,6 +1189,7 @@ services:
   #   volumes:
   #     # app-inventory 와 **같은 자리**. 위 머리말 참조.
   #     - /volume1/dss/inventory-data:/data
+  #     - "/volume1/2_AS센터/2. 부품 관리/1. 재고 및 부품 입출고 관리/4. 재고관리 시스템:/data/workbook"
   #   deploy:
   #     resources:
   #       limits:

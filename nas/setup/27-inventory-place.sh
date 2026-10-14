@@ -67,7 +67,11 @@ FAIL=0
 # 벗기고, **바뀐 줄 수가 기대값과 다르면 아무것도 놓지 않는다.**
 # 기대값은 개발 PC 에서 실측했다 (2026-10-13, js-yaml 로 앞뒤 둘 다 파싱 확인).
 # 2026-10-14: app-inventory 에 공유폴더 볼륨 한 줄이 늘어 69 → 70.
-N_UNCOMMENT_WANT=70
+# 2026-10-14: tools-inventory 에도 **글자까지 같은** 한 줄을 더해 70 → 71.
+#             두 자리가 같아야 하는 까닭은 compose 의 그 블록 머리말에 있다 —
+#             전환일 명령(build-workbook-template · workbook-selftest)이
+#             **앱이 보는 바로 그 파일**을 만들어야 하기 때문이다.
+N_UNCOMMENT_WANT=71
 
 # ── 개발 PC 에서 잰 값 — 이것과 다르면 옮기지 않는다 ───────────────────
 # 🔴 셋 다 비어 있다. 까닭을 그대로 적어 둔다:
@@ -386,6 +390,64 @@ else
   [ "${LEFT:-0}" = 0 ] && ok "시험 흔적이 남지 않았다" \
     || { bad "시험 흔적이 남아 있다 — 아래를 손으로 지우세요"
          find "$DATA" -maxdepth 2 -name '.dss-*-test' 2>/dev/null | sed 's/^/       /'; }
+fi
+
+say
+say "══ 6-2. 🔴 진짜 확인 — uid $UID_APP 이 **공유폴더에** 쓸 수 있나 ══"
+say "  $SHARE_WB"
+say "  🔴 5-2 의 「주인이 $UID_APP 이다」로는 **모자랍니다.** 여기는 직원들이 쓰는"
+say "     사내 공유폴더라 시놀로지 ACL 이 켜져 있고, ACL 이 켜진 자리에서는 chown"
+say "     만으로 쓰기가 열린다는 보장이 없습니다. 그래서 **앱이 쓰는 길로** 잽니다 —"
+say "     6번과 같은 방식으로 임시 컨테이너를 띄워 /data/workbook 에 써 봅니다."
+say "  🔴 여기서는 ACL 을 **걷지 않습니다.** 직원이 탐색기로 들어오는 길이 그"
+say "     ACL 입니다. 걷으면 엑셀은 생기는데 아무도 못 보게 되어 이 폴더를 쓰는"
+say "     까닭 자체가 사라집니다. 아래가 ✗ 면 고치지 말고 **알리세요.**"
+if [ -z "$PROBE_IMG" ]; then
+  bad "시험에 쓸 이미지를 하나도 찾지 못했다 — 공유폴더 쓰기 시험을 **못 했다**"
+  say "     (재고 관리 이미지를 실은 뒤 27-deploy.sh 가 같은 시험을 다시 합니다.)"
+elif [ ! -d "$SHARE_WB" ]; then
+  bad "공유폴더가 없어 쓰기 시험을 **못 했다** — 위 5-2 의 ✗ 를 먼저 보세요"
+else
+  say "  · 시험에 쓴 이미지: $PROBE_IMG"
+  # 🔴 6번과 같은 까닭으로 콜론과 리다이렉션으로 빈 파일을 만들지 않는다 —
+  #    쓰기가 막히면 ash 가 셸을 그 자리에서 끝내 뒤 줄이 아예 안 돌고 판정이
+  #    빈 채로 지나간다. touch 와 mkdir 은 외부 명령이라 실패해도 셸이 산다.
+  WOUT=$("$DOCKER" run --rm --network none -u "$UID_APP:$GID_APP" \
+        -v "$SHARE_WB:/data/workbook" --entrypoint sh "$PROBE_IMG" -c '
+          id
+          if touch /data/workbook/.dss-write-test 2>/dev/null; then
+            echo "PROBE WB_WRITE_OK"
+            rm -f /data/workbook/.dss-write-test 2>/dev/null
+          else
+            echo "PROBE WB_WRITE_FAIL"
+          fi
+          if mkdir -p /data/workbook/.dss-mkdir-test 2>/dev/null; then
+            echo "PROBE WB_MKDIR_OK"
+            rmdir /data/workbook/.dss-mkdir-test 2>/dev/null
+          else
+            echo "PROBE WB_MKDIR_FAIL"
+          fi' 2>&1)
+  printf '%s\n' "$WOUT" | grep -E '^(uid=|PROBE )' | sed 's/^/     /'
+  case "$WOUT" in
+    *"PROBE WB_WRITE_OK"*)
+      ok "🔴 uid $UID_APP 이 공유폴더에 **실제로 썼다** (바로 지웠다)" ;;
+    *"PROBE WB_WRITE_FAIL"*)
+      bad "🔴 uid $UID_APP 이 공유폴더에 못 쓴다 — 현황판 엑셀이 영영 안 생긴다"
+      say "     화면에는 아무 오류도 안 뜹니다. 로그에만 남습니다."
+      say "     🔴 ACL 을 걷어서 풀지 마세요 — 직원이 못 보게 됩니다. 알리세요." ;;
+    *)
+      bad "공유폴더 쓰기 시험을 판정하지 못했다 — 아래가 그대로의 출력이다"
+      printf '%s\n' "$WOUT" | sed 's/^/     /' | head -8 ;;
+  esac
+  case "$WOUT" in
+    *"PROBE WB_MKDIR_OK"*)   ok "🔴 폴더도 만들 수 있다 (workbook/OLD 가 이렇게 생긴다)" ;;
+    *"PROBE WB_MKDIR_FAIL"*) bad "🔴 폴더를 못 만든다 — OLD/ 가 안 생겨 월별 보관이 멈춘다" ;;
+  esac
+  # 시험 흔적이 남지 않았는지까지 본다. 직원이 보는 폴더라 더 그렇다.
+  WLEFT=$(find "$SHARE_WB" -maxdepth 2 -name '.dss-*-test' 2>/dev/null | wc -l)
+  [ "${WLEFT:-0}" = 0 ] && ok "시험 흔적이 남지 않았다" \
+    || { bad "시험 흔적이 남아 있다 — 아래를 손으로 지우세요"
+         find "$SHARE_WB" -maxdepth 2 -name '.dss-*-test' 2>/dev/null | sed 's/^/       /'; }
 fi
 
 say
