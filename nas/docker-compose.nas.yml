@@ -854,6 +854,15 @@ services:
   # ══ 벗길 자리 ①/둘 ═════════════ DSS-INVENTORY-UNCOMMENT-BEGIN-APP ════
   # app-inventory:
   #   image: dss-inventory:0.1
+  #   # 🔴 gid 100(users) 으로 돈다 — **uid 는 1001 그대로다.**
+  #   #    아래 /data/workbook 에 붙는 사내 공유폴더의 시놀로지 ACL 은 **이름
+  #   #    기반**이라, NAS 에 아예 없는 번호인 gid 1001 은 그 ACL 어디에도 안
+  #   #    걸린다. users 그룹이 gid 100 이다. 폴더 주인을 1001 로 바꿔도 ACL 이
+  #   #    막는다 — 그렇다고 ACL 을 걷으면 직원이 탐색기로 못 들어온다.
+  #   #    2026-10-14 NAS 실측 — 공유폴더: 1001:1001 ✗ · 1001:100 ✓
+  #   #    (데이터 폴더 /volume1/dss/inventory-data 는 둘 다 ✓ 라 안 깨진다.)
+  #   #    🔴 이 줄이 빠지면 현황판 엑셀이 공유폴더에 안 생기는데 화면은 멀쩡하다.
+  #   user: "1001:100"
   #   container_name: dss-inventory
   #   restart: unless-stopped
   #   logging: *logging
@@ -1154,7 +1163,7 @@ services:
   #    import-workbook --unmatched · workbook-selftest)을 그냥 돌리면 root 가
   #    주인인 파일이 생겨 **앱(uid 1001)이 그 뒤로 못 덮어쓴다.** 그 명령들은
   #    반드시 아래 둘 중 하나로:
-  #      ① docker compose … run --rm --user 1001:1001 tools-inventory …
+  #      ① docker compose … run --rm --user 1001:100 tools-inventory …
   #      ② 돌린 뒤  chown -R 1001:1001 /volume1/dss/inventory-data
   #    (27-inventory-check.sh 가 폴더 전체의 주인을 되읽어 어긋나면 알린다.)
   #
@@ -1175,6 +1184,13 @@ services:
   # ══ 벗길 자리 ②/둘 ═══════════ DSS-INVENTORY-UNCOMMENT-BEGIN-TOOLS ════
   # tools-inventory:
   #   image: dss-inventory-tools:1
+  #   # 🔴 app-inventory 와 **똑같이** gid 100(users) · uid 는 1001 그대로.
+  #   #    까닭은 위 app-inventory 블록의 주석에 적었다 — 공유폴더의 시놀로지
+  #   #    ACL 이 이름 기반이라 NAS 에 없는 gid 1001 은 안 걸린다(2026-10-14
+  #   #    NAS 실측: 공유폴더 1001:1001 ✗ · 1001:100 ✓).
+  #   #    🔴 이 줄이 생기면서 이 컨테이너는 더 이상 root 로 돌지 않는다 —
+  #   #       전환일 명령이 만드는 파일의 주인이 곧바로 1001 이 된다.
+  #   user: "1001:100"
   #   profiles: [tools]
   #   networks: [dss-data, dss-edge]
   #   env_file:

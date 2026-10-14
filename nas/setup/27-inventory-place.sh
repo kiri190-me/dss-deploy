@@ -59,6 +59,9 @@ DATA=$D/inventory-data
 SHARE_WB="/volume1/2_AS센터/2. 부품 관리/1. 재고 및 부품 입출고 관리/4. 재고관리 시스템"
 UID_APP=1001
 GID_APP=1001
+# 🔴 **공유폴더에 쓸 때만** 쓰는 그룹 번호. $GID_APP(1001)과 다르다 —
+#    까닭은 6-2 절에 적었다. 데이터 폴더(5번)는 1001:1001 그대로다.
+GID_SHARE=100
 STAMP=$(date +%Y%m%d-%H%M%S)
 FAIL=0
 
@@ -71,7 +74,12 @@ FAIL=0
 #             두 자리가 같아야 하는 까닭은 compose 의 그 블록 머리말에 있다 —
 #             전환일 명령(build-workbook-template · workbook-selftest)이
 #             **앱이 보는 바로 그 파일**을 만들어야 하기 때문이다.
-N_UNCOMMENT_WANT=71
+# 2026-10-14: 두 블록에 user: "1001:100" 한 줄과 그 까닭 주석을 더해 71 → 87
+#             (app 쪽 9줄 · tools 쪽 7줄). 벗겨지는 주석도 바뀐 줄로 세어진다.
+#             까닭: 공유폴더의 시놀로지 ACL 이 **이름 기반**이라 NAS 에 아예
+#             없는 번호인 gid 1001 은 그 ACL 어디에도 안 걸린다. users 가
+#             gid 100 이다 — **uid 는 1001 그대로.** 아래 6-2 절을 보라.
+N_UNCOMMENT_WANT=87
 
 # ── 개발 PC 에서 잰 값 — 이것과 다르면 옮기지 않는다 ───────────────────
 # 🔴 셋 다 비어 있다. 까닭을 그대로 적어 둔다:
@@ -393,8 +401,14 @@ else
 fi
 
 say
-say "══ 6-2. 🔴 진짜 확인 — uid $UID_APP 이 **공유폴더에** 쓸 수 있나 ══"
+say "══ 6-2. 🔴 진짜 확인 — $UID_APP:$GID_SHARE 이 **공유폴더에** 쓸 수 있나 ══"
 say "  $SHARE_WB"
+say "  🔴 6번과 **다른 그룹 번호**로 잽니다 — 6번(데이터 폴더)은 $UID_APP:$GID_APP 이고"
+say "     여기는 $UID_APP:$GID_SHARE(users) 입니다. 공유폴더의 시놀로지 ACL 은 이름"
+say "     기반이라 NAS 에 아예 없는 번호인 gid $GID_APP 은 그 ACL 어디에도 안 걸립니다"
+say "     (2026-10-14 NAS 실측: 공유폴더 $UID_APP:$GID_APP ✗ · $UID_APP:$GID_SHARE ✓)."
+say "     compose 의 app-inventory · tools-inventory 도 같은 번호로 돕니다 —"
+say "     **앱이 쓰는 그 번호로** 재야 이 시험이 뜻이 있습니다."
 say "  🔴 5-2 의 「주인이 $UID_APP 이다」로는 **모자랍니다.** 여기는 직원들이 쓰는"
 say "     사내 공유폴더라 시놀로지 ACL 이 켜져 있고, ACL 이 켜진 자리에서는 chown"
 say "     만으로 쓰기가 열린다는 보장이 없습니다. 그래서 **앱이 쓰는 길로** 잽니다 —"
@@ -412,7 +426,17 @@ else
   # 🔴 6번과 같은 까닭으로 콜론과 리다이렉션으로 빈 파일을 만들지 않는다 —
   #    쓰기가 막히면 ash 가 셸을 그 자리에서 끝내 뒤 줄이 아예 안 돌고 판정이
   #    빈 채로 지나간다. touch 와 mkdir 은 외부 명령이라 실패해도 셸이 산다.
-  WOUT=$("$DOCKER" run --rm --network none -u "$UID_APP:$GID_APP" \
+  # 🔴 여기만 $GID_SHARE(100 · users)로 띄운다. 6번은 $GID_APP(1001)이다. 까닭:
+  #     · 공유폴더의 시놀로지 ACL 은 **이름 기반**이고 group:users 와 개별
+  #       사용자에게 허용한다. users 가 gid 100 이다. NAS 에 아예 없는 번호인
+  #       gid 1001 은 그 ACL 어디에도 안 걸려, 폴더 주인을 1001 로 바꿔도 막힌다
+  #       (2026-10-14 NAS 실측: 공유폴더 1001:1001 ✗ · 1001:100 ✓).
+  #     · 데이터 폴더는 주인이 1001 이고 모드가 750 이라 앞자리 rwx 로 통한다.
+  #       거기까지 gid 100 으로 바꾸면 users(전 직원)에게 읽기가 열리므로
+  #       **좁은 쪽을 그대로 둔다** — 5번의 chown 은 1001:1001 이다.
+  #     · compose 의 app-inventory · tools-inventory 도 1001:100 으로 돈다.
+  #       앱이 쓰는 바로 그 번호로 재는 것이 이 절의 핵심이다.
+  WOUT=$("$DOCKER" run --rm --network none -u "$UID_APP:$GID_SHARE" \
         -v "$SHARE_WB:/data/workbook" --entrypoint sh "$PROBE_IMG" -c '
           id
           if touch /data/workbook/.dss-write-test 2>/dev/null; then
@@ -430,10 +454,12 @@ else
   printf '%s\n' "$WOUT" | grep -E '^(uid=|PROBE )' | sed 's/^/     /'
   case "$WOUT" in
     *"PROBE WB_WRITE_OK"*)
-      ok "🔴 uid $UID_APP 이 공유폴더에 **실제로 썼다** (바로 지웠다)" ;;
+      ok "🔴 $UID_APP:$GID_SHARE 이 공유폴더에 **실제로 썼다** (바로 지웠다)" ;;
     *"PROBE WB_WRITE_FAIL"*)
-      bad "🔴 uid $UID_APP 이 공유폴더에 못 쓴다 — 현황판 엑셀이 영영 안 생긴다"
+      bad "🔴 $UID_APP:$GID_SHARE 이 공유폴더에 못 쓴다 — 현황판 엑셀이 영영 안 생긴다"
       say "     화면에는 아무 오류도 안 뜹니다. 로그에만 남습니다."
+      say "     공유폴더 ACL 에 group:users 가 아직 있는지, 그리고 그 users 가"
+      say "     gid $GID_SHARE 인지(getent group users)부터 보세요."
       say "     🔴 ACL 을 걷어서 풀지 마세요 — 직원이 못 보게 됩니다. 알리세요." ;;
     *)
       bad "공유폴더 쓰기 시험을 판정하지 못했다 — 아래가 그대로의 출력이다"
