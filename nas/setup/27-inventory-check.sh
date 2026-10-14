@@ -278,7 +278,7 @@ echo "══ 7. 🔴 「있는가」가 아니라 「쓸 수 있는가」 ══
 echo "  임시 컨테이너를 uid $UID_APP 으로 띄워 파일과 폴더를 만들었다 지웁니다."
 echo "  🔴 앱은 **1분마다** 여기에 씁니다 — 못 쓰면 화면은 멀쩡한데 엑셀만 멈춥니다."
 PROBE_IMG=""
-for t in dss-inventory:0.1 dss-board:0.1 dss-leave:0.2 dss-improvements:0.3 dss-as:2.5 dss-auth:1.6; do
+for t in dss-inventory:0.1 dss-board:0.2 dss-leave:0.2 dss-improvements:0.3 dss-as:2.5 dss-auth:1.7; do
   if "$DOCKER" image inspect "$t" >/dev/null 2>&1; then PROBE_IMG=$t; break; fi
 done
 if [ ! -d "$DATA" ]; then

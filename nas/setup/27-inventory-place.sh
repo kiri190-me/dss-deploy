@@ -334,7 +334,7 @@ say "  「있는가」가 아니라 「쓸 수 있는가」를 봅니다. 임시
 say "  파일을 하나 만들었다 지우고, **폴더도 만들었다 지웁니다** —"
 say "  앱이 workbook · baseline · backup · OLD 를 스스로 mkdir 하기 때문입니다."
 PROBE_IMG=""
-for t in dss-inventory:0.1 dss-board:0.1 dss-leave:0.2 dss-improvements:0.3 dss-as:2.5 dss-auth:1.6; do
+for t in dss-inventory:0.1 dss-board:0.2 dss-leave:0.2 dss-improvements:0.3 dss-as:2.5 dss-auth:1.7; do
   if "$DOCKER" image inspect "$t" >/dev/null 2>&1; then PROBE_IMG=$t; break; fi
 done
 if [ -z "$PROBE_IMG" ]; then

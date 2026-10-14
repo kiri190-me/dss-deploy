@@ -164,9 +164,13 @@ SZ_TOOLS=;   MD5_TOOLS=
 # ── 🔴 **건드리지 않는 열둘.** ─────────────────────────────────────────
 # 전부 지금 운영에서 돌고 있다. compose 에서 이 태그가 흔들렸으면 남의 것이
 # 섞인 것이다(두 세션이 같은 저장소를 쓴다). 고치지 말고 알린다.
-# 🔴 이 목록은 **2026-10-13 게시판 설치 직후** 기준이다. 그 사이에 다른 배포
-#    (26-…)가 들어갔다면 목록이 모자랄 수 있다 — 고치지 말고 먼저 알리세요.
-KEEP_AUTH=dss-auth:1.6
+# 🔴 이 목록은 **2026-10-14 26번 배포 직후** 기준이다(2026-10-14 갱신).
+#    그날 아침 26번으로 포털 dss-auth 1.6 → **1.7**, 게시판 dss-board
+#    0.1 → **0.2** 가 올라갔고 둘 다 지금 운영에서 돌고 있다. 나머지 열은
+#    2026-10-13 게시판 설치 때 그대로다.
+#    그 뒤에 또 다른 배포가 들어갔다면 목록이 모자랄 수 있다 — 고치지 말고
+#    먼저 알리세요.
+KEEP_AUTH=dss-auth:1.7
 KEEP_AS=dss-as:2.5
 KEEP_ASTOOLS=dss-as-tools:1
 KEEP_METERS=dss-meters:1.3
@@ -176,7 +180,7 @@ KEEP_IMPTOOLS=dss-improvements-tools:2
 KEEP_PO=dss-po:0.5
 KEEP_LEAVE=dss-leave:0.2
 KEEP_LEAVETOOLS=dss-leave-tools:2
-KEEP_BOARD=dss-board:0.1
+KEEP_BOARD=dss-board:0.2
 KEEP_BOARDTOOLS=dss-board-tools:1
 
 # ── 재고 관리의 값들 ───────────────────────────────────────────────────
