@@ -143,7 +143,8 @@ TAG_APP=dss-inventory:0.1
 TAG_TOOLS=dss-inventory-tools:1
 
 # ── tar 둘 ─────────────────────────────────────────────────────────────
-# 🔴 크기와 md5 가 **비어 있다.** 이 스크립트를 쓴 세션은 docker build 를
+# ✅ 2026-10-14 개발 PC 에서 굽고 docker save 로 떠 실측해 아래를 채웠다(아래 안내는 그 전 이야기).
+# 🔴 크기와 md5 가 **비어 있었다.** 이 스크립트를 쓴 세션은 docker build 를
 #    돌리지 않았으므로 잴 값이 없었다. 비어 있으면 **대조하지 않고**, 대신
 #    받은 값을 찍고 「대조하지 않았다」고 크게 말한다.
 #    🔵 그래도 **지문 확인은 그대로 산다** — tar_config_id() 가 tar 안의
@@ -157,9 +158,9 @@ TAG_TOOLS=dss-inventory-tools:1
 #    🔴 docker save 를 다시 돌리면 이 값이 달라질 수 있다 — 이미 뽑아 둔
 #       파일을 그대로 올리세요.
 TAR_APP=$IMAGES/dss-inventory-0.1.tar
-SZ_APP=;     MD5_APP=
+SZ_APP=95283712;     MD5_APP=385fa27a2e4a7bc83007d37f4c6c1ad0
 TAR_TOOLS=$IMAGES/dss-inventory-tools-1.tar
-SZ_TOOLS=;   MD5_TOOLS=
+SZ_TOOLS=212687872;   MD5_TOOLS=0b1c7604feac0d423f5e4b53f392ea30
 
 # ── 🔴 **건드리지 않는 열둘.** ─────────────────────────────────────────
 # 전부 지금 운영에서 돌고 있다. compose 에서 이 태그가 흔들렸으면 남의 것이
