@@ -192,6 +192,10 @@ INV_HOST=inventory.dss21.co.kr
 INV_BASE=https://inventory.dss21.co.kr
 INV_DATA=$D/inventory-data
 INV_MNT=/data
+# 🔴 그중 workbook 한 칸만은 **사내 공유폴더가 덧씌운다** (2026-10-14).
+#    /volume1/dss 에는 시놀로지 ACL 이 걸려 직원이 탐색기로 못 열기 때문이다.
+#    27-inventory-place.sh 의 SHARE_WB 와 **같은 값**이어야 한다.
+INV_SHARE_WB="/volume1/2_AS센터/2. 부품 관리/1. 재고 및 부품 입출고 관리/4. 재고관리 시스템"
 UID_APP=1001
 GID_APP=1001
 CLIENT_ID=dss-inventory
@@ -1032,6 +1036,16 @@ run_checks() {
     svc_block "$CF_EFF" "$s" | grep -q "$INV_DATA:$INV_MNT" \
       && ok "$s 에 $INV_DATA:$INV_MNT 볼륨이 있다" \
       || bad "🔴 $s 에 데이터 볼륨이 없다 — 만든 엑셀이 컨테이너와 함께 사라진다"
+    # 🔴 그 위에 덧씌우는 **공유폴더 볼륨**. 빠져도 화면은 멀쩡하고 파일도
+    #    남는다 — 다만 $INV_DATA/workbook 안쪽에만 쌓인다. 그 자리는 시놀로지
+    #    ACL 때문에 직원이 탐색기로 못 연다. 이 시스템의 핵심 요구가
+    #    「직원이 공유 폴더에서 현황판 엑셀을 읽는다」라서, 이것이 조용히
+    #    무너지면 목적 자체가 사라진다.
+    # 🔴 grep -qF 다(-q 가 아니다) — 이 경로에는 점이 넷(2. · 1. · 4.) 들어
+    #    있어 정규식으로 읽으면 아무 글자나 맞는다. 고정 문자열로 본다.
+    svc_block "$CF_EFF" "$s" | grep -qF "$INV_SHARE_WB:$INV_MNT/workbook" \
+      && ok "$s 에 공유폴더 → $INV_MNT/workbook 볼륨이 있다" \
+      || bad "🔴 $s 에 공유폴더 볼륨이 없다 — 현황판이 /volume1/dss 안쪽에 쌓여 **직원이 탐색기로 못 여는데 화면은 멀쩡하다**"
     v=$(svc_env "$CF_EFF" "$s" INVENTORY_DATA_DIR)
     [ "$v" = "$INV_MNT" ] && ok "$s 의 INVENTORY_DATA_DIR 가 $INV_MNT 다" \
       || bad "$s 의 INVENTORY_DATA_DIR 가 $INV_MNT 가 아니다 (${v:-빔}) — 볼륨과 짝이 안 맞는다"
@@ -1897,7 +1911,8 @@ cat <<ANNOUNCE
 
 🔴 사람이 이어서 할 일:
   · 내일 아침 백업을 한 번 더 보세요 — 스케줄러가 실제로 돌려서
-    dss_inventory 덤프와 files/inventory-data 가 생기는지가 진짜 확인입니다:
+    dss_inventory 덤프와 files/inventory-data · files/inventory-workbook
+    **셋이 다** 생기는지가 진짜 확인입니다(현황판 공유폴더가 셋째입니다):
       ls -lt /volume1/dss/backups/db/ | head -9
       ls -l  /volume1/dss/backups/files/
   · 위 메모리 값을 Claude 에게 알려 주세요 — compose 의 예산표를 다시 적습니다.
