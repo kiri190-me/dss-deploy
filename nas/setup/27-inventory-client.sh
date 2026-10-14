@@ -37,7 +37,8 @@
 #     chr(128230)  =  16진 1F4E6  =  U+1F4E6
 #   넣은 뒤 4번이 to_hex(ascii(...)) 로 **코드값을 되읽어** 확인한다.
 #
-# ── 🔴 client_secret_hash 가 아직 비어 있다 ────────────────────────────
+# ── client_secret_hash 는 2026-10-14 에 채웠다 ─────────────────────────
+#   그 전까지는 비어 있었다(운영용 시크릿을 발급하기 전이었다).
 #   아래 HASH 가 비면 이 스크립트는 **아무것도 바꾸지 않고 멈춘다.**
 #
 #   채우는 길 둘 (둘 다 평문이 아니라 sha256 64자다):
@@ -55,7 +56,7 @@ BASE=https://inventory.dss21.co.kr
 HASH_FILE=/volume1/dss/setup/incoming/inventory-client-hash.txt
 
 # 🔴 여기에 sha256 64자(소문자 hex)를 적는다. 평문이 아니다.
-HASH=
+HASH=091996b6d9439ee83066d975221c8607cb9120c4a9c877c99d9b0d30d1b0bd81
 
 if [ -z "$HASH" ] && [ -r "$HASH_FILE" ]; then
   HASH=$(tr -dc 'a-f0-9' < "$HASH_FILE" | cut -c1-64)
@@ -65,7 +66,8 @@ fi
 if [ -z "$HASH" ]; then
   echo "🔴 client_secret_hash 가 비어 있습니다. **아무것도 바꾸지 않았습니다.**"
   echo
-  echo "   아직 운영용 클라이언트 시크릿을 발급하기 전입니다."
+  echo "   운영용 클라이언트 시크릿은 2026-10-14 에 발급해 HASH= 줄에 채웠습니다."
+  echo "   이 메시지가 보인다면 그 줄이 비어 있는 옛 판이 올라온 것입니다."
   echo "   🔴 개발용 시크릿을 그대로 쓰지 마세요 — 운영은 다른 값입니다"
   echo "      (dss-inventory/docs/전환일_절차서_2026-10-12.md 2-2절)."
   echo "   Claude 가 시크릿을 만들고 sha256 해시를 드리면, 둘 중 하나로 넣으세요:"
