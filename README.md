@@ -57,6 +57,60 @@
 
 ---
 
+### 🔵 2026-10-14 낮 — 27번(재고 관리) 준비를 이어갔다. **아직 NAS 에서 안 돌렸다**
+
+🔴 **이 절도 「고친 것」까지다.** 커밋 넷뿐이고 배포는 하지 않았다.
+
+#### 🔴 직원이 엑셀을 보는 자리가 정해졌다 (사용자 결정)
+
+```
+/volume1/2_AS센터/2. 부품 관리/1. 재고 및 부품 입출고 관리/4. 재고관리 시스템
+```
+
+형제 셋(`1. AS 관련 부품` · `2. CS 재고 관리` · `3. 이전 관리 자료`)이 이미 쓰이는 자리다.
+권한을 견줘 확인했다 — 거기는 `drwxrwxrwx+` 라 직원이 열리고,
+`/volume1/dss/board-uploads` 는 `drwxr-x---` 라 소유자 말고는 못 본다. 그래서 ⓑ 가 맞다.
+
+🔴 **그 폴더는 아직 없다.** `27-inventory-place.sh` 5-2 절이 만들고 `chown 1001` 한다.
+부모 셋은 직원들이 쓰는 폴더라 건드리지 않는다(주인이 `dhcho` · `ybjeong` · `swhur`).
+
+#### 🔴 볼륨 한 줄인 줄 알았는데 파일 다섯이 걸려 있었다
+
+`/data` 통째가 아니라 **`/data/workbook` 만** 돌린다 — `/data/templates` 의 양식 두 벌은
+프로그램이 다시 못 만드는 입력물이라 사람이 드나드는 자리에 두지 않는다.
+그 결정 하나에서 넷이 따라 나왔다:
+
+| 파일 | 왜 |
+|---|---|
+| `docker-compose.nas.yml` | 앱 **과 도구** 양쪽에 같은 볼륨. 그 블록 머리말이 이미 「같은 자리여야 한다」고 요구하고 있었다 — 전환일 명령이 앱이 보는 그 파일을 만든다 |
+| `27-inventory-place.sh` | 공유폴더를 만들고 주인을 맞추고, 🔴 **임시 컨테이너로 실제로 써 본다.** ACL 이 켜진 자리라 「주인이 1001 이다」로는 모자라다 |
+| `backup-nightly.sh` | 🔴 workbook 이 `inventory-data` 밖으로 나가 **백업에서 빠졌다.** 거기 `현황판_사람수정_*.xlsx`(사람이 적은 것)와 `OLD/`(월별 영구 백업)가 쌓인다 — 둘 다 프로그램이 다시 못 만든다 |
+| `27-deploy.sh` · `27-inventory-check.sh` | 그 백업이 안 돌아도 ✓ 로 지나가던 것을 잡게. compose 에 볼륨이 빠졌는지도 본다 |
+
+🔵 `N_UNCOMMENT_WANT` 는 **69 → 71** 이 됐다(벗길 줄이 둘 늘었다).
+awk 모의실험으로 71 이 나오는 것과, 볼륨을 뺀 사본에서 새 검사가 **걸리는 것**을 확인했다.
+
+#### 🔴 아직 사람이 해야 하는 것 — 이것이 없으면 27번은 못 선다
+
+1. ~~공유폴더 자리~~ → **정해졌다**(위)
+2. 🔴 운영 `SSO_CLIENT_SECRET` 발급 → sha256 해시를 `27-inventory-client.sh` 의 `HASH=` 에
+3. 🔴 **포털에 정영빈 ADMIN 등록** — 없으면 사이트가 서도 **아무도 못 들어간다**
+   (`requires_grant` 가 참이고 `make:admin` 같은 비상구가 없다)
+4. `nas/env/inventory.env` 작성 — 🔴 **저장소에 두지 않는다**(비밀값). 필수 키 여덟:
+   `SSO_ISSUER` · `SSO_CLIENT_ID` · `SSO_CLIENT_SECRET` · `SSO_REDIRECT_URI` ·
+   `AUTH_SESSION_SECRET` · `SSO_TX_SECRET` · `SESSION_COOKIE_SECURE` · `SESSION_HOURS`
+   🔴 뒤의 둘이 **같으면 앱이 시작할 때 던진다.** `SESSION_HOURS` 는 1~12 밖이면 역시 던진다.
+   🔴 `DATABASE_URL` · `PORT` · `TZ` · `STOCK_WORKBOOK_PATH` 등 **열은 넣으면 안 된다**(compose 가 넘긴다).
+   🔵 `STOCK_WORKBOOK_SHARE_PATH` 는 선택이고 **저장 위치가 아니라 화면에 보여 주는 안내 글자**다
+   (`src/lib/env.ts:173`). 비우면 화면이 `/data/workbook/…` 를 띄워 직원이 복사해도 못 간다.
+   꼴은 A/S 와 같게 `\\NAS이름\공유이름\…`.
+5. 이미지 둘을 굽고 tar 의 크기·md5 를 `27-deploy.sh` 네 줄에 채운다
+6. 🔴 Cloudflare A 레코드 `inventory` + DSM 리버스 프록시 443 → `localhost:13800`
+
+#### 🔵 이 PC 의 Git Bash `ssh` 함정은 위 절에 적어 두었다
+
+---
+
 ### 🟡 2026-10-13 밤 — **배포본 둘을 써 두었다. 아직 NAS 에서 아무것도 안 돌렸다**
 
 > 🔵 **이 절은 지나간 기록이다.** 여기 적힌 「26번이 글만 쓴 상태」는 2026-10-14 아침에
