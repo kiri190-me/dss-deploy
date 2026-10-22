@@ -340,7 +340,7 @@ for spec in \
   "as.env|AS_API_TOKEN AS_WRITE_TOKEN INVENTORY_API_BASE_URL INVENTORY_API_TOKEN INVENTORY_WRITE_TOKEN" \
   "po.env|AS_WRITE_TOKEN AS_APP_BASE_URL INVENTORY_API_BASE_URL INVENTORY_API_TOKEN" \
   "inventory.env|SSO_ISSUER SSO_CLIENT_ID SSO_REDIRECT_URI AS_LOOKUP_URL AS_LOOKUP_TOKEN AS_API_BASE_URL INVENTORY_WRITE_TOKEN" \
-  "auth.env|AUTH_TX_SECRET AUTH_KEYS_DIR AUTH_ACTIVE_KID" ; do
+  "auth.env|AUTH_TX_SECRET AUTH_ACTIVE_KID" ; do
   f="$ENVD/${spec%%|*}"; keys="${spec#*|}"
   printf '%s\n' "    ── ${spec%%|*}"
   if [ ! -f "$f" ]; then unk "${spec%%|*} 의 이름들" "파일이 없다"; continue; fi
