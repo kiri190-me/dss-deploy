@@ -24,6 +24,12 @@
 #      거기 쌓이는 것 중 프로그램이 다시 만들지 못하는 둘:
 #        현황판_사람수정_*.xlsx   사람이 적은 것이다
 #        OLD/                     월별 영구 백업
+#   🔴 + RF 이슈관리 rf-trouble-data (2026-10-22 더함, 아홉째 사이트)
+#      🔴 **이 시스템만 위 DB 목록에 한 줄도 없다. 빠뜨린 것이 아니다** —
+#         DB 자체가 없고 자료가 전부 이 폴더의 파일이다(이슈 · 색인 · 첨부 ·
+#         설정 config.json · 세션 서명 열쇠 .session-secret). 그래서
+#         **이 한 줄이 그 시스템 백업의 전부**다. 빠지면 아무 오류 없이
+#         전부가 백업되지 않는다 — 아래 2026-09-29 상자가 그 일의 기록이다.
 #                                     →  /volume1/dss/backups/files/ (쌓아 올림)
 #   기록       /volume1/dss/setup/logs/backup-*.log  (관리자가 읽을 수 있는 곳 — 검수용)
 #
@@ -193,6 +199,44 @@ for p in inventory-workbook; do
     echo "  · $p — 공유폴더가 아직 없다 (첫 설치 전이면 정상입니다)"
   elif rsync -a "$INV_WB/" "$B/files/$p/"; then
     echo "  ✓ $p · 파일 $(find "$B/files/$p" -type f | wc -l)개 · $(du -sh "$B/files/$p" | cut -f1)"
+  else echo "  ✗ $p 복사 실패"; FAIL=1; fi
+done
+
+# 🔴 RF 이슈관리 자료 폴더 (2026-10-22 더함, 아홉째) — 앞의 것들과 **성격이
+#    가장 다르다.** 저쪽은 DB 덤프가 본체이고 폴더는 곁가지였지만,
+#    🔴 **이 시스템에는 DB 가 아예 없다.** 위 DB 절에 rf-trouble 줄이 한 개도
+#    없는 것은 빠뜨린 것이 아니다 — 그 집은 자료를 전부 파일로 들고 있다
+#    (그 저장소 server.js 의 DATA = <저장소>/data, 컨테이너 안에서는 /app/data):
+#      issues.json      작업 일지 본체 — 🔴 다시 만들 수 없다
+#      kb.json          공유폴더를 훑어 만든 색인. 다시 만들 수는 있지만 오래 걸린다
+#      uploads/         첨부 — 🔴 다시 만들 수 없다
+#      config.json      공유폴더 경로와 pathMap. 🔴 사람이 적은 것이라 다시 못 만든다
+#      .session-secret  세션 서명 열쇠. 잃으면 로그인해 있던 사람이 한꺼번에 풀린다
+#    🔴 그래서 **이 한 줄이 그 시스템 백업의 전부**다.
+#
+# 🔴 **위 for 줄들에 이름을 끼워 넣지 않고 따로 돈다.** 이미 돌고 있는 줄을
+#    고치면 검증된 것들의 차례까지 함께 흔들린다 — 더하는 변경은 더하기만
+#    한다(게시판 · inventory-data 를 더할 때 적은 그 까닭 그대로다). 하는 일은
+#    위와 글자 그대로 같다(rsync -a · 쌓아 올림 · --delete 없음).
+#
+# 🔴 **첫 설치 전에는 이 폴더가 아직 없다.** 그때는 실패로 세지 않는다 —
+#    32-rf-trouble-deploy.sh --init 이 폴더를 만들기 전에 이 백업이 돌면 ✗ 가
+#    떠서 진짜 실패와 구별이 안 되고 사람을 헷갈리게 한다(inventory-workbook
+#    절과 같은 까닭이다). 알리기만 한다.
+#
+# 🔵 /backup 쪽(/volume1/dss/rf-trouble-backup)은 **여기 넣지 않는다.** 그것은
+#    앱이 issues.json 을 30분마다 날짜 붙여 복사해 두는 자리라, 아래 줄이 받는
+#    data/ 에서 다시 만들어지는 것이다 — 백업의 백업을 받지 않는다.
+RFT_DATA=$D/rf-trouble-data
+for p in rf-trouble-data; do
+  if [ ! -d "$RFT_DATA" ]; then
+    echo "  · $p — 폴더가 아직 없다 (첫 설치 전이면 정상입니다)"
+  elif rsync -a "$D/$p/" "$B/files/$p/"; then
+    echo "  ✓ $p · 파일 $(find "$B/files/$p" -type f | wc -l)개 · $(du -sh "$B/files/$p" | cut -f1)"
+    # 🔴 「복사했다」가 아니라 「본체가 들어왔나」를 본다. 폴더만 있고
+    #    issues.json 이 없으면 그 시스템은 사실상 백업되지 않은 것이다.
+    #    🔵 세우기만 하고 아직 아무도 안 쓴 날에는 0 이 정상이다.
+    echo "    · 그중 issues.json: $(find "$B/files/$p" -maxdepth 1 -name 'issues.json' 2>/dev/null | wc -l)개 (쓰기 시작한 뒤에는 1)"
   else echo "  ✗ $p 복사 실패"; FAIL=1; fi
 done
 

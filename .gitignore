@@ -24,3 +24,6 @@ tmp/
 # OS
 Thumbs.db
 .DS_Store
+
+# 설정 백업 사본 — 비밀값이 들어 있다. *.env 는 이미 막혀 있는데 .bak 은 안 걸렸다(2026-10-22)
+nas/env/*.bak*
