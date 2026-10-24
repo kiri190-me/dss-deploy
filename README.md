@@ -178,9 +178,12 @@ A/S      커밋 2   ed689f3  통합 승인함 — A/S 의 결재 대기 건을 �
 
 즉시 알림이 실패한 건을 줍는 뒷받침이다. DSM 작업 스케줄러에 10분마다 넣는다:
 ```
-docker compose -f /volume1/dss/docker-compose.nas.yml --env-file /volume1/dss/.env.nas \
+docker compose -f /volume1/dss/deploy/docker-compose.nas.yml --env-file /volume1/dss/deploy/.env.nas \
   --profile tools run --rm tools-auth npm run notify:approvals
 ```
+🔴 **경로에 `deploy/` 가 들어간다**(2026-10-25 고침 — 그 전에는 빠져 있었다).
+`nas/jobs/*.sh` 와 `nas/setup/*-deploy.sh` 가 **전부** `$D/deploy/docker-compose.nas.yml`
+· `$D/deploy/.env.nas` 를 쓴다. 빼고 치면 「그런 파일 없음」으로 끝난다.
 🔴 **지금은 즉시 알림만 돈다.** 그것이 실패한 결재는 메일이 영영 안 가고 아무도
 신고하지 않는다 — 다음 세션의 첫 일로 둔다.
 
@@ -193,9 +196,14 @@ docker compose -f /volume1/dss/docker-compose.nas.yml --env-file /volume1/dss/.e
 실패하면 그 결재는 메일이 영영 안 가고 **아무도 신고하지 않는다.**
 🔵 같은 자리에서 **②도 함께** 넣으면 한 번에 끝난다.
 
-**② 포털의 `purge-expired.ts` 를 부를 길을 낸다** (서른둘째부터 밀려 있다)
-🔴 감사 로그 3년 보관이 **한 번도 안 돌고 있다.** 그것이 보안 근거 문서에 적혀 있다.
-🔵 ① 과 같은 `tools-auth` 서비스를 쓰므로 명령 모양이 같다.
+**② 포털의 `purge-expired.ts` 를 부를 길을 낸다** — ✅ **코드는 끝났다**(2026-10-25,
+커밋 `310b583`). `nas/jobs/purge-nightly.sh` 에 **넷째 회차**로 들어갔다.
+🔴 **다만 아직 운영은 안 바뀌었다 — NAS 에 올려야 실제로 돈다.** 오늘 밤에도
+`/volume1/dss/jobs/purge-nightly.sh` 는 **A/S 셋만** 돌린다. 감사 로그 3년 보관은
+그 파일을 갈아 끼운 다음 03:30 부터 집행된다.
+👉 올리는 절차는 [`runbook/12-야간-완전삭제.md`](./runbook/12-야간-완전삭제.md) **4절**,
+올린 뒤 확인은 같은 문서 **5·7절**(`grep -c "── 포털"` 이 1 이어야 한다).
+🔵 ① 과 같은 `tools-auth` 서비스를 쓴다 — ① 을 넣는 자리에서 함께 올리면 한 번에 끝난다.
 
 **③ `_images-31/33/34/35` 를 정리한다** (개발 PC 디스크 ~2.4GB)
 NAS 로 다 옮겼고 운영에서 돌고 있다. 지난 판 tar 는 되돌릴 때 쓰이므로
@@ -321,7 +329,9 @@ tr -d '\000' < build.log | grep -oaE "exporting config sha256:…"  # ✓
 가장 작은 고침이다(저장소 수정이라 조각 하나).
 🔴 그것이 **감사 로그 3년 보관을 집행하는 유일한 코드**인데 지금은 야간 작업으로 부를 길이
 없다 — 보안 정책에 적힌 것이 실제로는 **안 돌고 있다.**
-🔵 그 뒤 `nas/jobs/purge-nightly.sh` 에 포털 몫을 더한다(지금은 A/S 셋만 돈다).
+🔵 ✅ **완료 (2026-10-25, 커밋 `310b583`)** — `nas/jobs/purge-nightly.sh` 에 **넷째 회차**로
+들어갔다. 바로 위 「부를 길이 없다」는 **옛 상태**다. 🔴 다만 **NAS 에 올려야 실제로 돈다** —
+올리기 전까지 운영은 A/S 셋만 돈다(`runbook/12-야간-완전삭제.md` 4절).
 
 **② `dss-trouble` 저장소에 보고만 해 둔 것 둘** (공개 저장소라 따로 다룬다)
 
@@ -554,7 +564,9 @@ NAS 에 올린 것까지는 `--init` 이 확인했지만, **스케줄러가 02:3
 가장 작은 고침이다(저장소 수정이라 조각 하나).
 🔴 그것이 **감사 로그 3년 보관을 집행하는 유일한 코드**인데 지금은 야간 작업으로 부를 길이
 없다 — 보안 정책에 적힌 것이 실제로는 안 돌고 있다.
-🔵 그 뒤 `nas/jobs/purge-nightly.sh` 에 포털 몫을 더한다(지금은 A/S 셋만 돈다).
+🔵 ✅ **완료 (2026-10-25, 커밋 `310b583`)** — `nas/jobs/purge-nightly.sh` 에 **넷째 회차**로
+들어갔다. 바로 위 「부를 길이 없다」는 **옛 상태**다. 🔴 다만 **NAS 에 올려야 실제로 돈다** —
+올리기 전까지 운영은 A/S 셋만 돈다(`runbook/12-야간-완전삭제.md` 4절).
 
 **③ 공유폴더 둘 붙이기** — 폴더 위치가 정해지는 날.
 절차는 [`runbook/15-RF이슈관리-공유폴더-연결.html`](./runbook/15-RF이슈관리-공유폴더-연결.html)
