@@ -344,7 +344,7 @@ check_new_migs() {
     ls -1 "$MIGDIR/${t}_"*.sql >/dev/null 2>&1 || miss="$miss $t(sql)"
     [ -f "$MIGDIR/meta/${t}_snapshot.json" ]   || miss="$miss $t(snapshot)"
   done
-  if [ -z "$miss" ]; then ok "0119·0120 의 .sql 과 meta/*_snapshot.json 이 다 있다"
+  if [ -z "$miss" ]; then ok "0121·0122·0123 의 .sql 과 meta/*_snapshot.json 이 다 있다"
   else bad "🔴 빠진 것:$miss"; rc=1; fi
   n=0
   for t in $AS_NEW_MIGS; do
@@ -353,23 +353,30 @@ check_new_migs() {
     local c; c=$(grep -ciE "$DESTRUCTIVE_RE" "$f" 2>/dev/null); n=$((n + ${c:-0}))
   done
   if [ "$n" = "$MIG_DROP_WANT" ]; then
-    ok "0119·0120 에 지우는 문장이 ${n}줄이다 (기대 ${MIG_DROP_WANT}줄 — 더하기만 한다)"
+    ok "0121·0122·0123 에 지우는 문장이 ${n}줄이다 (기대 ${MIG_DROP_WANT}줄 — 더하기만 한다)"
   else
-    bad "🔴 0119·0120 에 지우는 문장이 ${n}줄이다 (기대 ${MIG_DROP_WANT}줄) — 고치지 말고 **먼저 알리세요**"
+    bad "🔴 0121·0122·0123 에 지우는 문장이 ${n}줄이다 (기대 ${MIG_DROP_WANT}줄) — 고치지 말고 **먼저 알리세요**"
     rc=1
   fi
   # 🔵 글자 표식 — 올린 것이 그 파일이 맞는지. 이름만 맞고 속이 다를 수 있다.
-  f=$(ls -1 "$MIGDIR/0119_"*.sql 2>/dev/null | head -1)
+  #    🔴 셋 다 본다. 하나만 보면 나머지 둘은 이름만 맞아도 통과한다.
+  f=$(ls -1 "$MIGDIR/0121_"*.sql 2>/dev/null | head -1)
   if [ -n "$f" ]; then
     grep -qF "CREATE TABLE \"$AS_NEW_TABLE\"" "$f" \
-      && ok "0119 안에 표 $AS_NEW_TABLE 를 만드는 줄이 있다" \
-      || { bad "🔴 0119 안에 그 표를 만드는 줄이 **없다** — 다른 파일이다"; rc=1; }
+      && ok "0121 안에 표 $AS_NEW_TABLE 를 만드는 줄이 있다" \
+      || { bad "🔴 0121 안에 그 표를 만드는 줄이 **없다** — 다른 파일이다"; rc=1; }
   fi
-  f=$(ls -1 "$MIGDIR/0120_"*.sql 2>/dev/null | head -1)
+  f=$(ls -1 "$MIGDIR/0122_"*.sql 2>/dev/null | head -1)
+  if [ -n "$f" ]; then
+    grep -qF "ADD COLUMN \"$AS_NEW_COL2\"" "$f" \
+      && ok "0122 안에 칸 $AS_NEW_COL2 를 더하는 줄이 있다" \
+      || { bad "🔴 0122 안에 그 칸을 더하는 줄이 **없다** — 다른 파일이다"; rc=1; }
+  fi
+  f=$(ls -1 "$MIGDIR/0123_"*.sql 2>/dev/null | head -1)
   if [ -n "$f" ]; then
     grep -qF "ADD COLUMN \"$AS_NEW_COL\"" "$f" \
-      && ok "0120 안에 칸 $AS_NEW_COL 를 더하는 줄이 있다" \
-      || { bad "🔴 0120 안에 그 칸을 더하는 줄이 **없다** — 다른 파일이다"; rc=1; }
+      && ok "0123 안에 칸 $AS_NEW_COL 를 더하는 줄이 있다" \
+      || { bad "🔴 0123 안에 그 칸을 더하는 줄이 **없다** — 다른 파일이다"; rc=1; }
   fi
   return "$rc"
 }
@@ -407,6 +414,11 @@ AS_BOX=dss-pg-app; AS_DB=dss_as; AS_HAVE=121   # [저장소] 51-build.sh 4절과
 #    운영 볼륨/기록이 121 이고 124 가 되어야 한다. 값의 출처는 51-build.sh 4절.
 AS_WANT=124
 AS_NEW_MIGS='0121 0122 0123'
+# 🔴 「지우는 문장」의 잣대. 앱의 src/lib/db/migration-safety.ts 와 같다.
+#    ⚠️ DELETE 는 **DELETE FROM** 일 때만 센다 — 0123 의 ON DELETE restrict 는
+#    제약의 동작이지 지우는 문장이 아니다. 안 가르면 더하기만 하는 판이 ✗ 가 된다.
+DESTRUCTIVE_RE='DROP[[:space:]]+(TABLE|COLUMN|SCHEMA)|TRUNCATE|DELETE[[:space:]]+FROM'
+MIG_DROP_WANT=0
 # 묶음이 들어오는 자리 — 51-build.sh 가 만든 as-migrations.tar.gz 를 여기로 scp 한다.
 MIGTAR=$D/setup/incoming/as-migrations.tar.gz
 # 🔴 51-build.sh --go 가 2026-11-04 에 찍은 값. 묶음이 옮기다 끊겼는지를 이 둘로 가른다.
