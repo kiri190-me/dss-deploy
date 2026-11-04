@@ -309,8 +309,8 @@ ENV_PO=$D/deploy/env/po.env
 #   🔵 이름만이라도 적어 두는 까닭: 줄이 아예 없으면 4절(--preload)이 **아무것도
 #      안 싣고 조용히 끝난다.** 이름이 있으면 싣기는 제대로 된다.
 TARS='
-dss-as-4.4.tar|132760576|bd00411b93ee38f7ddb2539bfdeda039|sha256:69bef07c811241de4adfb74bfc84529c6629e16b9dc4975af8fb2106d2c7aea8
-dss-as-tools-11.tar|223945216|62cfc5551a7fd94d0f828cd9c7b06530|sha256:c55865a35b550b0e8868bf937a19093a4bd3f01d1c295406e5cb3a6602754ec4
+dss-as-4.4.tar|133611008|9c29c222576e982e823762494aa1e900|sha256:1f9245ae51573e57090108429c4f8eee129a42d7e67f6707a31c05eb14eba57b
+dss-as-tools-11.tar|224566784|54d062938e70c5b1fa75fdc8000c9d93|sha256:624e1831580401b3dd9b917179564ff1ce2fe5d97b55f5af7389486ed514a75f
 '
 # ══ 🔴 마이그레이션 헬퍼 넷 — 39-deploy.sh 에서 줄 단위로 가져왔다 ════
 #    40~50번에는 이 넷이 없다(그 열 번은 마이그레이션이 0건이었다).
@@ -409,6 +409,10 @@ AS_WANT=124
 AS_NEW_MIGS='0121 0122 0123'
 # 묶음이 들어오는 자리 — 51-build.sh 가 만든 as-migrations.tar.gz 를 여기로 scp 한다.
 MIGTAR=$D/setup/incoming/as-migrations.tar.gz
+# 🔴 51-build.sh --go 가 2026-11-04 에 찍은 값. 묶음이 옮기다 끊겼는지를 이 둘로 가른다.
+MIGTAR_SIZE=2383054
+MIGTAR_MD5=c015011297edbcd4f438a3bbe3309e2a
+INCOMING=$D/setup/incoming
 # 🔴 적용 뒤 **값으로** 확인할 것들(겉이 아니라 결과).
 #    0121 표 하나 · 0122 칸 하나 · 0123 칸 하나와 인덱스 하나.
 AS_NEW_TABLE=procedure_case_execution_edges
@@ -1534,6 +1538,58 @@ else
   doubt
 fi
 
+# ── 2. 🔴 A/S 마이그레이션 볼륨 — 이 배포의 심장 ─────────────────────
+printf '\n== 2-나. 🔴 A/S 마이그레이션 볼륨 (%s → %s 의 %s)\n' "$MIGDIR" "$AS_TOOLS_SVC" "$IMG_MIGDIR"
+printf '%s\n' "🔴 .sql 만으로는 모자라다 — **meta/_journal.json 과 snapshot 까지** 가야 한다."
+printf '%s\n' "   목록에 없는 .sql 은 drizzle 이 아예 모르고, 적용이 **0건으로 조용히 끝난다.**"
+read_migdir
+say "$MIGDIR — .sql ${MIG_N_SQL}장 · meta/_journal.json 의 idx ${MIG_N_J}개"
+case "$MIG_STATE" in
+  DONE) ok "볼륨이 **이미 $AS_WANT 이다** — 묶음을 이미 풀었거나 다시 돌리는 중이다"
+        check_new_migs || true ;;
+  OLD)  if [ "$MODE" = check ]; then
+          hm "볼륨이 아직 $AS_HAVE 이다 — **올리기 전이면 정상**이다. --migrate 가 갈아 끼운다"
+        else
+          ok "볼륨이 $AS_HAVE 이다 (--migrate 가 $AS_WANT 로 갈아 끼운다)"
+        fi
+        if [ -s "$MIGTAR" ]; then
+          say "묶음이 있다: $MIGTAR ($(stat -c %s "$MIGTAR" 2>/dev/null)바이트 · md5 $(md5sum "$MIGTAR" | awk '{print $1}'))"
+          # 🔴 풀기 전에 **안을 센다.** 「파일이 왔다」와 「담겼다」는 다르다.
+          TSQL=$(tar -tzf "$MIGTAR" 2>/dev/null | grep -c '^drizzle/[0-9].*\.sql$')
+          TJRN=$(tar -xzOf "$MIGTAR" drizzle/meta/_journal.json 2>/dev/null | grep -o '"idx"' | wc -l | tr -d ' ')
+          say "묶음 안 — .sql ${TSQL:-?}장 · idx ${TJRN:-?}개"
+          if [ "${TSQL:-0}" = "$AS_WANT" ] && [ "${TJRN:-0}" = "$AS_WANT" ]; then
+            ok "묶음 안이 $AS_WANT 이다 (풀면 볼륨이 맞아진다)"
+          else
+            bad "🔴 묶음 안이 .sql ${TSQL:-?} · idx ${TJRN:-?} 다 — **$AS_WANT 이어야 한다.** 다시 묶어 올리세요"
+            doubt
+          fi
+          if [ -n "${MIGTAR_MD5:-}" ] && [ -n "${MIGTAR_SIZE:-}" ]; then
+            M=$(md5sum "$MIGTAR" | awk '{print $1}')
+            S=$(stat -c %s "$MIGTAR" 2>/dev/null)
+            [ "$S" = "$MIGTAR_SIZE" ] && ok "묶음 크기가 구울 때와 같다  [배포본]" \
+              || bad "묶음 크기가 다르다 (${S} ≠ ${MIGTAR_SIZE}) — 옮기다 끊겼다  [배포본]"
+            [ "$M" = "$MIGTAR_MD5" ] && ok "묶음 md5 가 구울 때와 같다  [배포본]" \
+              || bad "묶음 md5 가 다르다 — 옮기다 깨졌다  [배포본]"
+          else
+            hm "묶음의 잰 값이 이 파일에 없다 — 39-build.sh 의 출력에서 MIGTAR_SIZE·MIGTAR_MD5 를 채우세요"
+          fi
+        else
+          if [ "$MODE" = check ]; then
+            hm "묶음이 아직 없다: $MIGTAR — **올리기 전이면 정상**이다"
+          else
+            bad "🔴 묶음이 없다: $MIGTAR — 이것 없이는 $AS_WANT 로 못 간다"
+          fi
+          say "올리는 법 (개발 PC · PowerShell):"
+          cmd "cd \"C:/Users/희만/Desktop/Development/_images-48\""
+          cmd "scp -O as-migrations.tar.gz dss-nas:$INCOMING/"
+          say "🔴 tar 에 드라이브 문자(C:)를 주지 마세요 — 원격 호스트로 읽습니다."
+        fi ;;
+  NODIR) bad "🔴 $MIGDIR 폴더가 **없다** — compose 가 $AS_TOOLS_SVC 에 붙이는 그 폴더다" ;;
+  *)    bad "🔴 볼륨이 $AS_HAVE 도 $AS_WANT 도 아니다 (.sql ${MIG_N_SQL} · idx ${MIG_N_J})"
+        say "→ 고치지 말고 **먼저 알리세요.**"; doubt ;;
+esac
+
 # ── 3. 들여올 이미지 둘 ───────────────────────────────────────────────
 printf '\n== 3. 들여올 이미지 둘 (앱 하나 · 도구 하나)\n'
 BLANK=0
@@ -1638,7 +1694,7 @@ if [ "$MODE" = preload ]; then
 fi
 
 if [ "$MODE" = migrate ]; then
-  printf '\n== 7. 🔴 마이그레이션 — A/S DB 가 바뀐다 (%s → %s)\n' "$AS_HAVE" "$AS_WANT"
+  printf '\n== 4-나. 🔴 마이그레이션 — A/S DB 가 바뀐다 (%s → %s)\n' "$AS_HAVE" "$AS_WANT"
   if [ "$FAIL" != 0 ]; then printf '\n🔴 위에 ✗ 가 있다 — **DB 를 안 건드리고 멈춘다.**\n'; exit 1; fi
 
   # ── 7-ㄱ. 🔴 지금 이 자리에서 덤프를 뜬다 ───────────────────────────
