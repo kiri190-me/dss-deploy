@@ -8,8 +8,11 @@
 #     bash "/c/Users/희만/Desktop/Development/dss-deploy/nas/setup/51-build.sh" --check
 #     bash "/c/Users/희만/Desktop/Development/dss-deploy/nas/setup/51-build.sh" --go
 #
-#   🔵 PowerShell 에서도 돈다 — 49번까지 그렇게 돌렸다:
-#     & bash.exe "C:\Users\희만\Desktop\Development\dss-deploy\nas\setup\51-build.sh" --check
+#   🔴 PowerShell 에서 부를 때는 **슬래시로** 적는다(2026-11-04 에 실제로 걸렸다):
+#     & bash.exe "C:/Users/희만/Desktop/Development/dss-deploy/nas/setup/51-build.sh" --check
+#     역슬래시로 적으면 bash 가 그 역슬래시를 먹어 경로가 통째로 붙어 버린다 —
+#     "C:Users희만Desktop…" 가 되어 No such file or directory 가 난다.
+#     49번까지 머리말에 역슬래시 예시가 적혀 있었는데 **그게 틀린 줄이었다.**
 #
 #   둘째 인자로 tar 를 둘 폴더를 바꿀 수 있다(기본값은 Development/_images-48):
 #     bash .../51-build.sh --go "/d/배포본/_images-48"
