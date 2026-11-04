@@ -1914,6 +1914,11 @@ fi
 #     되돌린다 — 도구는 :10 그대로 둔다(39·41~49번과 같은 판단).
 #  🔴 **app-po 줄은 어느 모드에서도 안 건드린다.**
 printf '\n== 5. compose 의 image: 줄을 바꾼다\n'
+# 🔵 고치기 **전**의 tools-as 가 이미 새 태그인가 — 아래 WANT_DIFF 가 이 값으로 갈린다.
+TOOLS_WAS_NEW=0
+TWL=$(img_line "$AS_TOOLS_SVC" 2>/dev/null || true)
+if [ -n "${TWL:-}" ] && [ "$(tag_at "$TWL")" = "$TOOLS_NEW" ]; then TOOLS_WAS_NEW=1; fi
+say "고치기 전 $AS_TOOLS_SVC — $(tag_at "${TWL:-0}") (이미 새 태그인가: $TOOLS_WAS_NEW)"
 if [ "$FAIL" != 0 ]; then printf '\n🔴 위에 ✗ 가 있다 — **아무것도 안 고치고 멈춘다.**\n'; exit 1; fi
 
 cp "$CF" "$BK" || { printf '🔴 사본을 못 떴다. 멈춘다.\n'; exit 1; }
@@ -1975,7 +1980,18 @@ say "줄 수 $L0 → $L1 · image: 줄 $IMGS0 → $IMGS1 · 달라진 image: 줄
 #    --rollback 은 하나(app-as)만 달라져야 한다.
 #    🔴 49번은 3/2 였다 — **PO 가 빠져서 하나씩 줄었다.** 여기가 PO 를 안 건드렸다는
 #       기계적 증거다.
-if [ "$MODE" = go ]; then WANT_DIFF=2; else WANT_DIFF=1; fi
+# 🔴 **단계마다 기대값이 다르다.** 47번까지는 --go 가 app-as 와 tools-as 를
+#    한꺼번에 바꿔서 늘 2 였다. 이 판에는 --migrate 가 생겼고 **그 단계가
+#    tools-as 를 먼저 :11 로 바꾼다** — 그러면 --go 에서 달라지는 것은 app-as
+#    하나뿐이다. 2 로 박아 두면 제대로 동작한 --go 가 ✗ 를 받고 되돌아간다
+#    (2026-11-04 에 실제로 그렇게 멈췄다).
+#    🔵 그래서 **세어서 정한다** — 고치기 전의 tools-as 가 이미 새 태그면 1,
+#    아니면 2. 사람이 --migrate 를 건너뛰고 --go 를 먼저 불러도 맞는다.
+if [ "$MODE" = go ]; then
+  if [ "$TOOLS_WAS_NEW" = "1" ]; then WANT_DIFF=1; else WANT_DIFF=2; fi
+else
+  WANT_DIFF=1
+fi
 [ "$((DIFFN / 2))" = "$WANT_DIFF" ] && ok "image: 줄이 꼭 ${WANT_DIFF}개만 달라졌다 (우리 것 · app-po 는 안 건드렸다)" \
   || { bad "image: 줄이 $((DIFFN / 2))개 달라졌다 — ${WANT_DIFF}개를 기대했다. 남의 것을 건드렸을 수 있다"; doubt; }
 dc config -q >/dev/null 2>&1 && ok "compose 문법이 통과했다" || bad "문법이 깨졌다"
