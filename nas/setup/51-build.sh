@@ -457,7 +457,7 @@ printf '%s\n' "  저장소 뿌리: $DEV"
 printf '%s\n' "  tar 둘을 둘 자리: $OUT"
 printf '%s\n' "  굽는 것: dss-as:4.4 · dss-as-tools:11  (저장소 하나 · 이미지 둘)"
 printf '%s\n' "  🔴 PO 는 **안 굽는다** — HEAD 가 기준 SHA 그대로다(2절이 다시 잰다)"
-printf '%s\n' "  🔴 이번 판은 **양식 파일 다섯도 올린다** (8절 · 꼬리말)"
+printf '%s\n' "  🔵 이번 판은 **양식을 한 장도 안 올린다** — .xlsx 변경이 0줄이다(8절이 센다)"
 printf '%s\n' "────────────────────────────────────────────────────────────"
 
 # ── 1. 도커가 도는가 ──────────────────────────────────────────────────
@@ -683,7 +683,7 @@ else
   bad "A/S Dockerfile 이 package.json 을 안 담는다 — npm run 이 Missing script 로 죽는다"
 fi
 if grep -qE '^COPY .*src \./src' "$ASDIR/Dockerfile" 2>/dev/null; then
-  ok "tools 스테이지가 src/ 를 담는다 (닫힘 안에서 바뀐 여섯이 들어가는 길)"
+  ok "tools 스테이지가 src/ 를 담는다 (닫힘 안에서 바뀐 여덟이 들어가는 길)"
 else
   bad "A/S Dockerfile 이 src/ 를 안 담는다 — 이번에 고친 코드가 통째로 빠진다"
 fi
@@ -871,7 +871,7 @@ for f in src/lib/domain/quote-change-detection.ts \
   esac
 done
 if [ "$OUTSIDE_SEEN" = "4" ] && [ "$OUTSIDE_OK" = "4" ]; then
-  ok "새 파일 넷이 다 닫힘 밖이다 (도구가 안 부른다 — 굽는 까닭은 ㄴ 의 여섯과 ㄷ 의 일흔둘이다)"
+  ok "새 파일 넷이 다 닫힘 밖이다 (도구가 안 부른다 — 굽는 까닭은 ㄴ 의 여덟과 ㄷ 의 235다)"
 else
   note "새 파일을 ${OUTSIDE_SEEN}개 봤고 그중 ${OUTSIDE_OK}개가 밖이다 — 넷/넷을 기대했다. 사람이 보세요"
 fi
@@ -1272,10 +1272,10 @@ for row in $(printf '%s\n' "$SITES" | tr -d ' ' | grep -v '^$'); do
     if [ "${got:-0}" = "3" ]; then printf '  ✓ npm 명령 셋이 이미지 안에 있다 (Missing script 가 안 난다)\n'
     else printf '  ✗ 명령이 %s/3 개다 — **옛 package.json 이 담겼거나 명령이 사라졌다.** 그날 npm error Missing script 가 난다\n' "${got:-0}"; IMGFAIL=1; fi
     # ③ 🔴 **닫힘 안에서 바뀐 여섯이 다 담겼는가.** 하나라도 없으면 ✗.
-    v=$(docker run --rm --entrypoint sh "$TAG" -c 'for f in /app/src/lib/domain/notifications.ts /app/src/lib/domain/quote-approval-rules.ts /app/src/lib/domain/quote-new-link.ts /app/src/lib/domain/service-report-body-wrap.ts /app/src/lib/xlsx/service-report-template.ts /app/src/lib/xlsx/sheet-rows.ts; do if [ -f "$f" ]; then echo "yes $f"; else echo "no  $f"; fi; done' 2>/dev/null | tr -d '\r')
+    v=$(docker run --rm --entrypoint sh "$TAG" -c 'for f in /app/src/lib/domain/due-date-inversion.ts /app/src/lib/domain/notifications.ts /app/src/lib/domain/shipment-finished.ts /app/src/lib/validation/repair-case-update-input.ts /app/src/lib/domain/procedure-next-procedure-link.ts /app/src/lib/db/mutations/procedure-next-procedure-link-context.ts; do if [ -f "$f" ]; then echo "yes $f"; else echo "no  $f"; fi; done' 2>/dev/null | tr -d '\r')
     printf '%s\n' "$v" | sed 's/^/      /'
     got=$(printf '%s\n' "$v" | grep -c '^yes ')
-    if [ "${got:-0}" = "6" ]; then printf '  ✓ 닫힘 안에서 바뀐 여섯이 다 들어갔다\n'
+    if [ "${got:-0}" = "6" ]; then printf '  ✓ 닫힘에서 바뀐 넷과 이번 판의 새 파일 둘이 다 들어갔다\n'
     else printf '  ✗ 여섯 중 %s개만 들어갔다 — src/ 가 온전히 안 담겼다\n' "${got:-0}"; IMGFAIL=1; fi
     # ④ 🔵 48번이 올린 도구 넷 — **빼지 않는다.** 이번 판에 안 바뀌었지만 있어야 부른다.
     v=$(docker run --rm --entrypoint sh "$TAG" -c 'for f in /app/scripts/check-due-date-inverted.ts /app/scripts/check-requested-due-date-sync.ts /app/scripts/check-target-shipment-missing.ts /app/scripts/lib/requested-due-date-sync-survey.ts; do if [ -f "$f" ]; then echo "yes $f"; else echo "no  $f"; fi; done' 2>/dev/null | tr -d '\r')
@@ -1495,69 +1495,51 @@ printf '%s' "$TARTABLE"
 echo "  🔴 위 두 줄로 TARS 의 두 줄을 통째로 갈아 끼운다."
 echo "$MIGLINE"
 echo "  🔴 마지막 줄(묶음)은 51-deploy.sh 의 MIGTAR_SIZE · MIGTAR_MD5 에 넣는다."
-printf '\n%s\n' "════════ 51-deploy.sh 의 TPL_UP 에 적힌 값과 맞대어 볼 것 (다섯 줄) ════════"
-printf '%s' "$TPLTABLE"
-printf '%s\n' "  🔵 이 다섯 줄이 51-deploy.sh 의 TPL_UP 표와 **글자 그대로 같아야** 한다."
-printf '%s\n' "     다르면 51-deploy.sh 의 그 다섯 줄을 위 값으로 갈아 끼우세요."
-
-printf '\n%s\n' "✅ 둘 다 구웠다. tar · 로그 · 양식이 여기 있다:"
+printf '\n%s\n' "✅ 둘 다 구웠다. tar · 묶음 · 로그가 여기 있다:"
 printf '%s\n' "    $OUT"
 ls -1 "$OUT" 2>/dev/null | sed 's/^/      /'
-printf '%s\n' "    templates/"
-ls -1 "$OUT/templates" 2>/dev/null | sed 's/^/        /'
 printf '\n%s\n' "══════════════════════════════════════════════════════════════"
-printf '%s\n' "🔴 **올리는 차례 — 양식이 먼저다**"
+printf '%s\n' "🔴 **올리는 차례 — 이번 판은 양식이 없다. 마이그레이션이 있다.**"
 printf '%s\n' "══════════════════════════════════════════════════════════════"
-printf '%s\n' "  까닭: 새 보고서 코드는 양식의 라벨 글상자를 **못 찾으면 던진다.** 운영에"
-printf '%s\n' "  놓인 양식의 속을 이 스크립트는 못 보므로, **모르는 채로 코드를 먼저 올리지"
-printf '%s\n' "  않는다.** 거꾸로 「옛 코드 + 새 양식」은 견적서 번호가 화면에서만 잠깐"
-printf '%s\n' "  어긋날 뿐이고 문서는 멀쩡하다 — 그쪽이 재서 안전한 쪽이다."
-printf '%s\n' "  🔵 양식은 볼륨에 놓인 파일이고 앱이 쓸 때마다 다시 읽는다. **컨테이너를"
-printf '%s\n' "     안 내려도 바뀐다.**"
+printf '%s\n' "  🔵 양식은 **한 장도 안 올립니다** — 47번이 올린 다섯이 운영에 그대로 있고"
+printf '%s\n' "     이번 범위에 .xlsx 변경이 한 줄도 없습니다(8절에서 11개 md5 를 맞댔습니다)."
+printf '%s\n' "  🔴 대신 **마이그레이션 3건**이 있습니다(0121·0122·0123). 운영 기록 121 → 124."
+printf '%s\n' "     as-migrations.tar.gz 를 **따로** 올려야 합니다 — 안 올리면 이미지를 다"
+printf '%s\n' "     올려도 db:migrate 가 빈 폴더를 읽고 **0건으로 조용히 끝납니다.**"
+printf '%s\n' ""
+printf '%s\n' "  🔴 PowerShell 경로는 **슬래시**로 적습니다. 역슬래시는 bash·scp 가 먹습니다."
 printf '%s\n' ""
 printf '%s\n' "  ① (개발 PC · PowerShell) **스크립트부터 올린다**"
-printf '%s\n' "       cd C:\\Users\\희만\\Desktop\\Development"
-printf '%s\n' "       scp -O dss-deploy\\nas\\setup\\51-deploy.sh dss-nas:/volume1/dss/setup/"
-printf '%s\n' "       Get-FileHash -Algorithm MD5 dss-deploy\\nas\\setup\\51-deploy.sh"
+printf '%s\n' "       cd \"C:/Users/희만/Desktop/Development/dss-deploy/nas/setup\""
+printf '%s\n' "       scp -O 51-deploy.sh dss-nas:/volume1/dss/setup/"
+printf '%s\n' "       Get-FileHash -Algorithm MD5 51-deploy.sh"
 printf '%s\n' ""
-printf '%s\n' "  ② (NAS) 지금 상태를 재고 **운영 양식의 md5 를 본다**"
+printf '%s\n' "  ② (NAS) 지금 상태를 잰다 — 아직 아무것도 안 바뀐다"
 printf '%s\n' "       sudo -i"
 printf '%s\n' "       bash /volume1/dss/setup/51-deploy.sh            ← --check"
 printf '%s\n' "       bash /volume1/dss/setup/51-deploy.sh --count    ← 올리기 전 수"
+printf '%s\n' "     🔵 2절의 마이그레이션 수가 **121** 로 나와야 합니다(아직 --migrate 전)."
 printf '%s\n' ""
-printf '%s\n' "  ③ (NAS) **양식을 백업하고 받을 자리를 만든다**"
-printf '%s\n' "       bash /volume1/dss/setup/51-deploy.sh --templates-prep"
+printf '%s\n' "  ③ (개발 PC · PowerShell) **tar 둘과 묶음을 보낸다 — 한 줄에 하나씩**"
+printf '%s\n' "       cd \"$(printf '%s' "$OUT" | sed 's|^/c/|C:/|')\""
+printf '%s\n' "       scp -O dss-as-4.4.tar dss-nas:/volume1/dss/images/"
+printf '%s\n' "       scp -O dss-as-tools-11.tar dss-nas:/volume1/dss/images/"
+printf '%s\n' "       scp -O as-migrations.tar.gz dss-nas:/volume1/dss/setup/incoming/"
+printf '%s\n' "     🔴 **-O 를 빼지 마세요** — DSM 에 sftp 서버가 없어 -O 없이는 실패합니다."
+printf '%s\n' "     🔴 묶음을 빠뜨리면 마이그레이션이 0건으로 끝납니다."
 printf '%s\n' ""
-printf '%s\n' "  ④ (개발 PC · PowerShell) **양식 다섯을 .incoming 으로 보낸다**"
-printf '%s\n' "       cd $(to_win "$OUT")\\templates"
-printf '%s\n' "       scp -O \"제너레이터 OH 견적서.xlsx\" dss-nas:/volume1/dss/as-templates-incoming/"
-printf '%s\n' "       scp -O \"검사보고서_매쳐.xlsx\" dss-nas:/volume1/dss/as-templates-incoming/"
-printf '%s\n' "       scp -O \"검사보고서_제너레이터.xlsx\" dss-nas:/volume1/dss/as-templates-incoming/"
-printf '%s\n' "       scp -O \"수리보고서_매쳐.xlsx\" dss-nas:/volume1/dss/as-templates-incoming/"
-printf '%s\n' "       scp -O \"수리보고서_제너레이터.xlsx\" dss-nas:/volume1/dss/as-templates-incoming/"
-printf '%s\n' "     🔴 **한 줄에 하나씩입니다.** 이름에 공백과 한글이 둘 다 있어 별표(*)로"
-printf '%s\n' "        묶으면 PowerShell 이 어떻게 쪼갤지 장담할 수 없습니다."
-printf '%s\n' "     🔴 **scp 에는 -O 를 붙입니다.** DSM 에 sftp 서버가 없어 -O 없이는 실패합니다."
-printf '%s\n' "     🔴 **드라이브 문자를 scp 의 보내는 쪽에 주지 마세요** — 폴더로 들어가서 보냅니다."
-printf '%s\n' ""
-printf '%s\n' "  ⑤ (NAS) **md5 를 맞대고 제자리로 옮긴다** (여기가 유일하게 양식을 쓰는 단계)"
-printf '%s\n' "       bash /volume1/dss/setup/51-deploy.sh --templates-apply"
-printf '%s\n' ""
-printf '%s\n' "  ⑥ (개발 PC · PowerShell) **이미지 tar 둘을 보낸다**"
-printf '%s\n' "       cd $(to_win "$OUT")"
-printf '%s\n' "       scp -O dss-as-4.4.tar dss-as-tools-11.tar dss-nas:/volume1/dss/images/"
-printf '%s\n' ""
-printf '%s\n' "  ⑦ (NAS) **들여놓고 갈아 끼운다**"
+printf '%s\n' "  ④ (NAS) **들여놓고 → 마이그레이션 → 갈아 끼운다**"
 printf '%s\n' "       bash /volume1/dss/setup/51-deploy.sh --preload"
 printf '%s\n' "       bash /volume1/dss/setup/51-deploy.sh            ← 다시 --check"
+printf '%s\n' "       bash /volume1/dss/setup/51-deploy.sh --migrate  🔴 DB 가 바뀐다"
 printf '%s\n' "       bash /volume1/dss/setup/51-deploy.sh --go       ⏱ 정지 창"
 printf '%s\n' "       bash /volume1/dss/setup/51-deploy.sh --count    ← 올린 뒤 수"
+printf '%s\n' "     🔴 **--migrate 와 --go 는 따로 부릅니다** — 마이그레이션이 덜 된 DB 에"
+printf '%s\n' "        새 판이 붙으면 안 됩니다."
+printf '%s\n' "     🔵 --migrate 는 먼저 **덤프를 뜨고**, 돌리기 직전에 **20초 취소 창**을 줍니다."
 printf '%s\n' ""
-echo "🔴 **마이그레이션 3건이다**(0121·0122·0123). 운영 기록 121 → 124."
-echo "   as-migrations.tar.gz 를 **따로** 올려야 한다 — 안 올리면 적용이 0건으로 끝난다:"
-echo "       scp -O as-migrations.tar.gz dss-nas:/volume1/dss/setup/incoming/"
-echo "   그리고 차례가 하나 는다:  --preload → --check → **--migrate** → --go"
-printf '%s\n' "🔴 **되돌리기**: --rollback 은 **이미지만** 되돌립니다. 양식은 **자동으로 안**"
-printf '%s\n' "   **돌아갑니다** — --templates-prep 가 만든 백업 폴더에서 사람이 되돌립니다."
-printf '%s\n' "   그 폴더 이름은 --templates-prep 가 찍어 줍니다."
+printf '%s\n' "🔴 **되돌리기**: --rollback 은 **이미지만** 되돌립니다. 🔴 **마이그레이션은 안**"
+printf '%s\n' "   **돌아갑니다** — 되돌릴 길은 --migrate 가 뜬 덤프뿐이고, 그 경로를 --migrate 가"
+printf '%s\n' "   찍어 줍니다. 🔵 다만 0121~0123 은 **더하기만 하는 판**이라(표 하나 · 칸 셋 ·"
+printf '%s\n' "   인덱스 하나), 앱만 옛 판으로 되돌려도 옛 코드는 새 칸을 안 읽어 그냥 돕니다."
 printf '%s\n' "────────────────────────────────────────────────────────────"
