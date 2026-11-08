@@ -276,15 +276,13 @@ ENV_PO=$D/deploy/env/po.env
 
 # ══ 🔴 tar 둘의 지문 — [배포본] 55-build.sh 가 굽고 **바로 잰 값**을 넣는다 ══
 #   tar 이름|바이트|md5|Config 지문
-#   🔴 **아직 안 채웠다.** 55-build.sh --go 가 끝에 찍어 주는 **두 줄**로 아래
-#      두 줄을 통째로 갈아 끼우세요.
+#   🔵 **채웠다** — 2026-11-09 01:32 에 55-build.sh --go 가 굽고 바로 잰 값이다
+#      (구운 것 2/2 · 실패 0 · 이미지 안 검사 전부 통과).
 #   🔴 비어 있으면 3절이 **--check·--rollback 에서는 ? · --preload·--go 에서는 ✗**
 #      로 센다. 🔵 막는 것은 **✗ 뿐이다** — ? 는 아무것도 안 막는다.
-#   🔵 이름만이라도 적어 두는 까닭: 줄이 아예 없으면 4절(--preload)이 **아무것도
-#      안 싣고 조용히 끝난다.** 이름이 있으면 싣기는 제대로 된다.
 TARS='
-dss-as-4.8.tar|||
-dss-as-tools-15.tar|||
+dss-as-4.8.tar|134617600|e8ec1c2cbfa3754b3ddfb528bb4a6ed1|sha256:2a985703be567cc6e6f8dee5a449a484601f208eb2159f03e3e214c77fd9d5b6
+dss-as-tools-15.tar|225323520|d46556f6dbae24e5b6278e599d684b57|sha256:3073fe20fe15cc619526348b08144445e49b145423d902112f392defa8653f66
 '
 TARS_WANT=2
 
@@ -328,9 +326,9 @@ MIG_DROP_WANT=0
 #    그 안에만 있다. drizzle/ 은 이미지에 안 굽고 볼륨으로 붙기 때문이다.
 MIGTAR=$D/setup/incoming/as-migrations.tar.gz
 INCOMING=$D/setup/incoming
-# 🔴 55-build.sh --go 가 찍어 주는 값. **아직 안 채웠다.** 비워 두면 ? 로만 센다.
-MIGTAR_SIZE=
-MIGTAR_MD5=
+# 🔵 55-build.sh --go 가 굽고 바로 잰 값(2026-11-09 01:32). 묶음 안 .sql 127 · idx 127.
+MIGTAR_SIZE=2471329
+MIGTAR_MD5=ddec2e73f6ef979b6983dd929494eab9
 
 # ══ 🔴 **이번 판이 만드는 열** — 단계마다 기대가 다르다 ═══════════════
 #   🔴 --migrate **전에는 하나도 없고**, **뒤에는 다섯이 다 있어야** 한다.
