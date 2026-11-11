@@ -986,7 +986,7 @@ inventory_gateway_check() { # 1 strict|soft
 #      **늘 참인 검사**였다(아무것도 안 재는 ✓). 이번 판을 실제로 재는 것은
 #      **이번 판이 바꾼 20개**와 **이번 판의 표식 다섯**이다.
 as_tools_inside_check() {
-  local v got seen c nmiss nwrite ntx nok
+  local v got seen c nmiss nwrite ntx nok probe lines
   printf '\n    ── %s 안을 센다 (겉이 아니라 결과 · 🔵 소스가 **글자 그대로** 있다)\n' "$AS_TOOLS_NEW"
   v=$("$DOCKER" run --rm --entrypoint sh "$AS_TOOLS_NEW" -c "test -f /app/package.json && echo yes || echo no" 2>/dev/null | tr -d '\r')
   say "/app/package.json: ${v:-못 읽음} (기대 yes)"
@@ -1035,11 +1035,33 @@ as_tools_inside_check() {
   #    🔴 「파일이 담겼다」와 「그 시험이 돈다」는 다른 말이다 — 이 저장소의 시험은
   #       글롭이 아니라 목록에 적어야 돈다. 담겨 있고 등록이 빠지면 **오류 없이
   #       조용히 안 돈다.** 🔵 여기서 시험을 돌리지는 않는다(운영 상자다).
-  v=$("$DOCKER" run --rm --entrypoint sh "$AS_TOOLS_NEW" -c 'set -f; for t in src/components/common/CheckboxFilterDropdown.test.tsx src/components/common/checkbox-filter-dropdown.test.ts src/components/misc-cases/misc-case-multi-select-filters.test.ts src/components/repair-cases/repair-case-multi-select-filters.test.ts src/lib/domain/in-house-filter-matches-dashboard.test.ts; do if grep -rqFx "$t" /app/scripts/test-lists 2>/dev/null; then echo "yes $t"; else echo "no  $t"; fi; done' 2>/dev/null | tr -d '\r')
+  #
+  #    🔴 **목록 파일은 CRLF 다 — 줄 전체로 맞대는 「-Fx」 가 「\r」 때문에 안 맞는다.**
+  #       🔴 2026-11-11 개발 PC 의 「--go」 에서 같은 줄이 **0/5 로 가짜 ✗** 를 냈다.
+  #          이미지는 멀쩡했고 **검사가 틀렸다.**
+  #       🔴 개발 PC 의 Git Bash grep 은 \r 를 스스로 걷어내 **거기서는 안 드러난다.**
+  #          리눅스 컨테이너의 GNU grep 은 안 그런다 — NAS 가 바로 그쪽이다.
+  #       🔵 그래서 **「tr -d」 로 \r 를 걷어낸 뒤** 맞댄다. 「-Fx」 는 **살린다** —
+  #          경로 일부만 겹치는 다른 줄에 걸리면 안 된다.
+  #    🔴 **cat 의 글롭은 「set -f」 앞에서 푼다** — 뒤에 두면 글롭이 꺼져 있어
+  #       「*.txt」 가 글자 그대로 남고 **파일을 한 줄도 못 읽는다.**
+  #    🔴 **없는 경로 하나를 일부러 함께 묻는다** — 그 줄이 no 로 안 나오면
+  #       「무조건 yes」인 검사라는 뜻이고, 다섯의 yes 도 못 믿는다.
+  v=$("$DOCKER" run --rm --entrypoint sh "$AS_TOOLS_NEW" -c 'L=$(cat /app/scripts/test-lists/*.txt 2>/dev/null | tr -d "\r"); echo "lines $(printf "%s\n" "$L" | grep -c .)"; set -f; for t in src/components/common/CheckboxFilterDropdown.test.tsx src/components/common/checkbox-filter-dropdown.test.ts src/components/misc-cases/misc-case-multi-select-filters.test.ts src/components/repair-cases/repair-case-multi-select-filters.test.ts src/lib/domain/in-house-filter-matches-dashboard.test.ts src/__dss_probe_not_registered__.test.ts; do n=$(printf "%s\n" "$L" | grep -cFx -- "$t"); if [ "${n:-0}" -ge 1 ]; then echo "yes $t"; else echo "no  $t"; fi; done' 2>/dev/null | tr -d '\r')
   printf '%s\n' "$v" | sed 's/^/      /'
   got=$(printf '%s\n' "$v" | grep -c '^yes ' || true)
-  if [ "${got:-0}" = "$AS_NEW_TESTS_WANT" ]; then
+  probe=$(printf '%s\n' "$v" | grep -c '^no  src/__dss_probe_not_registered__' || true)
+  lines=$(printf '%s\n' "$v" | sed -n 's/^lines //p')
+  say "\\r 를 걷어내고 읽은 목록 줄 수: ${lines:-?}개 (0 이면 아래 수가 전부 못 믿을 값이다)"
+  if ! isnum "${lines:-}" || [ "${lines:-0}" -lt 100 ]; then
+    bad "🔴 이미지 안 목록을 ${lines:-못 읽음}줄밖에 못 읽었다 — **빈 결과는 삼켜진 오류일 수 있다**"
+    doubt
+  elif [ "${probe:-0}" != "1" ]; then
+    bad "🔴 **없는 경로가 no 로 안 나왔다** — 줄 전체 일치가 깨졌다. 아래 yes 도 못 믿는다"
+    doubt
+  elif [ "${got:-0}" = "$AS_NEW_TESTS_WANT" ]; then
     ok "새 시험 $AS_NEW_TESTS_WANT 개가 이미지 안의 목록에도 등록돼 있다 (담기기만 한 것이 아니다)"
+    say "🔵 없는 경로 하나는 **no** 로 나왔습니다 — 「무조건 yes」인 검사가 아닙니다."
   else
     bad "🔴 등록된 것이 ${got:-0}/${AS_NEW_TESTS_WANT} 개다 — **옛 목록 파일이 담겼다**"
     doubt

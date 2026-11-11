@@ -1268,7 +1268,25 @@ fi
 # 🔴 **새 시험 다섯이 목록 파일에 등록돼 있는가** — 등록을 빠뜨리면 **오류 없이
 #    조용히 안 돈다**(이 저장소에 기록된 함정). 🔵 시험을 돌리지는 않는다 —
 #    이 파일은 아무것도 안 바꾸고 아무것도 안 돌린다. **등록 여부만** 본다.
+#
+# 🔴 **목록 파일은 CRLF 다 — 줄 전체로 맞대는 「-Fx」 가 「\r」 때문에 안 맞는다.**
+#    [실측 2026-11-11] components.txt 1322줄 · unit.txt 1938줄이 **전부 CRLF** 다.
+#    🔴 그래서 **반드시 「tr -d」 로 \r 를 걷어낸 뒤에** 맞댄다.
+#    🔴 **개발 PC 에서는 이 결함이 안 드러난다** — Git Bash 의 grep 은 파일을 텍스트
+#       모드로 열어 \r 를 스스로 걷어내므로 「-Fx」 가 그냥 맞는다. **리눅스 컨테이너
+#       안의 GNU grep 은 안 그런다.** 2026-11-11 「--go」 에서 이미지 안 검사가
+#       **0/5 로 가짜 ✗** 를 냈다(이미지는 멀쩡했다). 그래서 **여기도 같은 처방**을
+#       해 둔다 — 두 자리가 같은 잣대를 써야 한쪽이 거짓말을 안 한다.
+#    🔵 「-Fx」(줄 전체 일치)는 **살린다.** 경로 일부만 겹치는 다른 줄에 걸리면 안 된다.
+#
+# 🔴 **「무조건 yes」인 검사가 되지 않게** 없는 경로 하나를 **일부러 함께 묻는다.**
+#    그 한 줄이 no 로 안 나오면 아래 다섯의 yes 도 못 믿는다.
+REG_PROBE_MISS=src/__dss_probe_not_registered__.test.ts
 printf '\n  ── 🔴 새 시험 다섯이 scripts/test-lists 에 **등록돼 있는가** (빠지면 조용히 안 돈다)\n'
+say "🔴 목록 파일은 **CRLF** 다 — \\r 를 걷어낸 뒤 줄 전체로 맞댄다(그냥 -Fx 면 안 맞는다)."
+REG_LIST=$(cat "$ASDIR"/scripts/test-lists/*.txt 2>/dev/null | tr -d '\r')
+REG_LINES=$(printf '%s\n' "$REG_LIST" | grep -c . || true)
+say "목록 파일을 \\r 걷어내고 ${REG_LINES:-0}줄 읽었다 (0 이면 아래 수가 전부 못 믿을 값이다)"
 REG_SEEN=0; REG_OK=0
 for t in src/components/common/CheckboxFilterDropdown.test.tsx \
          src/components/common/checkbox-filter-dropdown.test.ts \
@@ -1276,12 +1294,20 @@ for t in src/components/common/CheckboxFilterDropdown.test.tsx \
          src/components/repair-cases/repair-case-multi-select-filters.test.ts \
          src/lib/domain/in-house-filter-matches-dashboard.test.ts; do
   REG_SEEN=$((REG_SEEN+1))
-  n=$(grep -rFxc "$t" "$ASDIR/scripts/test-lists" 2>/dev/null | grep -v ':0$' | wc -l | tr -d ' ')
-  printf '      %-62s 목록에 적힌 파일 %s개\n' "$t" "${n:-0}"
+  n=$(printf '%s\n' "$REG_LIST" | grep -cFx -- "$t" || true)
+  printf '      %-62s 목록에 적힌 줄 %s개\n' "$t" "${n:-0}"
   if [ "${n:-0}" -ge 1 ] 2>/dev/null; then REG_OK=$((REG_OK+1)); fi
 done
-if [ "$REG_SEEN" = "5" ] && [ "$REG_OK" = "5" ]; then
-  ok "새 시험 다섯이 전부 목록에 등록돼 있다 (돌 수 있는 상태다)"
+REG_MISS_N=$(printf '%s\n' "$REG_LIST" | grep -cFx -- "$REG_PROBE_MISS" || true)
+printf '      %-62s 목록에 적힌 줄 %s개 (표본 · 기대 0)\n' "$REG_PROBE_MISS" "${REG_MISS_N:-0}"
+if [ "${REG_LINES:-0}" -lt 100 ] 2>/dev/null; then
+  bad "🔴 목록을 ${REG_LINES:-0}줄밖에 못 읽었다 — **빈 결과는 삼켜진 오류일 수 있다.** 멈추세요"
+  doubt
+elif [ "${REG_MISS_N:-1}" != "0" ]; then
+  bad "🔴 **없는 경로가 걸렸다** — 줄 전체 일치가 깨졌다. 아래 다섯의 yes 도 못 믿는다"
+  doubt
+elif [ "$REG_SEEN" = "5" ] && [ "$REG_OK" = "5" ]; then
+  ok "새 시험 다섯이 전부 목록에 등록돼 있다 (돌 수 있는 상태다 · 없는 경로는 안 걸렸다)"
 else
   bad "🔴 등록된 것이 ${REG_OK}/${REG_SEEN} 개다 — 다섯을 기대했다. **빠진 시험은 조용히 안 돈다**"
   doubt
@@ -1839,11 +1865,31 @@ for row in $(printf '%s\n' "$SITES" | tr -d ' ' | grep -v '^$'); do
       #    🔴 「파일이 담겼다」와 「그 시험이 돈다」는 다른 말이다 — 이 저장소의
       #       시험은 글롭이 아니라 목록에 적어야 돈다. 담겨 있고 등록이 빠지면
       #       **오류 없이 조용히 안 돈다.**
-      v=$(docker run --rm --entrypoint sh "$TAG" -c 'set -f; for t in src/components/common/CheckboxFilterDropdown.test.tsx src/components/common/checkbox-filter-dropdown.test.ts src/components/misc-cases/misc-case-multi-select-filters.test.ts src/components/repair-cases/repair-case-multi-select-filters.test.ts src/lib/domain/in-house-filter-matches-dashboard.test.ts; do if grep -rqFx "$t" /app/scripts/test-lists 2>/dev/null; then echo "yes $t"; else echo "no  $t"; fi; done' 2>/dev/null | tr -d '\r')
+      #
+      #    🔴 **목록 파일은 CRLF 다 — 줄 전체로 맞대는 「-Fx」 가 「\r」 때문에 안 맞는다.**
+      #       🔴 2026-11-11 「--go」 에서 이 줄이 **0/5 로 가짜 ✗** 를 냈다. 이미지는
+      #          멀쩡했고(파일명으로 grep 하면 다섯 다 있었다) **검사가 틀렸다.**
+      #       🔴 개발 PC 의 Git Bash grep 은 \r 를 스스로 걷어내서 **거기서는 안
+      #          드러난다.** 리눅스 컨테이너의 GNU grep 은 안 그런다.
+      #       🔵 그래서 **「tr -d」 로 \r 를 걷어낸 뒤** 맞댄다. 「-Fx」 는 **살린다** —
+      #          경로 일부만 겹치는 다른 줄에 걸리면 안 된다.
+      #    🔴 **cat 의 글롭은 「set -f」 앞에서 푼다** — 뒤에 두면 글롭이 꺼져 있어
+      #       「*.txt」 가 글자 그대로 남고 **파일을 한 줄도 못 읽는다.**
+      #    🔴 **없는 경로 하나를 일부러 함께 묻는다** — 그 줄이 no 로 안 나오면
+      #       「무조건 yes」인 검사라는 뜻이고, 다섯의 yes 도 못 믿는다.
+      v=$(docker run --rm --entrypoint sh "$TAG" -c 'L=$(cat /app/scripts/test-lists/*.txt 2>/dev/null | tr -d "\r"); echo "lines $(printf "%s\n" "$L" | grep -c .)"; set -f; for t in src/components/common/CheckboxFilterDropdown.test.tsx src/components/common/checkbox-filter-dropdown.test.ts src/components/misc-cases/misc-case-multi-select-filters.test.ts src/components/repair-cases/repair-case-multi-select-filters.test.ts src/lib/domain/in-house-filter-matches-dashboard.test.ts src/__dss_probe_not_registered__.test.ts; do n=$(printf "%s\n" "$L" | grep -cFx -- "$t"); if [ "${n:-0}" -ge 1 ]; then echo "yes $t"; else echo "no  $t"; fi; done' 2>/dev/null | tr -d '\r')
       printf '%s\n' "$v" | sed 's/^/      /'
       got=$(printf '%s\n' "$v" | grep -c '^yes ' || true)
-      if [ "${got:-0}" = "5" ]; then
+      probe=$(printf '%s\n' "$v" | grep -c '^no  src/__dss_probe_not_registered__' || true)
+      lines=$(printf '%s\n' "$v" | sed -n 's/^lines //p')
+      printf '      \\r 를 걷어내고 읽은 목록 줄 수: %s개 (0 이면 아래 수가 전부 못 믿을 값이다)\n' "${lines:-?}"
+      if ! isnum "${lines:-}" || [ "${lines:-0}" -lt 100 ]; then
+        printf '  ✗ 이미지 안 목록을 %s줄밖에 못 읽었다 — **빈 결과는 삼켜진 오류일 수 있다**\n' "${lines:-못 읽음}"; IMGFAIL=1
+      elif [ "${probe:-0}" != "1" ]; then
+        printf '  ✗ **없는 경로가 no 로 안 나왔다** — 줄 전체 일치가 깨졌다. 아래 yes 도 못 믿는다\n'; IMGFAIL=1
+      elif [ "${got:-0}" = "5" ]; then
         printf '  ✓ 새 시험 다섯이 이미지 안의 목록에도 등록돼 있다 (담기기만 한 것이 아니다)\n'
+        printf '%s\n' "      🔵 없는 경로 하나는 **no** 로 나왔습니다 — 「무조건 yes」인 검사가 아닙니다."
       else
         printf '  ✗ 등록된 것이 %s/5 개다 — **옛 목록 파일이 담겼다.** 그 시험들은 조용히 안 돕니다\n' "${got:-0}"; IMGFAIL=1
       fi
