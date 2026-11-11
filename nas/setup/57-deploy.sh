@@ -315,14 +315,20 @@ ENV_PO=$D/deploy/env/po.env
 
 # ══ 🔴 tar 둘의 지문 — [배포본] 57-build.sh 가 굽고 **바로 잰 값**을 넣는다 ══
 #   tar 이름|바이트|md5|Config 지문
-#   🔴 **아직 비어 있다.** 57-build.sh --go 가 끝에 찍어 주는 **두 줄**로 아래
-#      두 줄을 통째로 갈아 끼운다.
+#   🔵 **채워 넣었다**(2026-11-11 13:58). 개발 PC 의 _images-53 에서 구운 tar 둘을
+#      그 자리에서 다시 재어 넣은 값이다 — 바이트는 stat · md5 는 md5sum ·
+#      Config 지문은 tar 안 manifest.json 에서 뽑았다(57-build.sh 의 tar_config_id 와
+#      같은 방식).
+#   🔴 **이 값을 NAS 에서 재서 채우지 마라.** 그러면 「옮기다 깨졌는가」를 자기가 잰
+#      값으로 자기를 재는 꼴이 되어 **영영 통과한다.** 반드시 **구운 쪽**에서 잰다.
 #   🔴 비어 있으면 3절이 **--check·--rollback 에서는 ? · --preload·--go 에서는 ✗**
 #      로 센다. 🔵 막는 것은 **✗ 뿐이다** — ? 는 아무것도 안 막는다.
+#      실제로 2026-11-11 --preload 가 빈 칸 둘 때문에 ✗ 로 멈췄다 — 막아야 할 자리를
+#      제대로 막았다.
 #   🔵 **셋째 줄(묶음)은 없다** — 이번 판은 마이그레이션이 0건이다.
 TARS='
-dss-as-4.9.tar|||
-dss-as-tools-16.tar|||
+dss-as-4.9.tar|134651392|e3f4bf4333ef3cbff384d12415232d67|sha256:21925d327905c7608feb8ec2bbfdbaa6edffcbb33685afdeb2c0c267b569c24d
+dss-as-tools-16.tar|225334784|6b8f9a899e948022a55489c3656ed3c3|sha256:ddd5de51fb825bd599ce5faf3b045bd675e48fb0c6f2fbf5b59608c934191445
 '
 TARS_WANT=2
 
