@@ -397,13 +397,13 @@ ENV_PO=$D/deploy/env/po.env
 #      🔴 **쉰세째에는 빈 표가 그대로 NAS 로 올라갔고 --preload 가 ✗ 둘로 멈췄다**
 #         (2026-11-11). 🔵 61-build.sh 는 그 두 줄을 **세 자리**에서 찍는다.
 TARS='
-dss-as-5.3.tar|||
-dss-as-tools-20.tar|||
+dss-as-5.3.tar|134987776|1280924f8d74cedd0fa0666e61ca53f8|sha256:632eb38546191242c5b380152c3e273ff86e8a8a7fc0a210e15929a2d7b46887
+dss-as-tools-20.tar|225588736|c8707b03141b03a09a8365b35143e5f5|sha256:4d655ed0a6a1c08aef124adc2d5b3887ce436b68aeab6e7fdfd4380cfc047f83
 '
 TARS_WANT=2
-# 🔴 **묶음의 잰 값** — 61-build.sh --go 가 찍어 준다. **아직 비어 있다.**
-MIGTAR_SIZE=
-MIGTAR_MD5=
+# 🔴 **묶음의 잰 값** — 61-build.sh --go 가 찍어 준다 (2026-11-13 17:41 굽기에서 채웠다).
+MIGTAR_SIZE=2532210
+MIGTAR_MD5=4d2c8376080bd60ce1c105b06526a489
 
 # 🔴 tar 이름 → 태그. **정규식으로 되돌리지 않는다** — 이름마다 손으로 적는다.
 #    🔴 dss-as-5.3.tar 은 「끝의 숫자 앞에 콜론」 규칙으로 풀리지 않는다(판에 점이 있다).
