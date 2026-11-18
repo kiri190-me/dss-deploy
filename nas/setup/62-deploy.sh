@@ -479,10 +479,27 @@ swap_image() { # 1 서비스 2 새 태그 → 0 성공 / 1 실패
 
 # ── DB 에 묻는 길 ────────────────────────────────────────────────────
 #   🔴 **앱이 쓰는 길로 재지 않는다** — 여기는 관리용 조회뿐이고 전부 select 다.
+# 🔴🔴 **stdin 을 빨아들이는 명령을 고리 안에서 부르면 고리가 한 바퀴만 돈다**
+#   [실측 2026-11-18 · NAS 에서 --preload 가 잡았다] 2-ㄱ 절이 **A/S 한 집만 재고**
+#   재고·휴가·포털 **셋을 아예 안 쟀다.** 까닭은 이 함수가 아니라 **-i** 였다:
+#
+#     while IFS= read -r r; do  …  pgq …  done <<END   ← 고리의 stdin 이 here 문서
+#     pgq 안의 'docker exec -i' 가 그 here 문서를 **남김없이 빨아들인다**
+#     → 다음 read 가 EOF 를 받아 고리가 **첫 줄에서 끝난다**
+#
+#   🔵 개발 PC 에서 cat 으로 그대로 재현했다 — 네 줄짜리 고리가 **한 바퀴**만 돌고,
+#      </dev/null 을 붙이자 **네 바퀴** 다 돌았다.
+#   🔴 **잡아낸 것은 「본 것 == 기대」 관문이었다**(「DB 를 1곳만 봤다」). 그 줄이
+#      없었으면 **세 집을 안 잰 채 조용히 통과**했을 것이다 — 그래서 그 관문들을
+#      하나도 안 뺀다.
+#
+#   처방 둘을 **다 쓴다**:
+#     ① psql 은 stdin 을 **안 읽는다** → -i 를 **뗀다**(애초에 필요가 없었다).
+#     ② 그래도 **</dev/null 을 붙인다** — 나중에 누가 -i 를 되살려도 고리는 산다.
 pgq() { # 1 상자 2 DB 3 SQL
-  "$DOCKER" exec -i "$1" sh -c "psql -U \"\$POSTGRES_USER\" -d $2 -tAc \"$3\"" 2>/dev/null | tr -d ' \r'
+  "$DOCKER" exec "$1" sh -c "psql -U \"\$POSTGRES_USER\" -d $2 -tAc \"$3\"" </dev/null 2>/dev/null | tr -d ' \r'
 }
-pgrows() { "$DOCKER" exec -i "$1" sh -c "psql -U \"\$POSTGRES_USER\" -d $2 -tAc \"$3\"" 2>/dev/null | tr -d '\r'; }
+pgrows() { "$DOCKER" exec "$1" sh -c "psql -U \"\$POSTGRES_USER\" -d $2 -tAc \"$3\"" </dev/null 2>/dev/null | tr -d '\r'; }
 pgn() { local v; v=$(pgq "$1" "$2" "$3"); isnum "$v" && printf '%s' "$v"; }
 mig_count() { pgn "$1" "$2" 'select count(*) from drizzle.__drizzle_migrations'; }
 has_table() { pgn "$1" "$2" "select count(*) from information_schema.tables where table_schema='public' and table_name='$3'"; }
@@ -492,8 +509,13 @@ index_cols() { pgn "$1" "$2" "select coalesce(max(i.indnkeyatts),0) from pg_inde
 has_enum_value() { pgn "$1" "$2" "select count(*) from pg_enum e join pg_type t on t.oid=e.enumtypid where t.typname='$3' and e.enumlabel='$4'"; }
 table_rows() { pgn "$1" "$2" "select count(*) from $3"; }
 
-dct() { ( cd "$D/deploy" && "$DOCKER" compose -f "$CF" --env-file .env.nas --profile tools "$@" ); }
-dcu() { ( cd "$D/deploy" && "$DOCKER" compose -f "$CF" --env-file .env.nas "$@" ); }
+# 🔴 **compose 도 stdin 을 읽는다** — 위 pgq 와 같은 까닭으로 </dev/null 을 붙인다.
+#    🔴 특히 --go 의 up_one 은 **SITES 고리 안**에서 dcu up -d 를 부른다. 안 붙이면
+#       **앱 하나만 다시 뜨고 고리가 끝난다** — 나머지 다섯은 옛 판 그대로인데
+#       「다 띄웠다」로 보일 뻔했다(2-ㄱ 과 똑같은 결함이 --go 에 숨어 있었다).
+#    🔵 db:migrate 는 묻는 것이 없다. 혹시 묻게 되면 **멈추지 말고 실패**하는 쪽이 낫다.
+dct() { ( cd "$D/deploy" && "$DOCKER" compose -f "$CF" --env-file .env.nas --profile tools "$@" </dev/null ); }
+dcu() { ( cd "$D/deploy" && "$DOCKER" compose -f "$CF" --env-file .env.nas "$@" </dev/null ); }
 
 # ── 앱이 답하는가 ────────────────────────────────────────────────────
 #   🔴 **3xx 를 통과로 센다** — A/S 는 307, PO 는 303 으로 로그인에 보낸다.
@@ -532,8 +554,20 @@ if [ ! -x "$DOCKER" ]; then stop "도커를 못 찾았다 — $DOCKER"; fi
 step "1. 지금 상태 — **운영이 실제로 쓰는 것**만 본다 (저장소 사본을 안 믿는다)"
 
 # 1-ㄱ-0. 🔴 덤프 이름과 compose 사본 이름의 판 꼬리표가 같은가
-b1=$(printf '%s' "$BK" | grep -o 'v[0-9]*' | head -1)
-if [ "$b1" = "$DUMP_VER" ]; then ok "덤프와 compose 사본의 판 꼬리표가 같다 ($DUMP_VER)"
+# 🔴 **이 줄은 바깥을 안 잰다** — 이 파일 안의 BK 와 DUMP_VER 가 **서로** 맞는지만 본다.
+#    59번이 BK 는 v55 로 올리고 DUMP_VER 은 v54 로 두어 덤프가 엉뚱한 이름으로 쌓였다.
+#    🔵 **운영 compose 와는 아무 상관이 없다** — 이 집은 저장소 사본이 운영보다
+#       아홉 판 뒤처진 적이 있어서, 사본과 맞대는 검사는 애초에 안 만들었다.
+# 🔴 [실측 2026-11-18 · NAS] 여기가 「compose 사본은 **v** 인데 덤프는 v58 다」로
+#    **가짜 ✗** 를 냈다. 까닭은 잣대였다 — grep -o 'v[0-9]*' 는 별표라 **숫자 0개도
+#    맞는다.** BK 가 **/volume1/**… 로 시작하니 「volume1」의 **v** 가 먼저 걸려
+#    head -1 이 그 한 글자를 집었다. 🔴 판 꼬리표는 **파일 이름 쪽에만** 있으므로
+#    basename 을 먼저 떼고, 별표가 아니라 **더하기(한 자리 이상)**로 센다.
+b1=$(basename "$BK" | grep -oE 'v[0-9]+' | head -1)
+printf '    덤프 꼬리표 %s · compose 사본 이름 %s → 뽑은 꼬리표 [%s]\n' "$DUMP_VER" "$(basename "$BK")" "${b1:-못 뽑음}"
+if [ -z "${b1:-}" ]; then
+  unk "compose 사본의 판 꼬리표" "이름에서 v숫자 를 못 뽑았다 — 잣대를 보세요"
+elif [ "$b1" = "$DUMP_VER" ]; then ok "덤프와 compose 사본의 판 꼬리표가 같다 ($DUMP_VER)"
 else bad "compose 사본은 $b1 인데 덤프는 $DUMP_VER 다 — 59번이 이 자리를 놓쳤다"; fi
 
 # 1-ㄱ. 🔴 운영이 지금 쓰는 태그 전부
@@ -833,32 +867,65 @@ say ""
 say "── 2-ㅂ. 🔴 **이미지 안에서 도는 세 집** — 도구가 새 .sql 을 들고 있나"
 say "🔴 도구 태그를 안 갈면 **새 .sql 이 세상에 존재하지 않습니다** — 적용이 0건으로"
 say "   조용히 끝나고 겉으로는 성공으로 보입니다(31·39번이 겪었습니다)."
-img_sql_check() { # 1 서비스 2 기대 .sql 수 3 기대 마지막 번호들(빈칸 구분) 4 이름
-  local tag n miss
+# 🔴 **단계마다 기대값이 다르다 — 그리고 단계는 「compose 가 가리키는 태그」가 정한다.**
+#   [실측 2026-11-18 · NAS 의 첫 --preload 에서 ✗ 여섯이 났다]
+#   그때 compose 는 아직 **옛 도구 태그**를 가리키고 있었다. 옛 도구에 새 .sql 이
+#   없는 것은 **당연한데** 「28장을 기대했다」로 ✗ 를 냈다 — 이 파일이 바로 아랫줄에
+#   「옛 태그면 아직 안 갈았다는 뜻」이라고 **스스로 적어 두고도** ✗ 를 냈다.
+#   🔴 **검사를 느슨하게 하는 것이 아니라 기대값을 단계로 가른다.**
+#      · 태그가 **옛 것**이면 → 옛 수여야 ✓ 이고, **새 .sql 이 있으면 ✗**
+#        (누가 옛 태그 위에 새 이미지를 덮었다는 뜻이다 — 되돌릴 판이 사라졌다)
+#      · 태그가 **새 것**이면 → 새 수여야 ✓ 이고, **새 .sql 이 없으면 ✗**
+#        (31·39번이 겪은 「적용이 0건으로 조용히 끝나는」 그 자리다)
+#      · 그 밖이면 ⚠️ — 값만 찍고 사람이 본다
+#   🔵 **이 절을 지우지 않는다.** 지우면 도구 태그를 안 갈고 --migrate 를 돌려도
+#      아무도 모른다.
+img_sql_check() { # 1 서비스 2 TOOLS 열쇠 3 옛 .sql 수 4 새 .sql 수 5 새 번호들 6 이름
+  local tag n miss trow oldtag newtag want phase
   tag=$(svc_image "$1")
-  if [ -z "${tag:-}" ]; then bad "$4 — compose 에 $1 이 없다"; return; fi
+  trow=$(row_by_key "$TOOLS" "$2"); newtag=$(field "$trow" 3); oldtag=$(field "$trow" 4)
+  if [ -z "${tag:-}" ]; then bad "$6 — compose 에 $1 이 없다"; return; fi
+  if [ -z "${newtag:-}" ]; then bad "$6 — TOOLS 표에 $2 가 없다. 표가 깨졌다"; return; fi
   if ! "$DOCKER" image inspect "$tag" >/dev/null 2>&1; then
-    unk "$4 도구 이미지 안" "$tag 가 NAS 에 아직 없다 (--preload 전이면 정상)"; return
+    unk "$6 도구 이미지 안" "$tag 가 NAS 에 아직 없다 (--preload 전이면 정상)"; return
   fi
-  n=$("$DOCKER" run --rm --entrypoint sh "$tag" -c "ls $IMG_MIGDIR/*.sql 2>/dev/null | wc -l" 2>/dev/null | tr -d ' \r')
-  printf '      %-10s %-26s 안 .sql %s장 (기대 %s)\n' "$4" "$tag" "${n:-?}" "$2"
-  if [ "${n:-x}" = "$2" ]; then ok "$4 도구가 ${2}장을 들고 있다"
-  else bad "$4 도구가 ${n:-?}장이다 — ${2}장을 기대했다 (**옛 도구 태그다**)"; fi
-  miss=""
-  for t in $3; do
+  if   [ "$tag" = "$newtag" ]; then phase=NEW; want=$4
+  elif [ "$tag" = "$oldtag" ]; then phase=OLD; want=$3
+  else phase=ODD; want=""; fi
+  n=$("$DOCKER" run --rm --entrypoint sh "$tag" -c "ls $IMG_MIGDIR/*.sql 2>/dev/null | wc -l" </dev/null 2>/dev/null | tr -d ' \r')
+  printf '      %-10s %-26s 안 .sql %s장 · compose 가 가리키는 판 %s (기대 %s)\n' \
+    "$6" "$tag" "${n:-?}" "$phase" "${want:-판정안함}"
+  case "$phase" in
+    ODD) hm "$6 가 $tag 다 — 옛 $oldtag 도 새 $newtag 도 아니다. **사람이 보세요**"; return ;;
+    OLD) say "🔵 **아직 도구 태그를 안 갈았습니다** — --migrate 가 갈아 끼운 뒤 db:migrate 를 돌립니다." ;;
+  esac
+  if [ "${n:-x}" = "$want" ]; then
+    if [ "$phase" = OLD ]; then ok "$6 옛 도구가 ${want}장을 들고 있다 (아직 안 갈았다 — 맞다)"
+    else ok "$6 새 도구가 ${want}장을 들고 있다"; fi
+  else
+    bad "$6 도구가 ${n:-?}장이다 — $phase 단계에서는 ${want}장을 기대했다"
+    doubt
+  fi
+  miss=""; local got=0 seen=0
+  for t in $5; do
     local a
-    a=$("$DOCKER" run --rm --entrypoint sh "$tag" -c "ls $IMG_MIGDIR/${t}_*.sql 2>/dev/null | wc -l" 2>/dev/null | tr -d ' \r')
-    printf '        %s: %s개 (기대 1)\n' "$t" "${a:-?}"
-    [ "${a:-0}" = "1" ] || miss="$miss $t"
+    seen=$((seen+1))
+    a=$("$DOCKER" run --rm --entrypoint sh "$tag" -c "ls $IMG_MIGDIR/${t}_*.sql 2>/dev/null | wc -l" </dev/null 2>/dev/null | tr -d ' \r')
+    printf '        %s: %s개 (이 단계의 기대 %s)\n' "$t" "${a:-?}" "$(if [ "$phase" = NEW ]; then printf 1; else printf 0; fi)"
+    [ "${a:-0}" = "1" ] && got=$((got+1)) || miss="$miss $t"
   done
-  if [ -z "${miss:-}" ]; then ok "$4 도구가 **이번 판이 올릴 것**을 다 들고 있다"
-  else bad "$4 도구에 없는 것:$miss — 이 배포의 목적물이 안 담겼다"; fi
+  if [ "$phase" = NEW ]; then
+    if [ -z "${miss:-}" ]; then ok "$6 새 도구가 **이번 판이 올릴 것**을 다 들고 있다 (${got}/${seen})"
+    else bad "$6 새 도구에 없는 것:$miss — **이 배포의 목적물이 안 담겼다**"; fi
+  else
+    if [ "${got:-0}" = "0" ]; then ok "$6 옛 도구에는 새 .sql 이 **없다** (${seen}개 다 확인 — 맞다)"
+    else bad "$6 **옛 태그인데 새 .sql 이 ${got}개 있다** — 누가 옛 태그 위에 덮었다. 멈추고 알릴 것"; fi
+  fi
 }
-img_sql_check tools-inventory 28 "0026 0027" "재고관리"
-img_sql_check tools-leave      5 "0003 0004" "휴가관리"
-img_sql_check tools-auth      11 "0010"      "통합로그인포털"
-say "🔵 위 수가 옛 태그 기준이면(재고 26 · 휴가 3 · 포털 10) **아직 안 갈았다**는 뜻이고"
-say "   --migrate 가 태그를 먼저 갈아 끼운 뒤 db:migrate 를 돌립니다."
+#                서비스            열쇠            옛  새  새 번호들      이름
+img_sql_check tools-inventory inventorytools 26 28 "0026 0027" "재고관리"
+img_sql_check tools-leave     leavetools      3  5 "0003 0004" "휴가관리"
+img_sql_check tools-auth      authtools      10 11 "0010"      "통합로그인포털"
 
 # ══════════════════════════════════════════════════════════════════════
 # ── 3. 들여올 tar 열하나 + 묶음 하나 ─────────────────────────────────
@@ -1190,10 +1257,15 @@ bundle_mark() { # 1 태그 2 글자 3 사람이 부르는 말
 preload_inside() {
   step "🔎 들여온 이미지 **안**을 센다 — 겉이 아니라 결과"
   say "🔴 「실었다」와 「쓸 만한 이미지다」는 다른 말입니다."
+  # 🔴 **몇 집을 실제로 봤는지 센다.** 고리가 한 바퀴만 돌고 끝나도 ✗ 0 으로
+  #    통과할 수 있다 — 2-ㄱ 이 그렇게 **세 집을 안 잰 채** 지나갈 뻔했다
+  #    (잡아 준 것이 바로 그 절의 「본 것 == 기대」 관문이었다).
+  PRE_APP_SEEN=0; PRE_TOOL_SEEN=0
   # ── 앱 여섯
   while IFS= read -r r; do
     [ -n "$r" ] || continue
     K=$(field "$r" 1); NEW=$(field "$r" 4); NAME=$(field "$r" 8)
+    PRE_APP_SEEN=$((PRE_APP_SEEN+1))
     printf '\n    ── %s  %s (앱 · **번들**)\n' "$NAME" "$NEW"
     if ! "$DOCKER" image inspect "$NEW" >/dev/null 2>&1; then bad "$NAME — $NEW 가 안 실렸다"; continue; fi
     v=$("$DOCKER" run --rm --entrypoint sh "$NEW" -c "test -f /app/server.js && echo yes || echo no" 2>/dev/null | tr -d '\r')
@@ -1232,6 +1304,7 @@ ENDPRE1
   while IFS= read -r r; do
     [ -n "$r" ] || continue
     K=$(field "$r" 1); NEW=$(field "$r" 3); NAME=$(field "$r" 6)
+    PRE_TOOL_SEEN=$((PRE_TOOL_SEEN+1))
     printf '\n    ── %s  %s (도구 · **소스가 글자 그대로**)\n' "$NAME" "$NEW"
     if ! "$DOCKER" image inspect "$NEW" >/dev/null 2>&1; then bad "$NAME — $NEW 가 안 실렸다"; continue; fi
     v=$("$DOCKER" run --rm --entrypoint sh "$NEW" -c "test -f /app/package.json && echo yes || echo no" 2>/dev/null | tr -d '\r')
@@ -1305,6 +1378,13 @@ ENDPRE1
   done <<ENDPRE2
 $(rows_of "$TOOLS")
 ENDPRE2
+  # 🔴 **표본이 비어서 공짜로 통과하지 않게** 한다.
+  say ""
+  printf '    본 앱 %s / %s · 본 도구 %s / %s\n' "$PRE_APP_SEEN" "$SITES_WANT" "$PRE_TOOL_SEEN" "$TOOLS_WANT"
+  [ "$PRE_APP_SEEN" = "$SITES_WANT" ] && ok "앱 ${SITES_WANT}개의 안을 다 봤다" \
+    || bad "앱을 ${PRE_APP_SEEN}개만 봤다 — ${SITES_WANT}개를 기대했다. **고리가 한 바퀴만 돌았을 수 있다**"
+  [ "$PRE_TOOL_SEEN" = "$TOOLS_WANT" ] && ok "도구 ${TOOLS_WANT}개의 안을 다 봤다" \
+    || bad "도구를 ${PRE_TOOL_SEEN}개만 봤다 — ${TOOLS_WANT}개를 기대했다. **고리가 한 바퀴만 돌았을 수 있다**"
 }
 
 # ══════════════════════════════════════════════════════════════════════
@@ -1363,7 +1443,9 @@ make_dumps() {
     local f
     f="$BKDB/$2-$DUMP_VER-$STAMP.dump"
     printf '    뜨는 중 %s …\n' "$2"
-    if "$DOCKER" exec -i "$1" sh -c "pg_dump -U \"\$POSTGRES_USER\" -d $2 -Fc" > "$f" 2>/dev/null; then
+    # 🔵 pg_dump 도 stdin 을 안 읽는다 — -i 를 떼고 </dev/null 을 붙인다(위 pgq 와 같은 처방).
+    #    🔵 여기는 고리 안이 아니라 지금도 네 번 다 돌지만, 같은 꼴로 적어 둔다.
+    if "$DOCKER" exec "$1" sh -c "pg_dump -U \"\$POSTGRES_USER\" -d $2 -Fc" </dev/null > "$f" 2>/dev/null; then
       local sz; sz=$(stat -c %s "$f" 2>/dev/null)
       if isnum "${sz:-}" && [ "${sz:-0}" -gt 1000 ]; then
         ok "$2 덤프 ${sz}바이트 — $f"; DUMP_N=$((DUMP_N+1))
