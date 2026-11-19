@@ -330,8 +330,8 @@ AS_VOL_NEXT=0132
 #   🔵 **이름만 적고 값 칸은 비워 둔다** — 그래야 3절이 「표가 깨졌다」가 아니라
 #      「지문이 비어 있다」로 셉니다(65번의 첫 커밋과 같은 꼴입니다).
 TARS='
-dss-as-5.8.tar|||
-dss-as-tools-25.tar|||
+dss-as-5.8.tar|136141824|dfcb69ec0fd450103779e54b75f9ecf8|sha256:19b6c1e3d62584f293c83777e08cebe2951cc9dc81caed7502ab6a9d0f00aa19
+dss-as-tools-25.tar|226594304|e97df3ead6886e3f3b83faae414cd509|sha256:92c9c0490cf1e95a5232b1c54f0a531da2db3a77017e5cbbd48c92b5be97462f
 '
 TARS_WANT=2
 # ══ 🔴 **묶음의 지문** — 66-build.sh 가 찍어 준다 ═════════════════════
@@ -339,8 +339,8 @@ TARS_WANT=2
 #   🔴 **아직 비어 있다.** 비어 있으면 3-ㄴ 이 --check 에서는 ? · --migrate 에서는
 #      ✗ 로 센다. 🔴 **NAS 에서 재서 채우지 마라** — 자기가 잰 값으로 자기를 재면
 #      영영 통과한다.
-MIGTAR_SIZE=
-MIGTAR_MD5=
+MIGTAR_SIZE=2620436
+MIGTAR_MD5=20ee186dd1427a5c40f2adc8a3f4e22c
 
 # 🔴 tar 이름 → 태그. **정규식으로 되돌리지 않는다** — 이름마다 손으로 적는다.
 #    🔴 판에 점이 있는 것과 없는 것이 섞여 있어 한 규칙으로 안 풀린다.
