@@ -30,7 +30,18 @@ set -u
 export PATH=/usr/syno/sbin:/usr/syno/bin:/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
 D=/volume1/dss
 DOCKER=/usr/local/bin/docker
-IMAGE=dss-meters-tools:1
+# 🔴 **운영이 실제로 쓰는 태그를 적는다.** 아래 61줄이 「이 이미지가 NAS 에 있나」를
+#    확인하는 데만 쓰는 값이다 — 이것으로 무엇을 돌리지는 않는다.
+#    🔴 2026-11-20 에 `:1` → `:2` 로 고쳤다. 쉰여덟째 배포(2026-11-18)가 계측기 도구를
+#       2 로 올렸는데 이 줄이 1 에 머물러 있었다. 그대로 두면 이 파일을 다시 돌릴 때
+#       ㉠ `:1` 이 아직 남아 있으면 **엉뚱한 이미지를 확인하고 통과**하고
+#       ㉡ `:1` 을 지웠으면 **「도구 이미지가 없다」로 멈춘다**(멀쩡한데 못 돌린다).
+#    🔵 **매일 도는 알림은 이 값과 무관하다** — jobs/notify-daily.sh 는 이미지 이름을
+#       제 안에 안 적고 compose 의 tools-meters 를 부른다(`run --rm`). 그래서 이 줄이
+#       옛 태그였어도 **알림은 멀쩡히 새 판으로 돌고 있었다.**
+#    🔴 계측기 도구를 다시 올리는 판에서는 **이 줄도 함께 고쳐라.** 배포본이 이 파일을
+#       안 보므로 아무도 안 알려 준다.
+IMAGE=dss-meters-tools:2
 SRC=$D/setup/notify-daily.sh
 DST=$D/jobs/notify-daily.sh
 STAMP=$(date +%Y%m%d-%H%M%S)
