@@ -333,8 +333,8 @@ AS_VOL_LAST=0131
 #   🔵 **지난 판 바이트**(다음 판이 크기를 견줄 때 쓴다):
 #      dss-as-6.0.tar 136190464 · dss-as-tools-27.tar 226645504
 TARS='
-dss-as-6.1.tar|||
-dss-as-tools-28.tar|||
+dss-as-6.1.tar|136193536|bb443d917d3c4fe74c427834a5c2deee|sha256:2695c93f5929b8468d3f14498bd0ffcac5d2df7f2a7a4e68cf25cb791f1c6705
+dss-as-tools-28.tar|226646528|8a4240fb828e4e31add8ecfe2189a802|sha256:1bba06f699e812468c131cd67815f658b4b4694afd670df42d8b7c35ed865a80
 '
 TARS_WANT=2
 # 🔵 **묶음 값(MIGTAR_SIZE·MIGTAR_MD5)은 아예 없다** — 이번 판은 묶음을 안 만든다.
