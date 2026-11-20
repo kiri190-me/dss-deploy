@@ -292,8 +292,8 @@ AS_VOL_NEXT=0133
 #   🔵 **지난 판 바이트**(62-deploy.sh 의 TARS · 다음 판이 크기를 견줄 때 쓴다):
 #      dss-inventory-0.7.tar 95449600 · dss-inventory-tools-4.tar 213334528
 TARS='
-dss-inventory-0.8.tar|||
-dss-inventory-tools-5.tar|||
+dss-inventory-0.8.tar|95470592|0fb51933bb8c05b9b13239bbaae76420|sha256:f5d76689cee4f3a61e50dbb04dbde57d18d93f3e1b7d05781bbcd415618b18bf
+dss-inventory-tools-5.tar|213350912|0bbc4712c65366d4deed795fa03ac75b|sha256:260d2a73d2cced8a18f5ad309d193ce435f5c33d16dba9550f5bdf162eb1366a
 '
 TARS_WANT=2
 # 🔵 **묶음 값(MIGTAR_SIZE·MIGTAR_MD5)은 아예 없다** — 🔴 **재고는 묶음을 안 쓴다.**
