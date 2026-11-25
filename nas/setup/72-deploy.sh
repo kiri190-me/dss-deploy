@@ -416,8 +416,8 @@ AS_VOL_NEXT=0134
 #   🔵 **이름만 적고 값 칸은 비워 둔다** — 그래야 3절이 「표가 깨졌다」가 아니라
 #      「지문이 비어 있다」로 센다.
 TARS='
-dss-as-6.3.tar|||
-dss-as-tools-30.tar|||
+dss-as-6.3.tar|136938496|afb1243b71805de88abad2a8bdbf20d5|sha256:df8b22ed9fc9ee5035f958ccabe2447cbaba42c4d309c7a9f3c77327d5af2b5e
+dss-as-tools-30.tar|227207680|3664536aed9e144c312330e0daf6e743|sha256:dac633c3ea86c18a72fe1ccc71a8aa7b68471772ce66bea13d8f9f9be46521c7
 '
 TARS_WANT=2
 # ══ 🔵 **묶음의 지문(MIGTAR_SIZE·MIGTAR_MD5)이 없다** ═════════════════
