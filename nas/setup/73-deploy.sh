@@ -528,10 +528,10 @@ INV_TESTS_NOTE=12
 #   🔵 **이름만 적고 값 칸은 비워 둔다** — 그래야 3절이 「표가 깨졌다」가 아니라
 #      「지문이 비어 있다」로 센다.
 TARS='
-dss-as-6.4.tar|||
-dss-as-tools-31.tar|||
-dss-inventory-0.9.tar|||
-dss-inventory-tools-6.tar|||
+dss-as-6.4.tar|136987648|50536405235f2d3f32069dd53a22e9f2|sha256:dac5e045d5a1fd914cea3013b636670a2d962da28ee7e63ad67c9994e1df1d28
+dss-as-tools-31.tar|227245568|e29cf946e8b910571709ce550107b678|sha256:7869702f9f39e7ff70d77824147d2727c29a588d95fe8a51f1943180ba93cdd6
+dss-inventory-0.9.tar|95483904|b6eedd00f0df24942e5d8633279e9364|sha256:cd775339e1a95a5f392efc83c0fa6113293e9c76e8eccc9faafb02a160938b23
+dss-inventory-tools-6.tar|213390848|a4f7e7e2902f5dc0da72c0a48d44ecb2|sha256:38927417680b9cba01175482f0c1fd7fc98910004d3dbd550e0397a8056e6d81
 '
 TARS_WANT=4
 # ══ 🔵 **묶음의 지문(MIGTAR_SIZE·MIGTAR_MD5)이 없다** ═════════════════
