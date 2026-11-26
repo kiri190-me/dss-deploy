@@ -504,8 +504,8 @@ INV_IMG_NEXT=0028
 #   🔵 **이름만 적고 값 칸은 비워 둔다** — 그래야 3절이 「표가 깨졌다」가 아니라
 #      「지문이 비어 있다」로 센다.
 TARS='
-dss-as-6.5.tar|||
-dss-as-tools-32.tar|||
+dss-as-6.5.tar|137057280|4ea5030a163ef44c3aba3bf65bb989f0|sha256:4b6389d5e9dee871cbeea862b32c1b75514d44f37426abaa369e6d562726fcdb
+dss-as-tools-32.tar|227276800|a7699899cc7190663d9b0f9ab9b42bd6|sha256:35f4a0dc443da6e254e82741c1a641d52d2f37940c8f9773f3e538030788e3a9
 '
 TARS_WANT=2
 # ══ 🔴🔴 **묶음의 지문** — 74-build.sh 가 찍어 준다 ═══════════════════
@@ -513,8 +513,8 @@ TARS_WANT=2
 #   🔴 **아직 비어 있다.** 비어 있으면 3-ㄴ 이 --check 에서는 ? · --migrate 에서는
 #      ✗ 로 센다. 🔴 **NAS 에서 재서 채우지 마라** — 자기가 잰 값으로 자기를 재면
 #      영영 통과한다.
-MIGTAR_SIZE=
-MIGTAR_MD5=
+MIGTAR_SIZE=2710660
+MIGTAR_MD5=425aaa33f296a9386b15645604482963
 # ══ 🔴🔴 **옛 묶음의 지문** — incoming 에 아직 남아 있는 것 ═══════════
 #   🔴 [실측 2026-11-26] 71번이 2026-11-25 에 보낸 **134장**짜리가 setup/incoming 에
 #      **그대로 있다**(71-deploy.sh:398-399 의 값).
